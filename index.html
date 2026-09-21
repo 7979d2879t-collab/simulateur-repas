@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Simulateur repas semaine - V3</title>
+<title>Simulateur repas semaine - V3.1</title>
 <style>
 :root{--bg:#f4f7f8;--card:#fff;--navy:#17324d;--teal:#2d7d77;--line:#d9e1e4;--ok:#e8f5ec;--warn:#fff4dd;--bad:#fde8e7}
 *{box-sizing:border-box} body{margin:0;font-family:Arial,sans-serif;background:var(--bg);color:#26333c}
@@ -108,6 +108,8 @@ function updateFavButtons(){
 }
 function ingredientDisplay(x){
  let m=META[x.key]; if(!m)return x.qty+' g';
+ const liquids=new Set(['lait','lait_coco','creme','huile']);
+ if(liquids.has(x.key)){return x.qty>=1000?(x.qty/1000).toFixed(2).replace('.',',')+' L':Math.round(x.qty)+' ml';}
  const pieces={oeuf:[1,'œuf'],kiwi:[100,'kiwi'],banane:[120,'banane'],avocat:[200,'avocat'],poire:[150,'poire'],wrap:[60,'wrap']};
  if(pieces[x.key]){let n=Math.round((x.qty/pieces[x.key][0])*2)/2;return n+' '+pieces[x.key][1]+(n>1?'s':'')}
  return x.qty+' g';
@@ -166,8 +168,11 @@ function update(){
    let m=META[k], cost= m.unit==='œuf'? q*m.costPer : q/100*m.costPer100;
    const pieceMap={oeuf:[1,'œuf'],kiwi:[100,'kiwi'],banane:[120,'banane'],avocat:[200,'avocat'],poire:[150,'poire'],wrap:[60,'wrap']};
    let qty;
+   const liquidKeys=new Set(['lait','lait_coco','creme','huile']);
    if(pieceMap[k]){let n=Math.ceil((q/pieceMap[k][0])*2)/2;qty=(Number.isInteger(n)?n:n.toFixed(1).replace('.',','))+' '+pieceMap[k][1]+(n>1?'s':'');}
-   else qty=(q>=1000?(q/1000).toFixed(2)+' kg':Math.round(q)+' g');
+   else if(liquidKeys.has(k)){
+     qty=q>=1000?(q/1000).toFixed(2).replace('.',',')+' L':q>=100?(q/10).toFixed(q%10?1:0).replace('.',',')+' cl':Math.round(q)+' ml';
+   } else qty=(q>=1000?(q/1000).toFixed(2)+' kg':Math.round(q)+' g');
    tbody.innerHTML+=`<tr><td>${m.name}</td><td>${qty}</td><td>≈ ${cost.toFixed(2)} €</td></tr>`;
  });
  document.getElementById('weekSummary').innerHTML=active.length?
