@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Simulateur repas semaine - V3.3</title>
+<title>Simulateur repas semaine - V3.4</title>
 <style>
 :root{--bg:#f4f7f8;--card:#fff;--navy:#17324d;--teal:#2d7d77;--line:#d9e1e4;--ok:#e8f5ec;--warn:#fff4dd;--bad:#fde8e7}
 *{box-sizing:border-box} body{margin:0;font-family:Arial,sans-serif;background:var(--bg);color:#26333c}
@@ -46,7 +46,7 @@ button{border:0;background:var(--teal);color:#fff;padding:9px 12px;border-radius
 <table><thead><tr><th>Produit</th><th>Quantité</th><th>Coût estimé</th></tr></thead><tbody id="shopping"></tbody></table>
 <br><button onclick="printShopping()">🖨️ Imprimer la liste de courses</button></div>
 <div class="panel"><h2>Bilan de la semaine</h2><div id="weekSummary"></div><br>
-<canvas id="radar" width="420" height="300" style="width:100%;max-width:520px;height:auto;display:block;margin:8px auto"></canvas><p class="note" style="text-align:center">Toile : objectif = 100 % · résultat = moyenne des jours composés</p><button onclick="resetWeek()">Réinitialiser</button>
+<canvas id="radar" width="420" height="300" style="width:100%;max-width:520px;height:auto;display:block;margin:8px auto"></canvas><p class="note" style="text-align:center">Toile : 100 % = dans la zone cible · en dessous de 100 % = écart à la cible (trop bas ou trop haut)</p><button onclick="resetWeek()">Réinitialiser</button>
 <p class="note">Prix indicatifs base Lidl, hors promotions. Fruits en conserve : au jus/sans sucres ajoutés et poids égoutté. Framboises : surgelées par défaut.</p></div>
 </div>
 </main>
@@ -176,7 +176,8 @@ function update(){
  document.getElementById('avgFi').textContent=active.length?Math.round(avg('fi'))+' g':'-';
  document.getElementById('avgF').textContent=active.length?Math.round(avg('f'))+' g':'-';
  let wc=active.reduce((a,t)=>a+t.cost,0); document.getElementById('weekCost').textContent=active.length?'≈ '+wc.toFixed(2)+' €':'-';
- drawRadar(active.length?[avg('k')/2100,avg('p')/160,avg('fi')/32,avg('f')/68]:[0,0,0,0]);
+ const targetScore=(v,min,max)=>{if(v>=min&&v<=max)return 1;if(v<min)return Math.max(0,v/min);return Math.max(0,1-(v-max)/max);};
+ drawRadar(active.length?[targetScore(avg('k'),2050,2150),targetScore(avg('p'),150,170),targetScore(avg('fi'),30,35),targetScore(avg('f'),60,75)]:[0,0,0,0]);
  let tbody=document.getElementById('shopping'); tbody.innerHTML='';
  Object.entries(shop).sort((a,b)=>META[a[0]].name.localeCompare(META[b[0]].name,'fr')).forEach(([k,q])=>{
    let m=META[k], cost= m.unit==='œuf'? q*m.costPer : q/100*m.costPer100;
