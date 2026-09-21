@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Simulateur repas semaine - V4.3</title>
+<title>Simulateur repas semaine - V4.4</title>
 <style>
 :root{--bg:#f4f7f8;--card:#fff;--navy:#17324d;--teal:#2d7d77;--line:#d9e1e4;--ok:#e8f5ec;--warn:#fff4dd;--bad:#fde8e7}
 *{box-sizing:border-box} body{margin:0;font-family:Arial,sans-serif;background:var(--bg);color:#26333c}
@@ -40,7 +40,7 @@ button{border:0;background:var(--teal);color:#fff;padding:9px 12px;border-radius
 <div class="tools">
 <button onclick="autoWeek()">✨ Proposer ma semaine</button>
 <button onclick="smartSuggestions()">🎯 Compléter / optimiser</button>
-<span class="note">La proposition construit chaque journée autour des cibles et évite désormais de dépasser inutilement calories, protéines et lipides. Déjeuners en batch possibles ×2 ; petit-déjeuner et 2e collation restent optionnels s’ils feraient dépasser les cibles.</span>
+<span class="note">La proposition optimise maintenant chaque journée complète : priorité à 2 050–2 150 kcal, 150–170 g protéines, 30–35 g fibres et 60–75 g lipides. Ensuite seulement viennent batch cooking, variété et favoris.</span>
 </div>
 <div class="panel" id="suggestPanel" style="display:none;margin-bottom:14px"><h2>🎯 Suggestions adaptées</h2><div id="suggestions"></div></div>
 <div class="week" id="week"></div>
@@ -180,22 +180,51 @@ function bestForSelect(sel,base,usage={}){
    if(FAVORITES.has(r.id))score-=.10;
    return {r,score}}).sort((x,y)=>x.score-y.score)[0]?.r;
 }
+function inTargets(t){return t.k>=2050&&t.k<=2150&&t.p>=150&&t.p<=170&&t.fi>=30&&t.fi<=35&&t.f>=60&&t.f<=75}
+function dayDistance(t){
+ let d=fitScore(t);
+ // Strongly reward an actually valid day.
+ if(inTargets(t))d-=100;
+ return d;
+}
+function candidatePool(cat,usage,limit=14){
+ let arr=RECIPES.filter(r=>r.cat===cat);
+ return arr.map(r=>({r,s:(usage[r.id]||0)*(r.cat==='DÉJEUNERS & BATCH COOKING'?0.35:1.1)-(FAVORITES.has(r.id)?.12:0)})).sort((a,b)=>a.s-b.s).slice(0,limit).map(x=>x.r);
+}
+function bestWholeDay(day,usage){
+ const sels=[...document.querySelectorAll(`select[data-day="${day}"]`)];
+ let fixed={k:0,p:0,fi:0,f:0,c:0,cost:0}, open=[];
+ sels.forEach(s=>{if(s.value){fixed=addMeal(fixed,RECIPES.find(r=>r.id===+s.value))}else open.push(s)});
+ // Search practical combinations. Breakfast and snack2 may be empty; lunch/dinner/snack1 are filled.
+ const pools=open.map(s=>{
+   let p=candidatePool(s.dataset.cat,usage,s.dataset.slot==='snack2'?10:14);
+   if(s.dataset.slot==='breakfast'||s.dataset.slot==='snack2')p=[null,...p];
+   return p;
+ });
+ let best={score:Infinity,choices:[]};
+ function walk(i,t,choices){
+   if(i===open.length){
+     // Core meals must be present.
+     for(let j=0;j<open.length;j++){let sl=open[j].dataset.slot;if(['lunch','dinner','snack1'].includes(sl)&&!choices[j])return}
+     let score=dayDistance(t);
+     choices.forEach((r,j)=>{if(!r)return;let used=usage[r.id]||0,sl=open[j].dataset.slot;if(sl==='lunch')score+=used===1?-.18:used>1?(used-1)*1.7:0;else score+=used*.8});
+     if(score<best.score)best={score,choices:[...choices],tot:t};return;
+   }
+   for(const r of pools[i]){
+     let nt=r?addMeal(t,r):t;
+     // prune clearly impossible overshoots
+     if(nt.k>2225||nt.p>185||nt.fi>42||nt.f>84)continue;
+     choices[i]=r;walk(i+1,nt,choices);
+   }
+ }
+ walk(0,fixed,[]);
+ return {open,best};
+}
 function autoWeek(){
- // Build each day as a whole. Required core = lunch + dinner + one snack.
- // Breakfast and second snack are optional and added only when they improve target fit.
  let usage=usageCounts();
  for(let d=0;d<7;d++){
-   let sels=[...document.querySelectorAll(`select[data-day="${d}"]`)],base=dayTotalsFromSelects(d);
-   const core=['lunch','dinner','snack1'];
-   for(const slot of core){
-     let s=sels.find(x=>x.dataset.slot===slot);if(s&&!s.value){let r=bestForSelect(s,base,usage);if(r){s.value=String(r.id);usage[r.id]=(usage[r.id]||0)+1;base=addMeal(base,r)}}
-   }
-   // Breakfast: only if it improves the whole-day distance to targets.
-   let bs=sels.find(x=>x.dataset.slot==='breakfast');
-   if(bs&&!bs.value){let r=bestForSelect(bs,base,usage);if(r&&fitScore(addMeal(base,r))<fitScore(base)){bs.value=String(r.id);usage[r.id]=(usage[r.id]||0)+1;base=addMeal(base,r)}}
-   // Second snack stays optional; add only if clearly useful and without overshooting.
-   let ss=sels.find(x=>x.dataset.slot==='snack2');
-   if(ss&&!ss.value){let r=bestForSelect(ss,base,usage),n=r?addMeal(base,r):null;if(r&&n.k<=2150&&n.p<=170&&n.f<=75&&fitScore(n)<fitScore(base)){ss.value=String(r.id);usage[r.id]=(usage[r.id]||0)+1;base=n}}
+   let res=bestWholeDay(d,usage);
+   res.open.forEach((s,i)=>{let r=res.best.choices[i];if(r){s.value=String(r.id);usage[r.id]=(usage[r.id]||0)+1}});
  }
  update();updateFavButtons();
 }
