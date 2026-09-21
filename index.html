@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Simulateur repas semaine - V4</title>
+<title>Simulateur repas semaine - V4.1</title>
 <style>
 :root{--bg:#f4f7f8;--card:#fff;--navy:#17324d;--teal:#2d7d77;--line:#d9e1e4;--ok:#e8f5ec;--warn:#fff4dd;--bad:#fde8e7}
 *{box-sizing:border-box} body{margin:0;font-family:Arial,sans-serif;background:var(--bg);color:#26333c}
@@ -40,7 +40,7 @@ button{border:0;background:var(--teal);color:#fff;padding:9px 12px;border-radius
 <div class="tools">
 <button onclick="autoWeek()">✨ Proposer ma semaine</button>
 <button onclick="smartSuggestions()">🎯 Compléter / optimiser</button>
-<span class="note">La proposition remplit les cases vides. L’optimisation te suggère des changements sans les imposer.</span>
+<span class="note">La proposition tient compte des cibles journalières et de la semaine. Les déjeuners peuvent être répétés 2 fois pour le batch cooking ; petits-déjeuners, dîners et collations sont davantage variés.</span>
 </div>
 <div class="panel" id="suggestPanel" style="display:none;margin-bottom:14px"><h2>🎯 Suggestions adaptées</h2><div id="suggestions"></div></div>
 <div class="week" id="week"></div>
@@ -161,16 +161,20 @@ function fitScore(t){
  return Math.abs(t.k-TARGET.k)/500 + Math.abs(t.p-TARGET.p)/45 + Math.abs(t.fi-TARGET.fi)/14 + Math.abs(t.f-TARGET.f)/25;
 }
 function addMeal(t,r){return {k:t.k+r.macros.kcal,p:t.p+r.macros.protein,fi:t.fi+r.macros.fiber,f:t.f+r.macros.fat,c:t.c+r.macros.carbs,cost:t.cost+r.macros.cost}}
-function bestForSelect(sel,base){
- let candidates=RECIPES.filter(r=>r.cat===sel.dataset.cat);
- let fav=candidates.filter(r=>FAVORITES.has(r.id)); if(fav.length) candidates=[...fav,...candidates.filter(r=>!FAVORITES.has(r.id))];
- return candidates.map(r=>({r,score:fitScore(addMeal(base,r))})).sort((a,b)=>a.score-b.score)[0]?.r;
+function usageCounts(){let u={};document.querySelectorAll('select[data-slot]').forEach(s=>{if(s.value)u[s.value]=(u[s.value]||0)+1});return u}
+function bestForSelect(sel,base,usage={}){
+ let candidates=RECIPES.filter(r=>r.cat===sel.dataset.cat),slot=sel.dataset.slot;
+ return candidates.map(r=>{let score=fitScore(addMeal(base,r)),used=usage[r.id]||0;
+   if(slot==='lunch')score+=used===0?0:used===1?-.35:(used-1)*2.2;
+   else score+=used*1.8;
+   if(FAVORITES.has(r.id))score-=.12;
+   return {r,score}}).sort((x,y)=>x.score-y.score)[0]?.r;
 }
 function autoWeek(){
+ let usage=usageCounts();
  for(let d=0;d<7;d++){
-   let sels=[...document.querySelectorAll(`select[data-day="${d}"]`)];
-   let base=dayTotalsFromSelects(d);
-   sels.filter(s=>!s.value).forEach(s=>{let r=bestForSelect(s,base);if(r){s.value=String(r.id);base=addMeal(base,r)}});
+   let sels=[...document.querySelectorAll(`select[data-day="${d}"]`)],base=dayTotalsFromSelects(d);
+   sels.filter(s=>!s.value).forEach(s=>{let r=bestForSelect(s,base,usage);if(r){s.value=String(r.id);usage[r.id]=(usage[r.id]||0)+1;base=addMeal(base,r)}});
  }
  update();updateFavButtons();
 }
@@ -180,7 +184,7 @@ function smartSuggestions(){
    let sels=[...document.querySelectorAll(`select[data-day="${d}"]`)],base=dayTotalsFromSelects(d);
    let blanks=sels.filter(s=>!s.value);
    if(blanks.length){
-     let s=blanks[0],r=bestForSelect(s,base);
+     let s=blanks[0],r=bestForSelect(s,base,usageCounts());
      if(r)out.push({day:d,slot:s.dataset.slot,id:r.id,txt:`${DAYS[d]} — compléter ${SLOTS.find(x=>x[0]===s.dataset.slot)[1]} avec <b>${r.name}</b> (${r.macros.kcal} kcal, ${Math.round(r.macros.protein)} g prot., ${Math.round(r.macros.fat)} g lip.)`});
      continue;
    }
