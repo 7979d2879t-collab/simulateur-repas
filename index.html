@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Simulateur repas semaine - V1</title>
+<title>Simulateur repas semaine - V2</title>
 <style>
 :root{--bg:#f4f7f8;--card:#fff;--navy:#17324d;--teal:#2d7d77;--line:#d9e1e4;--ok:#e8f5ec;--warn:#fff4dd;--bad:#fde8e7}
 *{box-sizing:border-box} body{margin:0;font-family:Arial,sans-serif;background:var(--bg);color:#26333c}
@@ -52,9 +52,37 @@ const SLOTS=[
  ["dinner","Dîner","DÎNERS RAPIDES"],
  ["snack2","Dessert / collation 2 (option)","DESSERTS & COLLATIONS"]
 ];
+function mealGroup(r){
+ if(r.sub) return r.sub;
+ const n=r.name.toLowerCase();
+ if(r.cat==='DÉJEUNERS & BATCH COOKING'||r.cat==='DÎNERS RAPIDES'){
+   if(n.includes('wrap')||n.includes('pinsa')) return 'WRAPS & REPAS PRATIQUES';
+   if(n.includes('saumon')||n.includes('cabillaud')||n.includes('poisson')||n.includes('thon')||n.includes('crevette')) return 'POISSONS & FRUITS DE MER';
+   if(n.includes('œuf')||n.includes('omelette')) return 'ŒUFS';
+   if(n.includes('bœuf')||n.includes('steak')) return 'BŒUF';
+   if(n.includes('veau')) return 'VEAU';
+   if(n.includes('agneau')) return 'AGNEAU';
+   if(n.includes('canard')) return 'CANARD';
+   if(n.includes('porc')||n.includes('filet mignon')) return 'PORC';
+   return 'AUTRES';
+ }
+ if(r.cat==='DESSERTS & COLLATIONS'){
+   if(n.includes('chocolat')||n.includes('cacao')||n.includes('cookie')) return 'CHOCOLAT & GOURMAND';
+   if(n.includes('coco')) return 'COCO';
+   if(n.includes('flan')||n.includes('crème')||n.includes('mousse')) return 'FLANS, CRÈMES & MOUSSES';
+   if(n.includes('framboise')||n.includes('mangue')||n.includes('fruit')) return 'FRUITS';
+   return 'AUTRES DESSERTS';
+ }
+ return 'AUTRES';
+}
 function opts(cat){
- let arr=RECIPES.filter(r=>r.cat===cat);
- return '<option value="">-- aucun --</option>'+arr.map(r=>`<option value="${r.id}">${r.name} · ${r.macros.kcal} kcal · ${Math.round(r.macros.protein)}g P</option>`).join('');
+ let arr=RECIPES.filter(r=>r.cat===cat), groups={};
+ arr.forEach(r=>{let g=mealGroup(r);(groups[g]||(groups[g]=[])).push(r)});
+ let html='<option value="">-- aucun --</option>';
+ Object.entries(groups).forEach(([g,rs])=>{
+   html+='<optgroup label="'+g+'">'+rs.map(r=>`<option value="${r.id}">${r.name} · ${r.macros.kcal} kcal · ${Math.round(r.macros.protein)}g P</option>`).join('')+'</optgroup>';
+ });
+ return html;
 }
 function build(){
  const w=document.getElementById('week'); w.innerHTML='';
@@ -88,7 +116,8 @@ function update(){
      r.ings.forEach(x=>shop[x.key]=(shop[x.key]||0)+x.qty);
    });
    totals.push(t); let box=document.getElementById('tot'+i); box.className='daytotal '+quality(t.k,t.p,t.fi,t.f);
-   box.innerHTML=rs.length?`<b>${Math.round(t.k)} kcal</b><br>${Math.round(t.p)} g prot. · ${Math.round(t.c)} g gluc.<br>${Math.round(t.f)} g lip. · ${Math.round(t.fi)} g fibres<br>≈ ${t.cost.toFixed(2)} €`:'Aucun repas sélectionné.';
+   let rk=Math.max(0,2100-t.k), rp=Math.max(0,160-t.p), rfi=Math.max(0,32-t.fi), rf=Math.max(0,68-t.f);
+   box.innerHTML=rs.length?`<b>${Math.round(t.k)} kcal</b><br>${Math.round(t.p)} g prot. · ${Math.round(t.c)} g gluc.<br>${Math.round(t.f)} g lip. · ${Math.round(t.fi)} g fibres<br>≈ ${t.cost.toFixed(2)} €<hr style="border:0;border-top:1px solid #d9e1e4;margin:7px 0"><b>Reste indicatif</b><br>~${Math.round(rk)} kcal · ${Math.round(rp)} g prot.<br>~${Math.round(rfi)} g fibres · ~${Math.round(rf)} g lip.`:'Aucun repas sélectionné.';
  });
  const active=totals.filter(t=>t.k>0), n=active.length||1;
  const avg=x=>active.reduce((a,t)=>a+t[x],0)/n;
@@ -109,8 +138,8 @@ function update(){
  <p>${Math.round(avg('k'))>2150?'La moyenne est au-dessus du point de départ actuel.':Math.round(avg('k'))<1900?'La moyenne est assez basse : vérifie que tu as bien sélectionné toutes les prises alimentaires.':'La moyenne énergétique reste proche de la zone de départ.'}</p>`:'Sélectionne les repas pour commencer.';
  save();
 }
-function save(){let s=[];document.querySelectorAll('select').forEach(x=>s.push(x.value));localStorage.setItem('mealV1',JSON.stringify(s));}
-function load(){try{let a=JSON.parse(localStorage.getItem('mealV1'));if(a)document.querySelectorAll('select').forEach((x,i)=>x.value=a[i]||'');}catch(e){}}
-function resetWeek(){localStorage.removeItem('mealV1');document.querySelectorAll('select').forEach(x=>x.value='');update();}
+function save(){let s=[];document.querySelectorAll('select').forEach(x=>s.push(x.value));localStorage.setItem('mealV2',JSON.stringify(s));}
+function load(){try{let a=JSON.parse(localStorage.getItem('mealV2')||localStorage.getItem('mealV1'));if(a)document.querySelectorAll('select').forEach((x,i)=>x.value=a[i]||'');}catch(e){}}
+function resetWeek(){localStorage.removeItem('mealV1');localStorage.removeItem('mealV2');document.querySelectorAll('select').forEach(x=>x.value='');update();}
 build();
 </script></body></html>
