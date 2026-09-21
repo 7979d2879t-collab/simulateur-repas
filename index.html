@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Simulateur repas semaine - V3.2</title>
+<title>Simulateur repas semaine - V3.3</title>
 <style>
 :root{--bg:#f4f7f8;--card:#fff;--navy:#17324d;--teal:#2d7d77;--line:#d9e1e4;--ok:#e8f5ec;--warn:#fff4dd;--bad:#fde8e7}
 *{box-sizing:border-box} body{margin:0;font-family:Arial,sans-serif;background:var(--bg);color:#26333c}
@@ -46,7 +46,7 @@ button{border:0;background:var(--teal);color:#fff;padding:9px 12px;border-radius
 <table><thead><tr><th>Produit</th><th>Quantité</th><th>Coût estimé</th></tr></thead><tbody id="shopping"></tbody></table>
 <br><button onclick="printShopping()">🖨️ Imprimer la liste de courses</button></div>
 <div class="panel"><h2>Bilan de la semaine</h2><div id="weekSummary"></div><br>
-<button onclick="window.print()">Imprimer</button><button onclick="resetWeek()">Réinitialiser</button>
+<canvas id="radar" width="420" height="300" style="width:100%;max-width:520px;height:auto;display:block;margin:8px auto"></canvas><p class="note" style="text-align:center">Toile : objectif = 100 % · résultat = moyenne des jours composés</p><button onclick="resetWeek()">Réinitialiser</button>
 <p class="note">Prix indicatifs base Lidl, hors promotions. Fruits en conserve : au jus/sans sucres ajoutés et poids égoutté. Framboises : surgelées par défaut.</p></div>
 </div>
 </main>
@@ -146,6 +146,18 @@ function quality(k,p,fi,f){
  if(k<1700||k>2350||p<125||fi<20)return 'bad';
  return 'warn';
 }
+function drawRadar(vals){
+ const cv=document.getElementById('radar'); if(!cv)return; const ctx=cv.getContext('2d'),w=cv.width,h=cv.height,cx=w/2,cy=h/2+5,R=Math.min(w,h)*.32;
+ ctx.clearRect(0,0,w,h); const labels=['Calories','Protéines','Fibres','Lipides'], N=4;
+ const pt=(i,r)=>{let a=-Math.PI/2+i*2*Math.PI/N;return [cx+Math.cos(a)*r,cy+Math.sin(a)*r]};
+ ctx.font='12px Arial';ctx.textAlign='center';ctx.textBaseline='middle';
+ [0.25,0.5,0.75,1].forEach(fr=>{ctx.beginPath();for(let i=0;i<N;i++){let [x,y]=pt(i,R*fr);i?ctx.lineTo(x,y):ctx.moveTo(x,y)}ctx.closePath();ctx.strokeStyle='#d9e1e4';ctx.stroke()});
+ for(let i=0;i<N;i++){let [x,y]=pt(i,R);ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(x,y);ctx.strokeStyle='#d9e1e4';ctx.stroke();let [lx,ly]=pt(i,R+28);ctx.fillStyle='#26333c';ctx.fillText(labels[i],lx,ly)}
+ function poly(arr,stroke,fill){ctx.beginPath();arr.forEach((v,i)=>{let [x,y]=pt(i,R*Math.min(v,1.2));i?ctx.lineTo(x,y):ctx.moveTo(x,y)});ctx.closePath();ctx.strokeStyle=stroke;ctx.lineWidth=2;ctx.stroke();ctx.fillStyle=fill;ctx.fill()}
+ poly([1,1,1,1],'#17324d','rgba(23,50,77,.08)'); poly(vals,'#2d7d77','rgba(45,125,119,.18)');
+ ctx.fillStyle='#17324d';ctx.fillRect(20,h-18,12,3);ctx.fillStyle='#26333c';ctx.textAlign='left';ctx.fillText('Objectif',38,h-17);
+ ctx.fillStyle='#2d7d77';ctx.fillRect(110,h-18,12,3);ctx.fillStyle='#26333c';ctx.fillText('Mes résultats',128,h-17);
+}
 function update(){
  const days=selected(); let shop={}, totals=[];
  days.forEach((rs,i)=>{
@@ -164,6 +176,7 @@ function update(){
  document.getElementById('avgFi').textContent=active.length?Math.round(avg('fi'))+' g':'-';
  document.getElementById('avgF').textContent=active.length?Math.round(avg('f'))+' g':'-';
  let wc=active.reduce((a,t)=>a+t.cost,0); document.getElementById('weekCost').textContent=active.length?'≈ '+wc.toFixed(2)+' €':'-';
+ drawRadar(active.length?[avg('k')/2100,avg('p')/160,avg('fi')/32,avg('f')/68]:[0,0,0,0]);
  let tbody=document.getElementById('shopping'); tbody.innerHTML='';
  Object.entries(shop).sort((a,b)=>META[a[0]].name.localeCompare(META[b[0]].name,'fr')).forEach(([k,q])=>{
    let m=META[k], cost= m.unit==='œuf'? q*m.costPer : q/100*m.costPer100;
