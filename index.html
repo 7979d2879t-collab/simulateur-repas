@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Simulateur repas semaine - V3.1</title>
+<title>Simulateur repas semaine - V3.2</title>
 <style>
 :root{--bg:#f4f7f8;--card:#fff;--navy:#17324d;--teal:#2d7d77;--line:#d9e1e4;--ok:#e8f5ec;--warn:#fff4dd;--bad:#fde8e7}
 *{box-sizing:border-box} body{margin:0;font-family:Arial,sans-serif;background:var(--bg);color:#26333c}
@@ -43,7 +43,8 @@ button{border:0;background:var(--teal);color:#fff;padding:9px 12px;border-radius
 <div class="week" id="week"></div>
 <div class="grid2">
 <div class="panel"><h2>Liste de courses</h2><p class="note">Quantités théoriques nécessaires. Pour viande/poisson, achète le conditionnement commercial le plus proche; quelques grammes d'écart ne posent pas problème.</p>
-<table><thead><tr><th>Produit</th><th>Quantité</th><th>Coût estimé</th></tr></thead><tbody id="shopping"></tbody></table></div>
+<table><thead><tr><th>Produit</th><th>Quantité</th><th>Coût estimé</th></tr></thead><tbody id="shopping"></tbody></table>
+<br><button onclick="printShopping()">🖨️ Imprimer la liste de courses</button></div>
 <div class="panel"><h2>Bilan de la semaine</h2><div id="weekSummary"></div><br>
 <button onclick="window.print()">Imprimer</button><button onclick="resetWeek()">Réinitialiser</button>
 <p class="note">Prix indicatifs base Lidl, hors promotions. Fruits en conserve : au jus/sans sucres ajoutés et poids égoutté. Framboises : surgelées par défaut.</p></div>
@@ -180,6 +181,12 @@ function update(){
  <p>Moyenne : <b>${Math.round(avg('k'))} kcal</b> · <b>${Math.round(avg('p'))} g protéines</b> · ${Math.round(avg('fi'))} g fibres · ${Math.round(avg('f'))} g lipides.</p>
  <p>${Math.round(avg('k'))>2150?'La moyenne est au-dessus du point de départ actuel.':Math.round(avg('k'))<1900?'La moyenne est assez basse : vérifie que tu as bien sélectionné toutes les prises alimentaires.':'La moyenne énergétique reste proche de la zone de départ.'}</p>`:'Sélectionne les repas pour commencer.';
  save();
+}
+function printShopping(){
+ const rows=document.getElementById('shopping').innerHTML;
+ const w=window.open('','_blank','width=760,height=900');
+ w.document.write(`<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>Liste de courses</title><style>body{font-family:Arial,sans-serif;padding:24px;color:#26333c}h1{color:#17324d}table{width:100%;border-collapse:collapse}th,td{padding:9px;border-bottom:1px solid #d9e1e4;text-align:left}th{background:#edf5f3}@media print{body{padding:0}}</style></head><body><h1>Liste de courses</h1><p>Simulateur repas semaine</p><table><thead><tr><th>Produit</th><th>Quantité</th><th>Coût estimé</th></tr></thead><tbody>${rows}</tbody></table><script>window.onload=()=>{window.print();window.onafterprint=()=>window.close()}<\/script></body></html>`);
+ w.document.close();
 }
 function save(){let s=[];document.querySelectorAll('select').forEach(x=>s.push(x.value));localStorage.setItem('mealV2',JSON.stringify(s));}
 function load(){try{let a=JSON.parse(localStorage.getItem('mealV2')||localStorage.getItem('mealV1'));if(a)document.querySelectorAll('select').forEach((x,i)=>x.value=a[i]||'');}catch(e){}}
