@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Simulateur repas semaine - V4.2</title>
+<title>Simulateur repas semaine - V4.3</title>
 <style>
 :root{--bg:#f4f7f8;--card:#fff;--navy:#17324d;--teal:#2d7d77;--line:#d9e1e4;--ok:#e8f5ec;--warn:#fff4dd;--bad:#fde8e7}
 *{box-sizing:border-box} body{margin:0;font-family:Arial,sans-serif;background:var(--bg);color:#26333c}
@@ -40,7 +40,7 @@ button{border:0;background:var(--teal);color:#fff;padding:9px 12px;border-radius
 <div class="tools">
 <button onclick="autoWeek()">✨ Proposer ma semaine</button>
 <button onclick="smartSuggestions()">🎯 Compléter / optimiser</button>
-<span class="note">La proposition tient compte des cibles journalières et de la semaine. Les déjeuners peuvent être répétés 2 fois pour le batch cooking ; petits-déjeuners, dîners et collations sont davantage variés.</span>
+<span class="note">La proposition construit chaque journée autour des cibles et évite désormais de dépasser inutilement calories, protéines et lipides. Déjeuners en batch possibles ×2 ; petit-déjeuner et 2e collation restent optionnels s’ils feraient dépasser les cibles.</span>
 </div>
 <div class="panel" id="suggestPanel" style="display:none;margin-bottom:14px"><h2>🎯 Suggestions adaptées</h2><div id="suggestions"></div></div>
 <div class="week" id="week"></div>
@@ -157,24 +157,45 @@ function dayTotalsFromSelects(day){
  document.querySelectorAll(`select[data-day="${day}"]`).forEach(s=>{if(s.value){let r=RECIPES.find(x=>x.id===+s.value);t.k+=r.macros.kcal;t.p+=r.macros.protein;t.fi+=r.macros.fiber;t.f+=r.macros.fat;t.c+=r.macros.carbs;t.cost+=r.macros.cost}});
  return t;
 }
+function rangePenalty(v,min,max,hard=1){
+ if(v<min)return (min-v)/(max-min)*.7;
+ if(v>max)return (v-max)/(max-min)*hard;
+ return 0;
+}
 function fitScore(t){
- return Math.abs(t.k-TARGET.k)/500 + Math.abs(t.p-TARGET.p)/45 + Math.abs(t.fi-TARGET.fi)/14 + Math.abs(t.f-TARGET.f)/25;
+ // Overshoots are deliberately penalised more than modest shortfalls.
+ return rangePenalty(t.k,2050,2150,3.2)+rangePenalty(t.p,150,170,2.4)+rangePenalty(t.fi,30,35,1.5)+rangePenalty(t.f,60,75,3.2);
 }
 function addMeal(t,r){return {k:t.k+r.macros.kcal,p:t.p+r.macros.protein,fi:t.fi+r.macros.fiber,f:t.f+r.macros.fat,c:t.c+r.macros.carbs,cost:t.cost+r.macros.cost}}
 function usageCounts(){let u={};document.querySelectorAll('select[data-slot]').forEach(s=>{if(s.value)u[s.value]=(u[s.value]||0)+1});return u}
 function bestForSelect(sel,base,usage={}){
  let candidates=RECIPES.filter(r=>r.cat===sel.dataset.cat),slot=sel.dataset.slot;
- return candidates.map(r=>{let score=fitScore(addMeal(base,r)),used=usage[r.id]||0;
-   if(slot==='lunch')score+=used===0?0:used===1?-.35:(used-1)*2.2;
-   else score+=used*1.8;
-   if(FAVORITES.has(r.id))score-=.12;
+ return candidates.map(r=>{let next=addMeal(base,r),score=fitScore(next),used=usage[r.id]||0;
+   // Hard guardrails: avoid adding a meal that pushes an already substantial day far above targets.
+   if(next.k>2175)score+=(next.k-2175)/35;
+   if(next.p>172)score+=(next.p-172)/8;
+   if(next.f>77)score+=(next.f-77)/5;
+   if(slot==='lunch')score+=used===0?0:used===1?-.22:(used-1)*2.5;
+   else score+=used*1.9;
+   if(FAVORITES.has(r.id))score-=.10;
    return {r,score}}).sort((x,y)=>x.score-y.score)[0]?.r;
 }
 function autoWeek(){
+ // Build each day as a whole. Required core = lunch + dinner + one snack.
+ // Breakfast and second snack are optional and added only when they improve target fit.
  let usage=usageCounts();
  for(let d=0;d<7;d++){
    let sels=[...document.querySelectorAll(`select[data-day="${d}"]`)],base=dayTotalsFromSelects(d);
-   sels.filter(s=>!s.value).forEach(s=>{let r=bestForSelect(s,base,usage);if(r){s.value=String(r.id);usage[r.id]=(usage[r.id]||0)+1;base=addMeal(base,r)}});
+   const core=['lunch','dinner','snack1'];
+   for(const slot of core){
+     let s=sels.find(x=>x.dataset.slot===slot);if(s&&!s.value){let r=bestForSelect(s,base,usage);if(r){s.value=String(r.id);usage[r.id]=(usage[r.id]||0)+1;base=addMeal(base,r)}}
+   }
+   // Breakfast: only if it improves the whole-day distance to targets.
+   let bs=sels.find(x=>x.dataset.slot==='breakfast');
+   if(bs&&!bs.value){let r=bestForSelect(bs,base,usage);if(r&&fitScore(addMeal(base,r))<fitScore(base)){bs.value=String(r.id);usage[r.id]=(usage[r.id]||0)+1;base=addMeal(base,r)}}
+   // Second snack stays optional; add only if clearly useful and without overshooting.
+   let ss=sels.find(x=>x.dataset.slot==='snack2');
+   if(ss&&!ss.value){let r=bestForSelect(ss,base,usage),n=r?addMeal(base,r):null;if(r&&n.k<=2150&&n.p<=170&&n.f<=75&&fitScore(n)<fitScore(base)){ss.value=String(r.id);usage[r.id]=(usage[r.id]||0)+1;base=n}}
  }
  update();updateFavButtons();
 }
