@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Simulateur repas semaine - V4.1</title>
+<title>Simulateur repas semaine - V4.2</title>
 <style>
 :root{--bg:#f4f7f8;--card:#fff;--navy:#17324d;--teal:#2d7d77;--line:#d9e1e4;--ok:#e8f5ec;--warn:#fff4dd;--bad:#fde8e7}
 *{box-sizing:border-box} body{margin:0;font-family:Arial,sans-serif;background:var(--bg);color:#26333c}
@@ -49,7 +49,7 @@ button{border:0;background:var(--teal);color:#fff;padding:9px 12px;border-radius
 <table><thead><tr><th>Produit</th><th>Quantité</th><th>Coût estimé</th></tr></thead><tbody id="shopping"></tbody></table>
 <br><button onclick="printShopping()">🖨️ Imprimer la liste de courses</button></div>
 <div class="panel"><h2>Bilan de la semaine</h2><div id="weekSummary"></div><br>
-<canvas id="radar" width="420" height="300" style="width:100%;max-width:520px;height:auto;display:block;margin:8px auto"></canvas><p class="note" style="text-align:center">Toile : 100 % = dans la zone cible · en dessous de 100 % = écart à la cible (trop bas ou trop haut)</p><button onclick="resetWeek()">Réinitialiser</button>
+<div id="targetBars" style="margin:12px 0"></div><p class="note" style="text-align:center">Chaque jauge compare la moyenne de la semaine à sa zone cible. Le repère central correspond à la cible ; un dépassement reste visible au lieu d’être présenté comme meilleur.</p><button onclick="resetWeek()">Réinitialiser</button>
 <p class="note">Prix indicatifs base Lidl, hors promotions. Fruits en conserve : au jus/sans sucres ajoutés et poids égoutté. Framboises : surgelées par défaut.</p></div>
 </div>
 </main>
@@ -202,17 +202,20 @@ function applySuggestion(day,slot,id){
  let s=document.querySelector(`select[data-day="${day}"][data-slot="${slot}"]`);if(!s)return;
  s.innerHTML=opts(s.dataset.cat,String(id));s.value=String(id);update();updateFavButtons();smartSuggestions();
 }
-function drawRadar(vals){
- const cv=document.getElementById('radar'); if(!cv)return; const ctx=cv.getContext('2d'),w=cv.width,h=cv.height,cx=w/2,cy=h/2+5,R=Math.min(w,h)*.32;
- ctx.clearRect(0,0,w,h); const labels=['Calories','Protéines','Fibres','Lipides'], N=4;
- const pt=(i,r)=>{let a=-Math.PI/2+i*2*Math.PI/N;return [cx+Math.cos(a)*r,cy+Math.sin(a)*r]};
- ctx.font='12px Arial';ctx.textAlign='center';ctx.textBaseline='middle';
- [0.25,0.5,0.75,1].forEach(fr=>{ctx.beginPath();for(let i=0;i<N;i++){let [x,y]=pt(i,R*fr);i?ctx.lineTo(x,y):ctx.moveTo(x,y)}ctx.closePath();ctx.strokeStyle='#d9e1e4';ctx.stroke()});
- for(let i=0;i<N;i++){let [x,y]=pt(i,R);ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(x,y);ctx.strokeStyle='#d9e1e4';ctx.stroke();let [lx,ly]=pt(i,R+28);ctx.fillStyle='#26333c';ctx.fillText(labels[i],lx,ly)}
- function poly(arr,stroke,fill){ctx.beginPath();arr.forEach((v,i)=>{let [x,y]=pt(i,R*Math.min(v,1.2));i?ctx.lineTo(x,y):ctx.moveTo(x,y)});ctx.closePath();ctx.strokeStyle=stroke;ctx.lineWidth=2;ctx.stroke();ctx.fillStyle=fill;ctx.fill()}
- poly([1,1,1,1],'#17324d','rgba(23,50,77,.08)'); poly(vals,'#2d7d77','rgba(45,125,119,.18)');
- ctx.fillStyle='#17324d';ctx.fillRect(20,h-18,12,3);ctx.fillStyle='#26333c';ctx.textAlign='left';ctx.fillText('Objectif',38,h-17);
- ctx.fillStyle='#2d7d77';ctx.fillRect(110,h-18,12,3);ctx.fillStyle='#26333c';ctx.fillText('Mes résultats',128,h-17);
+function drawTargetBars(values){
+ const el=document.getElementById('targetBars');if(!el)return;
+ const defs=[
+  ['Calories',values[0],2050,2150,'kcal'],
+  ['Protéines',values[1],150,170,'g'],
+  ['Fibres',values[2],30,35,'g'],
+  ['Lipides',values[3],60,75,'g']
+ ];
+ el.innerHTML=defs.map(([name,v,min,max,unit])=>{
+   const center=(min+max)/2,scale=max*1.35,pct=Math.min(100,Math.max(0,v/scale*100)),lo=min/scale*100,hi=max/scale*100;
+   const state=v<min?'Trop bas':v>max?'Trop haut':'Dans la cible';
+   const cls=v>=min&&v<=max?'ok':'warn';
+   return `<div style="margin:12px 0"><div style="display:flex;justify-content:space-between;gap:8px"><b>${name}</b><span>${Math.round(v)} ${unit} · <b>${state}</b></span></div><div style="height:18px;background:#edf1f2;border-radius:9px;position:relative;overflow:hidden;margin-top:5px"><div style="position:absolute;left:${lo}%;width:${hi-lo}%;height:100%;background:#cde9d7"></div><div style="position:absolute;left:0;width:${pct}%;height:100%;background:${v>=min&&v<=max?'#2d7d77':'#d79b16'};opacity:.78"></div><div style="position:absolute;left:${center/scale*100}%;top:0;bottom:0;width:2px;background:#17324d"></div></div><div class="note">Cible : ${min}–${max} ${unit}</div></div>`;
+ }).join('');
 }
 function update(){
  const days=selected(); let shop={}, totals=[];
@@ -233,7 +236,7 @@ function update(){
  document.getElementById('avgF').textContent=active.length?Math.round(avg('f'))+' g':'-';
  let wc=active.reduce((a,t)=>a+t.cost,0); document.getElementById('weekCost').textContent=active.length?'≈ '+wc.toFixed(2)+' €':'-';
  const targetScore=(v,min,max)=>{if(v>=min&&v<=max)return 1;if(v<min)return Math.max(0,v/min);return Math.max(0,1-(v-max)/max);};
- drawRadar(active.length?[targetScore(avg('k'),2050,2150),targetScore(avg('p'),150,170),targetScore(avg('fi'),30,35),targetScore(avg('f'),60,75)]:[0,0,0,0]);
+ drawTargetBars(active.length?[avg('k'),avg('p'),avg('fi'),avg('f')]:[0,0,0,0]);
  let tbody=document.getElementById('shopping'); tbody.innerHTML='';
  Object.entries(shop).sort((a,b)=>META[a[0]].name.localeCompare(META[b[0]].name,'fr')).forEach(([k,q])=>{
    let m=META[k], cost= m.unit==='œuf'? q*m.costPer : q/100*m.costPer100;
