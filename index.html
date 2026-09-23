@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Simulateur repas semaine - V4.6</title>
+<title>Simulateur repas semaine - V4.7</title>
 <style>
 :root{--bg:#f4f7f8;--card:#fff;--navy:#17324d;--teal:#2d7d77;--line:#d9e1e4;--ok:#e8f5ec;--warn:#fff4dd;--bad:#fde8e7}
 *{box-sizing:border-box} body{margin:0;font-family:Arial,sans-serif;background:var(--bg);color:#26333c}
@@ -20,7 +20,7 @@ button{border:0;background:var(--teal);color:#fff;padding:9px 12px;border-radius
 .note{font-size:12px;color:#65727b}
 .tools{background:#fff;border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:14px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .tools input{flex:1;min-width:220px;padding:9px;border:1px solid #bcc8cd;border-radius:8px}
-.mealpick{border:1px solid #e2e8ea;border-radius:9px;padding:6px;margin-bottom:7px;background:#fafcfc}.batch1{background:#eaf4ff;border-color:#9fc7ea}.batch2{background:#fff3df;border-color:#e8c47c}.batch3{background:#f1eaff;border-color:#bba4df}.batchtag{font-size:11px;font-weight:bold;margin:3px 0 5px;color:#17324d}.mealpick label{margin-top:0}.slotsearch{width:100%;padding:6px 8px;border:1px solid #bcc8cd;border-radius:7px;margin-bottom:4px;font-size:12px}.slotactions{display:flex;gap:4px;flex-wrap:wrap}.suggest{padding:9px;border-bottom:1px solid var(--line)}
+.mealpick{border:1px solid #e2e8ea;border-radius:9px;padding:6px;margin-bottom:7px;background:#fafcfc}.batch1{background:#eaf4ff;border-color:#9fc7ea}.batch2{background:#fff3df;border-color:#e8c47c}.batch3{background:#f1eaff;border-color:#bba4df}.batchtag{font-size:11px;font-weight:bold;margin:3px 0 5px;color:#17324d}.tooltag{font-size:11px;display:inline-block;margin:3px 0;padding:3px 6px;border-radius:10px;background:#edf5f3;color:#17324d;font-weight:bold}.mealpick label{margin-top:0}.slotsearch{width:100%;padding:6px 8px;border:1px solid #bcc8cd;border-radius:7px;margin-bottom:4px;font-size:12px}.slotactions{display:flex;gap:4px;flex-wrap:wrap}.suggest{padding:9px;border-bottom:1px solid var(--line)}
 .mini{padding:6px 8px;margin:4px 3px 0 0;font-size:12px}.favon{background:#d79b16}.details{background:#526b7a}
 .modal{display:none;position:fixed;inset:0;background:#0008;z-index:50;padding:20px;overflow:auto}.modal.open{display:block}.modalbox{background:#fff;max-width:680px;margin:5vh auto;padding:20px;border-radius:14px}.modalbox h2{color:var(--navy);margin-top:0}.close{float:right;background:#526b7a} @media(max-width:1100px){.week{grid-template-columns:repeat(2,1fr)}.top{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:650px){.week,.grid2,.top{grid-template-columns:1fr}}
@@ -124,52 +124,52 @@ function ingredientDisplay(x){
 function prepInfo(r){
  const n=r.name.toLowerCase(),k=new Set(r.ings.map(x=>x.key));
  const has=(...x)=>x.some(v=>k.has(v));
- let appliance='Poêle + casserole',time='20–25 min',steps=[],tips='';
+ let appliance='🍳 Poêle / casserole — exceptionnel',time='20–25 min',steps=[],tips='';
  if(r.cat==='DESSERTS & COLLATIONS'){
    if(n.includes('flan')||n.includes('clafoutis')||n.includes('gâteau')){
-     appliance='Four ou Air Fryer';time='25–35 min';
-     steps=['Mélanger œuf, lait et ingrédients secs jusqu’à texture lisse.','Incorporer la whey lorsque le mélange est tiède/froid, puis ajouter les fruits ou garnitures.','Verser dans un moule adapté.','Four : 180 °C environ 20–30 min. Air Fryer : 160–170 °C environ 15–22 min. Vérifier le centre avant de sortir.','Laisser tiédir puis réserver au frais si la recette se mange froide.'];
+     appliance='🔵 Air Fryer';time='25–35 min';
+     steps=['Mélanger œuf, lait et ingrédients secs jusqu’à texture lisse.','Incorporer la whey lorsque le mélange est tiède/froid, puis ajouter les fruits ou garnitures.','Verser dans un moule adapté.','Air Fryer : 160–170 °C environ 15–22 min. Vérifier le centre avant de sortir.','Laisser tiédir puis réserver au frais si la recette se mange froide.'];
    }else if(n.includes('riz au lait')||n.includes('tapioca')||n.includes('crème')){
-     appliance='Casserole ou Cookeo mode dorer doux';time='15–25 min';
+     appliance='🟢 Cookeo — mode Dorer doux';time='15–25 min';
      steps=['Chauffer doucement le lait sans forte ébullition.','Ajouter riz, tapioca ou épaississant et cuire en remuant jusqu’à texture crémeuse.','Retirer du feu 2–3 min avant d’ajouter la whey pour éviter les grumeaux.','Ajouter coco, cacao ou fruit selon la recette puis laisser refroidir.'];
    }else{
-     appliance='Bol / réfrigérateur';time='5–10 min';
+     appliance='❄️ Frigo / sans cuisson';time='5–10 min';
      steps=['Peser les ingrédients.','Mélanger le laitage et la whey jusqu’à texture homogène.','Ajouter avoine/chia/cacao selon la recette.','Terminer par fruits et oléagineux.','Consommer immédiatement ou réserver au frais.'];
    }
  }else if(r.cat==='PETITS-DÉJEUNERS'){
    if(has('oeuf','jambon','thon','feta','saumon_fume')){
-     appliance='Poêle + grille-pain';time='10–15 min';
+     appliance='🍳 Poêle — exceptionnel';time='10–15 min';
      steps=['Préparer séparément la partie salée et la partie sucrée si c’est un duo.','Cuire les œufs à feu moyen sans les dessécher; réchauffer/toaster pain ou wrap si prévu.','Ajouter fromage, jambon, thon ou saumon hors feu selon la recette.','Pour la partie sucrée, mélanger le laitage avec la whey puis ajouter fruit/avoine/graines.','Servir les deux éléments séparément.'];
    }else{
-     appliance=n.includes('overnight')||n.includes('chia')?'Réfrigérateur':'Bol';time=n.includes('overnight')?'5 min + nuit au frais':'5–10 min';
+     appliance=n.includes('overnight')||n.includes('chia')?'❄️ Frigo / sans cuisson':'❄️ Sans cuisson';time=n.includes('overnight')?'5 min + nuit au frais':'5–10 min';
      steps=['Mélanger le laitage, la whey et les ingrédients secs.','Ajouter lait ou lait de coco progressivement pour régler la texture.','Ajouter les fruits et oléagineux.','Pour overnight/chia : couvrir et laisser au réfrigérateur au moins 4 h, idéalement une nuit.'];
    }
  }else if(n.includes('pané')){
-   appliance='Air Fryer';time='20–25 min';
+   appliance='🔵 Air Fryer';time='20–25 min';
    steps=['Préparer le poisson et l’éponger.','Passer dans l’œuf battu puis la chapelure; assaisonner.','Air Fryer préchauffé : 190 °C, 10–14 min selon l’épaisseur, retourner à mi-cuisson.','Cuire patate douce/pommes de terre et légumes en parallèle; Air Fryer possible à 190 °C 18–25 min en petits morceaux.','Servir dès que le poisson est juste cuit.'];
  }else if(n.includes('blanquette')||n.includes('pulled')||n.includes('mijoter')||has('boeuf_mijoter','veau','agneau')){
-   appliance='Cookeo (idéal) ou cocotte';time='Cookeo 30–40 min · cocotte 60–90 min';
+   appliance='🟢 Cookeo';time='Cookeo 30–40 min · cocotte 60–90 min';
    steps=['Couper viande et légumes.','Cookeo mode Dorer : saisir la viande 3–5 min avec l’oignon si présent.','Ajouter carottes/poireaux et environ 120–150 ml d’eau ou bouillon par portion batch de base, sans noyer la préparation.','Cuisson sous pression : porc/veau 18–22 min; bœuf/agneau 25–30 min. En cocotte, mijoter à feu doux jusqu’à viande tendre.','Après cuisson, incorporer crème/fromage frais et moutarde si prévue. Ne pas mettre la crème sous pression.','Cuire riz, semoule, purée ou polenta séparément et portionner.'];
  }else if(n.includes('curry-coco')||has('lait_coco')){
-   appliance='Poêle / sauteuse ou Cookeo';time='20–30 min';
-   steps=['Saisir la protéine 3–5 min avec l’oignon si présent.','Ajouter les légumes et cuire quelques minutes.','Ajouter curry puis lait de coco; mélanger.','Poêle : mijoter 8–12 min à feu doux. Cookeo : 3–5 min sous pression suffisent pour crevettes/poisson; 8–10 min pour porc.','Cuire le riz à part et servir avec la sauce coco.'];
+   appliance='🟢 Cookeo';time='20–30 min';
+   steps=['Saisir la protéine 3–5 min avec l’oignon si présent.','Ajouter les légumes et cuire quelques minutes.','Ajouter curry puis lait de coco; mélanger.','Cookeo : mode Dorer pour saisir, puis 3–5 min sous pression pour crevettes/poisson ou 8–10 min pour porc.','Cuire le riz à part et servir avec la sauce coco.'];
  }else if(n.includes('wrap')){
-   appliance='Poêle ou Air Fryer (optionnel)';time='10–15 min';
-   steps=['Préparer la garniture et cuire la protéine si nécessaire.','Tiédir le wrap 20–30 s à la poêle pour le rendre souple.','Étaler fromage frais/sauce puis répartir garniture et légumes.','Rouler serré. Pour une version chaude : Air Fryer 180 °C 4–6 min ou poêle 2–3 min par face.'];
+   appliance='🔵 Air Fryer';time='10–15 min';
+   steps=['Préparer la garniture et cuire la protéine si nécessaire.','Tiédir le wrap quelques secondes si nécessaire pour le rendre souple.','Étaler fromage frais/sauce puis répartir garniture et légumes.','Rouler serré. Pour une version chaude : Air Fryer 180 °C 4–6 min.'];
  }else if(n.includes('gnocchi')){
-   appliance='Poêle / sauteuse';time='15–20 min';
-   steps=['Saisir la viande puis réserver si nécessaire.','Faire dorer les gnocchis à la poêle 5–7 min.','Ajouter champignons/légumes et poursuivre la cuisson.','Remettre la viande, ajouter crème/fromage et chauffer 2–3 min à feu doux.'];
+   appliance='🟢 Cookeo — mode Dorer';time='15–20 min';
+   steps=['Saisir la viande puis réserver si nécessaire.','Cookeo mode Dorer : faire dorer les gnocchis 5–7 min en remuant.','Ajouter champignons/légumes et poursuivre la cuisson.','Remettre la viande, ajouter crème/fromage et chauffer 2–3 min à feu doux.'];
  }else if(n.includes('udon')||n.includes('nouilles')){
-   appliance='Wok ou grande poêle';time='15–20 min';
-   steps=['Préparer tous les ingrédients avant de commencer.','Saisir viande/crevettes à feu vif puis réserver.','Cuire les légumes 4–6 min pour les garder légèrement fermes.','Ajouter udon/nouilles préparés selon le paquet, puis remettre la protéine.','Mélanger 1–2 min avec l’assaisonnement et servir immédiatement.'];
+   appliance='🟢 Cookeo — mode Dorer';time='15–20 min';
+   steps=['Préparer tous les ingrédients avant de commencer.','Saisir viande/crevettes à feu vif puis réserver.','Cookeo mode Dorer : cuire les légumes 4–6 min pour les garder légèrement fermes.','Ajouter udon/nouilles préparés selon le paquet, puis remettre la protéine.','Mélanger 1–2 min avec l’assaisonnement et servir immédiatement.'];
  }else if(n.includes('saumon')||n.includes('cabillaud')||n.includes('poisson')||n.includes('crevette')){
-   appliance='Air Fryer ou poêle';time='15–25 min';
-   steps=['Préparer le féculent et les légumes.','Assaisonner le poisson. Air Fryer : saumon 180 °C 8–12 min; poisson blanc 180 °C 9–13 min selon épaisseur. Crevettes : poêle 3–5 min.','Préparer la sauce à feu doux séparément; ajouter crème/fromage frais en fin de cuisson.','Ne pas prolonger la cuisson du poisson une fois opaque et juste cuit.','Assembler et servir.'];
+   appliance='🔵 Air Fryer';time='15–25 min';
+   steps=['Préparer le féculent et les légumes.','Assaisonner le poisson. Air Fryer : saumon 180 °C 8–12 min; poisson blanc 180 °C 9–13 min selon épaisseur; crevettes 180 °C environ 6–8 min en remuant à mi-cuisson.','Préparer la sauce à feu doux séparément; ajouter crème/fromage frais en fin de cuisson.','Ne pas prolonger la cuisson du poisson une fois opaque et juste cuit.','Assembler et servir.'];
  }else if(has('oeuf')){
-   appliance='Poêle / casserole';time='12–20 min';
+   appliance='🍳 Poêle — exceptionnel';time='12–20 min';
    steps=['Cuire le féculent et les légumes prévus.','Battre ou préparer les œufs; cuire à feu moyen pour garder une texture moelleuse.','Ajouter feta/fromage et légumes en fin de cuisson.','Assembler et servir.'];
  }else{
-   appliance='Poêle / sauteuse + casserole';time='20–30 min';
+   appliance='🟢 Cookeo';time='20–30 min';
    steps=['Lancer d’abord le féculent ou les pommes de terre.','Couper les légumes et la viande.','Saisir la viande à feu moyen-vif puis réduire le feu.','Cuire les légumes; ajouter un petit fond d’eau si nécessaire.','Ajouter crème, fromage frais, moutarde, poivre ou fromage de la recette en fin de cuisson.','Assembler et servir sans prolonger la cuisson de la viande.'];
  }
  tips='Les temps sont des repères : l’épaisseur des aliments et la puissance de ton appareil peuvent les faire varier. Pour un batch, refroidir rapidement les portions non consommées puis les conserver au réfrigérateur.';
@@ -327,7 +327,7 @@ function drawTargetBars(values){
  }).join('');
 }
 function paintBatch(){
- document.querySelectorAll('.mealpick').forEach(x=>{x.classList.remove('batch1','batch2','batch3');let t=x.querySelector('.batchtag');if(t)t.remove()});
+ document.querySelectorAll('.mealpick').forEach(x=>{x.classList.remove('batch1','batch2','batch3');x.querySelectorAll('.batchtag,.tooltag').forEach(t=>t.remove());let s=x.querySelector('select');if(s&&s.value){let r=RECIPES.find(z=>z.id===+s.value),info=prepInfo(r),tag=document.createElement('div');tag.className='tooltag';tag.textContent=info.appliance;x.insertBefore(tag,x.querySelector('.slotactions'));}});
  let map={};document.querySelectorAll('select[data-slot]').forEach(s=>{if(s.value)(map[s.value]||(map[s.value]=[])).push(s)});
  let color=0;
  Object.entries(map).filter(([id,arr])=>arr.length>1).forEach(([id,arr])=>{
