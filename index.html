@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Simulateur repas semaine - V4.4</title>
+<title>Simulateur repas semaine - V4.5</title>
 <style>
 :root{--bg:#f4f7f8;--card:#fff;--navy:#17324d;--teal:#2d7d77;--line:#d9e1e4;--ok:#e8f5ec;--warn:#fff4dd;--bad:#fde8e7}
 *{box-sizing:border-box} body{margin:0;font-family:Arial,sans-serif;background:var(--bg);color:#26333c}
@@ -20,7 +20,7 @@ button{border:0;background:var(--teal);color:#fff;padding:9px 12px;border-radius
 .note{font-size:12px;color:#65727b}
 .tools{background:#fff;border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:14px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .tools input{flex:1;min-width:220px;padding:9px;border:1px solid #bcc8cd;border-radius:8px}
-.mealpick{border:1px solid #e2e8ea;border-radius:9px;padding:6px;margin-bottom:7px;background:#fafcfc}.mealpick label{margin-top:0}.slotsearch{width:100%;padding:6px 8px;border:1px solid #bcc8cd;border-radius:7px;margin-bottom:4px;font-size:12px}.slotactions{display:flex;gap:4px;flex-wrap:wrap}.suggest{padding:9px;border-bottom:1px solid var(--line)}
+.mealpick{border:1px solid #e2e8ea;border-radius:9px;padding:6px;margin-bottom:7px;background:#fafcfc}.batch1{background:#eaf4ff;border-color:#9fc7ea}.batch2{background:#fff3df;border-color:#e8c47c}.batch3{background:#f1eaff;border-color:#bba4df}.batchtag{font-size:11px;font-weight:bold;margin:3px 0 5px;color:#17324d}.mealpick label{margin-top:0}.slotsearch{width:100%;padding:6px 8px;border:1px solid #bcc8cd;border-radius:7px;margin-bottom:4px;font-size:12px}.slotactions{display:flex;gap:4px;flex-wrap:wrap}.suggest{padding:9px;border-bottom:1px solid var(--line)}
 .mini{padding:6px 8px;margin:4px 3px 0 0;font-size:12px}.favon{background:#d79b16}.details{background:#526b7a}
 .modal{display:none;position:fixed;inset:0;background:#0008;z-index:50;padding:20px;overflow:auto}.modal.open{display:block}.modalbox{background:#fff;max-width:680px;margin:5vh auto;padding:20px;border-radius:14px}.modalbox h2{color:var(--navy);margin-top:0}.close{float:right;background:#526b7a} @media(max-width:1100px){.week{grid-template-columns:repeat(2,1fr)}.top{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:650px){.week,.grid2,.top{grid-template-columns:1fr}}
@@ -121,9 +121,23 @@ function ingredientDisplay(x){
  if(pieces[x.key]){let n=Math.round((x.qty/pieces[x.key][0])*2)/2;return n+' '+pieces[x.key][1]+(n>1?'s':'')}
  return x.qty+' g';
 }
+function prepInfo(r){
+ const n=r.name.toLowerCase(),keys=r.ings.map(x=>x.key);
+ let appliance='Poêle / casserole',time='20–25 min',steps=[];
+ if(n.includes('air fryer')||n.includes('pané')){appliance='Air Fryer';time='20–25 min';steps=['Préparer et peser tous les ingrédients.','Cuire le féculent et/ou les légumes selon la recette.','Assaisonner le poisson, le paner si nécessaire, puis cuire à l’Air Fryer à 190 °C environ 10–14 min en retournant à mi-cuisson.','Assembler et servir.'];}
+ else if(n.includes('blanquette')||n.includes('mijoter')||n.includes('pulled')){appliance='Cookeo ou cocotte';time='30–45 min';steps=['Découper la viande et les légumes.','Faire revenir la viande avec l’oignon si présent.','Ajouter légumes, assaisonnement et un petit fond de bouillon/eau.','Cuire sous pression environ 18–25 min selon la viande.','Ajouter crème/fromage frais après cuisson et rectifier l’assaisonnement.','Cuire le féculent à part puis servir.'];}
+ else if(r.cat==='DESSERTS & COLLATIONS'||r.cat==='PETITS-DÉJEUNERS'){appliance='Bol / casserole / four selon recette';time='5–25 min';steps=['Peser les ingrédients.','Mélanger les ingrédients de base jusqu’à obtenir une texture homogène.','Ajouter fruits, graines ou oléagineux selon la recette.','Si cuisson nécessaire, cuire jusqu’à texture prise; sinon réserver au frais.','Ajouter la whey de préférence hors cuisson très chaude et mélanger soigneusement.'];}
+ else {steps=['Peser et préparer tous les ingrédients.','Cuire le féculent et les légumes.','Cuire la viande, le poisson ou les œufs sans les dessécher.','Préparer la sauce/crème indiquée et l’ajouter en fin de cuisson.','Assembler, goûter et rectifier l’assaisonnement.'];}
+ return {appliance,time,steps};
+}
+function batchForRecipe(id){
+ let occ=[];document.querySelectorAll('select[data-slot]').forEach(s=>{if(+s.value===id)occ.push({day:+s.dataset.day,slot:s.dataset.slot})});
+ occ.sort((a,b)=>a.day-b.day);return occ;
+}
 function showRecipe(sel){
- if(!sel.value)return;let r=RECIPES.find(x=>x.id===+sel.value),d=document.getElementById('recipeDetail');
- d.innerHTML=`<h2>${r.name}</h2><p><b>${r.macros.kcal} kcal</b> · ${Math.round(r.macros.protein)} g protéines · ${Math.round(r.macros.carbs)} g glucides · ${Math.round(r.macros.fat)} g lipides · ${Math.round(r.macros.fiber)} g fibres</p><h3>Ingrédients — 1 portion</h3><ul>${r.ings.map(x=>`<li>${META[x.key]?.name||x.key} : <b>${ingredientDisplay(x)}</b></li>`).join('')}</ul><p class="note">Les quantités à la pièce sont arrondies au demi-produit quand c’est pertinent. Les macros restent calculées avec les quantités de référence de la recette.</p>`;
+ if(!sel.value)return;let r=RECIPES.find(x=>x.id===+sel.value),d=document.getElementById('recipeDetail'),info=prepInfo(r),occ=batchForRecipe(r.id);
+ let batch=occ.length>1?`<div class="daytotal ok"><b>🍳 Batch cooking : ${occ.length} portions</b><br>Prépare ${occ.length} portions le <b>${DAYS[occ[0].day]}</b>. Tu manges cette recette : ${occ.map(o=>'<b>'+DAYS[o.day]+'</b>').join(' puis ')}.</div>`:'';
+ d.innerHTML=`<h2>${r.name}</h2><p><b>${r.macros.kcal} kcal</b> · ${Math.round(r.macros.protein)} g protéines · ${Math.round(r.macros.carbs)} g glucides · ${Math.round(r.macros.fat)} g lipides · ${Math.round(r.macros.fiber)} g fibres</p>${batch}<h3>Ingrédients — 1 portion</h3><ul>${r.ings.map(x=>`<li>${META[x.key]?.name||x.key} : <b>${ingredientDisplay(x)}</b></li>`).join('')}</ul>${occ.length>1?'<h3>Quantités batch — '+occ.length+' portions</h3><ul>'+r.ings.map(x=>'<li>'+(META[x.key]?.name||x.key)+' : <b>'+ingredientDisplay({key:x.key,qty:x.qty*occ.length})+'</b></li>').join('')+'</ul>':''}<h3>Préparation</h3><p><b>Appareil conseillé :</b> ${info.appliance} · <b>Temps :</b> ${info.time}</p><ol>${info.steps.map(x=>'<li>'+x+'</li>').join('')}</ol><p class="note">Les instructions sont adaptées au type de recette. Ajuste légèrement le temps selon ton appareil et l’épaisseur des aliments.</p>`;
  document.getElementById('recipeModal').classList.add('open');
 }
 function closeRecipe(){document.getElementById('recipeModal').classList.remove('open')}
@@ -267,6 +281,16 @@ function drawTargetBars(values){
    return `<div style="margin:12px 0"><div style="display:flex;justify-content:space-between;gap:8px"><b>${name}</b><span>${Math.round(v)} ${unit} · <b>${state}</b></span></div><div style="height:18px;background:#edf1f2;border-radius:9px;position:relative;overflow:hidden;margin-top:5px"><div style="position:absolute;left:${lo}%;width:${hi-lo}%;height:100%;background:#cde9d7"></div><div style="position:absolute;left:0;width:${pct}%;height:100%;background:${v>=min&&v<=max?'#2d7d77':'#d79b16'};opacity:.78"></div><div style="position:absolute;left:${center/scale*100}%;top:0;bottom:0;width:2px;background:#17324d"></div></div><div class="note">Cible : ${min}–${max} ${unit}</div></div>`;
  }).join('');
 }
+function paintBatch(){
+ document.querySelectorAll('.mealpick').forEach(x=>{x.classList.remove('batch1','batch2','batch3');let t=x.querySelector('.batchtag');if(t)t.remove()});
+ let map={};document.querySelectorAll('select[data-slot]').forEach(s=>{if(s.value)(map[s.value]||(map[s.value]=[])).push(s)});
+ let color=0;
+ Object.entries(map).filter(([id,arr])=>arr.length>1).forEach(([id,arr])=>{
+   let cls='batch'+(color%3+1);color++;
+   arr.sort((a,b)=>+a.dataset.day-+b.dataset.day);
+   arr.forEach((s,i)=>{let box=s.closest('.mealpick');box.classList.add(cls);let tag=document.createElement('div');tag.className='batchtag';tag.textContent=i===0?'🍳 PRÉPARER '+arr.length+' PORTIONS':'♻️ BATCH — portion '+(i+1)+'/'+arr.length;box.insertBefore(tag,box.querySelector('label').nextSibling)});
+ });
+}
 function update(){
  const days=selected(); let shop={}, totals=[];
  days.forEach((rs,i)=>{
@@ -303,6 +327,7 @@ function update(){
  `<p><b>${active.length} jour(s) composé(s).</b></p>
  <p>Moyenne : <b>${Math.round(avg('k'))} kcal</b> · <b>${Math.round(avg('p'))} g protéines</b> · ${Math.round(avg('fi'))} g fibres · ${Math.round(avg('f'))} g lipides.</p>
  <p>${Math.round(avg('k'))>2150?'La moyenne est au-dessus du point de départ actuel.':Math.round(avg('k'))<1900?'La moyenne est assez basse : vérifie que tu as bien sélectionné toutes les prises alimentaires.':'La moyenne énergétique reste proche de la zone de départ.'}</p>`:'Sélectionne les repas pour commencer.';
+ paintBatch();
  save();
 }
 function printShopping(){
