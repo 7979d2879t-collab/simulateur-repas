@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Simulateur repas semaine - V4.5</title>
+<title>Simulateur repas semaine - V4.6</title>
 <style>
 :root{--bg:#f4f7f8;--card:#fff;--navy:#17324d;--teal:#2d7d77;--line:#d9e1e4;--ok:#e8f5ec;--warn:#fff4dd;--bad:#fde8e7}
 *{box-sizing:border-box} body{margin:0;font-family:Arial,sans-serif;background:var(--bg);color:#26333c}
@@ -122,13 +122,58 @@ function ingredientDisplay(x){
  return x.qty+' g';
 }
 function prepInfo(r){
- const n=r.name.toLowerCase(),keys=r.ings.map(x=>x.key);
- let appliance='Poêle / casserole',time='20–25 min',steps=[];
- if(n.includes('air fryer')||n.includes('pané')){appliance='Air Fryer';time='20–25 min';steps=['Préparer et peser tous les ingrédients.','Cuire le féculent et/ou les légumes selon la recette.','Assaisonner le poisson, le paner si nécessaire, puis cuire à l’Air Fryer à 190 °C environ 10–14 min en retournant à mi-cuisson.','Assembler et servir.'];}
- else if(n.includes('blanquette')||n.includes('mijoter')||n.includes('pulled')){appliance='Cookeo ou cocotte';time='30–45 min';steps=['Découper la viande et les légumes.','Faire revenir la viande avec l’oignon si présent.','Ajouter légumes, assaisonnement et un petit fond de bouillon/eau.','Cuire sous pression environ 18–25 min selon la viande.','Ajouter crème/fromage frais après cuisson et rectifier l’assaisonnement.','Cuire le féculent à part puis servir.'];}
- else if(r.cat==='DESSERTS & COLLATIONS'||r.cat==='PETITS-DÉJEUNERS'){appliance='Bol / casserole / four selon recette';time='5–25 min';steps=['Peser les ingrédients.','Mélanger les ingrédients de base jusqu’à obtenir une texture homogène.','Ajouter fruits, graines ou oléagineux selon la recette.','Si cuisson nécessaire, cuire jusqu’à texture prise; sinon réserver au frais.','Ajouter la whey de préférence hors cuisson très chaude et mélanger soigneusement.'];}
- else {steps=['Peser et préparer tous les ingrédients.','Cuire le féculent et les légumes.','Cuire la viande, le poisson ou les œufs sans les dessécher.','Préparer la sauce/crème indiquée et l’ajouter en fin de cuisson.','Assembler, goûter et rectifier l’assaisonnement.'];}
- return {appliance,time,steps};
+ const n=r.name.toLowerCase(),k=new Set(r.ings.map(x=>x.key));
+ const has=(...x)=>x.some(v=>k.has(v));
+ let appliance='Poêle + casserole',time='20–25 min',steps=[],tips='';
+ if(r.cat==='DESSERTS & COLLATIONS'){
+   if(n.includes('flan')||n.includes('clafoutis')||n.includes('gâteau')){
+     appliance='Four ou Air Fryer';time='25–35 min';
+     steps=['Mélanger œuf, lait et ingrédients secs jusqu’à texture lisse.','Incorporer la whey lorsque le mélange est tiède/froid, puis ajouter les fruits ou garnitures.','Verser dans un moule adapté.','Four : 180 °C environ 20–30 min. Air Fryer : 160–170 °C environ 15–22 min. Vérifier le centre avant de sortir.','Laisser tiédir puis réserver au frais si la recette se mange froide.'];
+   }else if(n.includes('riz au lait')||n.includes('tapioca')||n.includes('crème')){
+     appliance='Casserole ou Cookeo mode dorer doux';time='15–25 min';
+     steps=['Chauffer doucement le lait sans forte ébullition.','Ajouter riz, tapioca ou épaississant et cuire en remuant jusqu’à texture crémeuse.','Retirer du feu 2–3 min avant d’ajouter la whey pour éviter les grumeaux.','Ajouter coco, cacao ou fruit selon la recette puis laisser refroidir.'];
+   }else{
+     appliance='Bol / réfrigérateur';time='5–10 min';
+     steps=['Peser les ingrédients.','Mélanger le laitage et la whey jusqu’à texture homogène.','Ajouter avoine/chia/cacao selon la recette.','Terminer par fruits et oléagineux.','Consommer immédiatement ou réserver au frais.'];
+   }
+ }else if(r.cat==='PETITS-DÉJEUNERS'){
+   if(has('oeuf','jambon','thon','feta','saumon_fume')){
+     appliance='Poêle + grille-pain';time='10–15 min';
+     steps=['Préparer séparément la partie salée et la partie sucrée si c’est un duo.','Cuire les œufs à feu moyen sans les dessécher; réchauffer/toaster pain ou wrap si prévu.','Ajouter fromage, jambon, thon ou saumon hors feu selon la recette.','Pour la partie sucrée, mélanger le laitage avec la whey puis ajouter fruit/avoine/graines.','Servir les deux éléments séparément.'];
+   }else{
+     appliance=n.includes('overnight')||n.includes('chia')?'Réfrigérateur':'Bol';time=n.includes('overnight')?'5 min + nuit au frais':'5–10 min';
+     steps=['Mélanger le laitage, la whey et les ingrédients secs.','Ajouter lait ou lait de coco progressivement pour régler la texture.','Ajouter les fruits et oléagineux.','Pour overnight/chia : couvrir et laisser au réfrigérateur au moins 4 h, idéalement une nuit.'];
+   }
+ }else if(n.includes('pané')){
+   appliance='Air Fryer';time='20–25 min';
+   steps=['Préparer le poisson et l’éponger.','Passer dans l’œuf battu puis la chapelure; assaisonner.','Air Fryer préchauffé : 190 °C, 10–14 min selon l’épaisseur, retourner à mi-cuisson.','Cuire patate douce/pommes de terre et légumes en parallèle; Air Fryer possible à 190 °C 18–25 min en petits morceaux.','Servir dès que le poisson est juste cuit.'];
+ }else if(n.includes('blanquette')||n.includes('pulled')||n.includes('mijoter')||has('boeuf_mijoter','veau','agneau')){
+   appliance='Cookeo (idéal) ou cocotte';time='Cookeo 30–40 min · cocotte 60–90 min';
+   steps=['Couper viande et légumes.','Cookeo mode Dorer : saisir la viande 3–5 min avec l’oignon si présent.','Ajouter carottes/poireaux et environ 120–150 ml d’eau ou bouillon par portion batch de base, sans noyer la préparation.','Cuisson sous pression : porc/veau 18–22 min; bœuf/agneau 25–30 min. En cocotte, mijoter à feu doux jusqu’à viande tendre.','Après cuisson, incorporer crème/fromage frais et moutarde si prévue. Ne pas mettre la crème sous pression.','Cuire riz, semoule, purée ou polenta séparément et portionner.'];
+ }else if(n.includes('curry-coco')||has('lait_coco')){
+   appliance='Poêle / sauteuse ou Cookeo';time='20–30 min';
+   steps=['Saisir la protéine 3–5 min avec l’oignon si présent.','Ajouter les légumes et cuire quelques minutes.','Ajouter curry puis lait de coco; mélanger.','Poêle : mijoter 8–12 min à feu doux. Cookeo : 3–5 min sous pression suffisent pour crevettes/poisson; 8–10 min pour porc.','Cuire le riz à part et servir avec la sauce coco.'];
+ }else if(n.includes('wrap')){
+   appliance='Poêle ou Air Fryer (optionnel)';time='10–15 min';
+   steps=['Préparer la garniture et cuire la protéine si nécessaire.','Tiédir le wrap 20–30 s à la poêle pour le rendre souple.','Étaler fromage frais/sauce puis répartir garniture et légumes.','Rouler serré. Pour une version chaude : Air Fryer 180 °C 4–6 min ou poêle 2–3 min par face.'];
+ }else if(n.includes('gnocchi')){
+   appliance='Poêle / sauteuse';time='15–20 min';
+   steps=['Saisir la viande puis réserver si nécessaire.','Faire dorer les gnocchis à la poêle 5–7 min.','Ajouter champignons/légumes et poursuivre la cuisson.','Remettre la viande, ajouter crème/fromage et chauffer 2–3 min à feu doux.'];
+ }else if(n.includes('udon')||n.includes('nouilles')){
+   appliance='Wok ou grande poêle';time='15–20 min';
+   steps=['Préparer tous les ingrédients avant de commencer.','Saisir viande/crevettes à feu vif puis réserver.','Cuire les légumes 4–6 min pour les garder légèrement fermes.','Ajouter udon/nouilles préparés selon le paquet, puis remettre la protéine.','Mélanger 1–2 min avec l’assaisonnement et servir immédiatement.'];
+ }else if(n.includes('saumon')||n.includes('cabillaud')||n.includes('poisson')||n.includes('crevette')){
+   appliance='Air Fryer ou poêle';time='15–25 min';
+   steps=['Préparer le féculent et les légumes.','Assaisonner le poisson. Air Fryer : saumon 180 °C 8–12 min; poisson blanc 180 °C 9–13 min selon épaisseur. Crevettes : poêle 3–5 min.','Préparer la sauce à feu doux séparément; ajouter crème/fromage frais en fin de cuisson.','Ne pas prolonger la cuisson du poisson une fois opaque et juste cuit.','Assembler et servir.'];
+ }else if(has('oeuf')){
+   appliance='Poêle / casserole';time='12–20 min';
+   steps=['Cuire le féculent et les légumes prévus.','Battre ou préparer les œufs; cuire à feu moyen pour garder une texture moelleuse.','Ajouter feta/fromage et légumes en fin de cuisson.','Assembler et servir.'];
+ }else{
+   appliance='Poêle / sauteuse + casserole';time='20–30 min';
+   steps=['Lancer d’abord le féculent ou les pommes de terre.','Couper les légumes et la viande.','Saisir la viande à feu moyen-vif puis réduire le feu.','Cuire les légumes; ajouter un petit fond d’eau si nécessaire.','Ajouter crème, fromage frais, moutarde, poivre ou fromage de la recette en fin de cuisson.','Assembler et servir sans prolonger la cuisson de la viande.'];
+ }
+ tips='Les temps sont des repères : l’épaisseur des aliments et la puissance de ton appareil peuvent les faire varier. Pour un batch, refroidir rapidement les portions non consommées puis les conserver au réfrigérateur.';
+ return {appliance,time,steps,tips};
 }
 function batchForRecipe(id){
  let occ=[];document.querySelectorAll('select[data-slot]').forEach(s=>{if(+s.value===id)occ.push({day:+s.dataset.day,slot:s.dataset.slot})});
@@ -137,7 +182,7 @@ function batchForRecipe(id){
 function showRecipe(sel){
  if(!sel.value)return;let r=RECIPES.find(x=>x.id===+sel.value),d=document.getElementById('recipeDetail'),info=prepInfo(r),occ=batchForRecipe(r.id);
  let batch=occ.length>1?`<div class="daytotal ok"><b>🍳 Batch cooking : ${occ.length} portions</b><br>Prépare ${occ.length} portions le <b>${DAYS[occ[0].day]}</b>. Tu manges cette recette : ${occ.map(o=>'<b>'+DAYS[o.day]+'</b>').join(' puis ')}.</div>`:'';
- d.innerHTML=`<h2>${r.name}</h2><p><b>${r.macros.kcal} kcal</b> · ${Math.round(r.macros.protein)} g protéines · ${Math.round(r.macros.carbs)} g glucides · ${Math.round(r.macros.fat)} g lipides · ${Math.round(r.macros.fiber)} g fibres</p>${batch}<h3>Ingrédients — 1 portion</h3><ul>${r.ings.map(x=>`<li>${META[x.key]?.name||x.key} : <b>${ingredientDisplay(x)}</b></li>`).join('')}</ul>${occ.length>1?'<h3>Quantités batch — '+occ.length+' portions</h3><ul>'+r.ings.map(x=>'<li>'+(META[x.key]?.name||x.key)+' : <b>'+ingredientDisplay({key:x.key,qty:x.qty*occ.length})+'</b></li>').join('')+'</ul>':''}<h3>Préparation</h3><p><b>Appareil conseillé :</b> ${info.appliance} · <b>Temps :</b> ${info.time}</p><ol>${info.steps.map(x=>'<li>'+x+'</li>').join('')}</ol><p class="note">Les instructions sont adaptées au type de recette. Ajuste légèrement le temps selon ton appareil et l’épaisseur des aliments.</p>`;
+ d.innerHTML=`<h2>${r.name}</h2><p><b>${r.macros.kcal} kcal</b> · ${Math.round(r.macros.protein)} g protéines · ${Math.round(r.macros.carbs)} g glucides · ${Math.round(r.macros.fat)} g lipides · ${Math.round(r.macros.fiber)} g fibres</p>${batch}<h3>Ingrédients — 1 portion</h3><ul>${r.ings.map(x=>`<li>${META[x.key]?.name||x.key} : <b>${ingredientDisplay(x)}</b></li>`).join('')}</ul>${occ.length>1?'<h3>Quantités batch — '+occ.length+' portions</h3><ul>'+r.ings.map(x=>'<li>'+(META[x.key]?.name||x.key)+' : <b>'+ingredientDisplay({key:x.key,qty:x.qty*occ.length})+'</b></li>').join('')+'</ul>':''}<h3>Préparation</h3><p><b>Appareil conseillé :</b> ${info.appliance} · <b>Temps :</b> ${info.time}</p><ol>${info.steps.map(x=>'<li>'+x+'</li>').join('')}</ol><p class="note">${info.tips}</p>`;
  document.getElementById('recipeModal').classList.add('open');
 }
 function closeRecipe(){document.getElementById('recipeModal').classList.remove('open')}
