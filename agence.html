@@ -73,15 +73,17 @@ details{border:1px solid var(--line);border-radius:13px;margin:10px 0;background
  <div class="cards" id="kpis"></div>
  <div class="grid">
   <div class="panel"><span class="badge">Commercial</span><h2 style="margin-top:12px">Clients & point d’équilibre</h2><div class="subtitle">Le seuil groupe répartit sur 12 mois les annuités et les dépenses annuelles. Le paiement réel du crédit reste visible dans la trésorerie.</div><div id="clientChart" class="chart"></div><div class="legend"><span><i class="dot" style="background:#2d7d77"></i>Clients</span><span><i class="dot" style="background:#cf9c42"></i>PE groupe lissé</span></div></div>
-  <div class="panel"><span class="badge">Liquidités</span><h2 style="margin-top:12px">Deux trésoreries à surveiller</h2><div class="subtitle">Les transferts entre holding et agence ne créent pas de liquidités nouvelles pour le groupe.</div><div id="cashChart" class="chart"></div><div class="legend"><span><i class="dot" style="background:#2d7d77"></i>Agence</span><span><i class="dot" style="background:#cf9c42"></i>Holding</span><span><i class="dot" style="background:#5b87bc"></i>Groupe</span></div></div>
+  <div class="panel"><span class="badge">Liquidités</span><h2 style="margin-top:12px">Banque vs trésorerie réellement disponible</h2><div class="subtitle">La trésorerie mobilisable exclut les cotisations URSSAF AV générées mais pas encore réglées. Les virements intragroupe ne créent pas de liquidités.</div><div id="cashChart" class="chart"></div><div class="legend"><span><i class="dot" style="background:#2d7d77"></i>Agence libre</span><span><i class="dot" style="background:#cf9c42"></i>Holding</span><span><i class="dot" style="background:#5b87bc"></i>Groupe libre</span></div></div>
  </div>
  <div class="panel"><h2>Atterrissage par année</h2><div class="subtitle">Les chiffres HT tiennent compte des coûts directs payés dès le mois de l’intervention et du délai d’encaissement choisi.</div><div class="yeargrid" id="yearCards"></div></div>
  <div id="warningBox" class="note warn"></div>
 </section>
 <section id="cash" class="tabpane">
  <div class="cards" id="cashKpis"></div>
+ <div class="note"><b>Trésorerie bancaire ≠ trésorerie mobilisable.</b> Une partie de l'argent sur le compte doit encore être versée à l'URSSAF. Aucun remboursement à la holding n'utilise ce montant réservé ni le coussin de sécurité de l'agence.</div>
+ <div class="panel"><h2>Cotisations URSSAF AV · accumulation et règlements trimestriels</h2><p class="subtitle">La provision se forme chaque mois avec les heures produites. Le prélèvement trimestriel est décalé selon le paramètre dans « Mes hypothèses » (par défaut : 2 mois après chaque fin de trimestre).</p><div class="expense-mini" id="urssafSummary"></div><div id="urssafChart" class="chart"></div><div class="legend"><span><i class="dot" style="background:#cf9c42"></i>URSSAF restant à payer</span><span><i class="dot" style="background:#b13e38"></i>Prélèvements du mois</span></div></div>
  <div class="panel"><h2>Trésorerie M1–M36</h2><p class="subtitle">Visualisez les 12 mois de différé, le versement d’intérêts éventuel, la première annuité avec capital et le remboursement du prêt création.</p><div id="cashChart2" class="chart"></div></div>
- <div class="panel"><h2>Tableau mensuel détaillé</h2><div class="subtitle">Les mois 12, 24 et 36 font apparaître les sorties bancaires annuelles. Scroll horizontal sur mobile.</div><div class="tablewrap"><table><thead><tr><th>Mois</th><th>Clients</th><th>CA facturé HT</th><th>Encaissements HT</th><th>Coûts directs</th><th>Redevance enseigne</th><th>Charges + com</th><th>Frais ponctuels</th><th>Droit d’entrée</th><th>Dette agence</th><th>Dette holding</th><th>Remb. avance → holding</th><th>Cash agence</th><th>Cash holding</th><th>Cash groupe</th></tr></thead><tbody id="monthly"></tbody></table></div></div>
+ <div class="panel"><h2>Tableau mensuel détaillé</h2><div class="subtitle">Les mois 12, 24 et 36 font apparaître les sorties bancaires annuelles. Scroll horizontal sur mobile.</div><div class="tablewrap"><table><thead><tr><th>Mois</th><th>Clients</th><th>CA facturé HT</th><th>Encaissements HT</th><th>Coût AV complet</th><th>URSSAF AV générée</th><th>URSSAF payée</th><th>URSSAF à régler</th><th>Redevance enseigne</th><th>Charges + com</th><th>Frais ponctuels</th><th>Droit d’entrée</th><th>Dette agence</th><th>Dette holding</th><th>Remb. avance → holding</th><th>Banque agence</th><th>Disponible agence (hors URSSAF)</th><th>Après réserve</th><th>Banque holding</th><th>Banque groupe</th><th>Disponible groupe (hors URSSAF)</th></tr></thead><tbody id="monthly"></tbody></table></div></div>
 </section>
 <section id="expenses" class="tabpane">
  <div class="panel"><h2>Mes dépenses · A1 à A3</h2><p class="subtitle">Modifiez chaque poste directement, ajoutez vos propres lignes et retrouvez immédiatement leur impact sur la marge nécessaire et la trésorerie. Dépenses fournisseurs en HT ; salaires, charges et indemnités en coût réel.</p>
@@ -97,7 +99,7 @@ details{border:1px solid var(--line);border-radius:13px;margin:10px 0;background
 <section id="settings" class="tabpane">
  <div class="note">Les cellules financières sont des <b>hypothèses modifiables</b> ; le simulateur n’est pas une offre bancaire. Notamment, la durée du prêt création, la date exacte de la première annuité et les dividendes futurs doivent encore être confirmés.</div>
  <div class="panel"><h2>01 · Commercial & facturation</h2><p class="subtitle">Profil commercial choisi en haut de page ; chaque profil suit une trajectoire linéaire entre les quatre jalons.</p><div class="formgrid" id="commercialFields"></div><details><summary>Définir les trois trajectoires clients</summary><div class="inside formgrid" id="rampFields"></div></details></div>
- <div class="panel"><h2>02 · Paramètres des dépenses</h2><p class="subtitle">La liste modifiable de chaque coût A1/A2/A3 est désormais dans l’onglet « Liste des dépenses » : aucune double saisie nécessaire.</p><div class="formgrid" id="operatingFields"></div><div id="costFields" class="note">Ouvrez « Liste des dépenses » pour modifier salaires, loyer, Ximi, communication, frais ponctuels et droit d’entrée en direct.</div></div>
+ <div class="panel"><h2>02 · Dépenses & URSSAF</h2><p class="subtitle">La liste modifiable des dépenses A1/A2/A3 est dans « Liste des dépenses ». Les cotisations URSSAF des auxiliaires sont déjà comprises dans leur coût complet : seul le calendrier de sortie bancaire est décalé ici.</p><div class="formgrid" id="operatingFields"></div><div id="costFields" class="note">Ouvrez « Liste des dépenses » pour modifier salaires, loyer, Ximi, communication, frais ponctuels et droit d’entrée en direct.</div></div>
  <div class="panel"><h2>03 · Crédit holding & prêt création</h2><p class="subtitle">Prêt création : 30 % des dépenses éligibles, dans la limite de 30 000 €. La holding ne peut pas le souscrire. Le différé est modélisé avec intérêts M12 et première annuité avec capital M24, sous réserve de confirmation.</p><div class="formgrid" id="financeFields"></div><div class="note">Le montant global se modifie dans la grande case en haut. Le prêt création à 0 % revient uniquement à l’exploitation, plafonné à 30 % des dépenses éligibles et à 30 000 €. La holding emprunte le solde et conserve la réserve que vous définissez ci-dessus.</div></div>
  <div class="panel"><h2>04 · Remboursement des avances & dividendes</h2><p class="subtitle">En présence d’une avance remboursable de la holding, le modèle peut financer ses annuités avec le surplus de trésorerie de l’agence, tout en conservant une réserve dans chaque société. Ce n’est pas un dividende : le mécanisme doit être validé par le comptable et la banque.</p><div class="formgrid" id="divFields"></div></div>
  <div class="note warn">Manquent toujours au modèle tant que vous ne les renseignez pas : fiscalité/TVA détaillée, éventuels coûts supplémentaires de l’agence existante, garanties bancaires et décalages de paiement réels des fournisseurs. Le modèle raisonne en trésorerie HT simplifiée.</div>
@@ -267,6 +269,7 @@ function render(){
  document.querySelectorAll("[data-growth]").forEach(b=>b.classList.toggle("on",b.dataset.growth===state.growth));
  document.querySelectorAll("[data-finance]").forEach(b=>b.classList.toggle("on",b.dataset.finance===state.financing));
  let minA=Math.min(...h.map(x=>x.cashA)),minH=Math.min(...h.map(x=>x.cashH)),minG=Math.min(...h.map(x=>x.cashG));
+ let minFreeA=Math.min(...h.map(x=>x.cashAvailableAgency)),minFreeG=Math.min(...h.map(x=>x.cashAvailableGroup));
  let groupYear2=h.slice(12,24).reduce((a,x)=>a+x.groupPE,0)/12;
  let firstCap=Math.max(1,Math.round(num(f.firstCapitalMonth)));
  let firstCapRecord=h.find(x=>x.m===firstCap);
@@ -275,30 +278,47 @@ function render(){
   kpi("Marge agence / mois · A1",euro(marginTarget(1).group),fmt(marginTarget(1).hours)+" h · "+fmt(marginTarget(1).clients)+" clients",false),
   kpi("Marge agence / mois · A2",euro(marginTarget(2).group),fmt(marginTarget(2).hours)+" h · "+fmt(marginTarget(2).clients)+" clients",false),
   kpi("Marge agence / mois · A3",euro(marginTarget(3).group),fmt(marginTarget(3).hours)+" h · "+fmt(marginTarget(3).clients)+" clients",false),
-  kpi("Point bas holding",euro(minH),"Après remboursement de l’avance",minH<0)
+  kpi("Point bas agence mobilisable",euro(minFreeA),"Après provision URSSAF, avant réserve",minFreeA<num(o.reserve))
  ].join("");
  chart("clientChart",[{fn:x=>x.clients,color:"#2d7d77",weight:3.2},{fn:x=>x.groupPE,color:"#cf9c42"}],"Trajectoire clients et point d'équilibre");
- const cashSeries=[{fn:x=>x.cashA,color:"#2d7d77"},{fn:x=>x.cashH,color:"#cf9c42"},{fn:x=>x.cashG,color:"#5b87bc",weight:3.4}];
- chart("cashChart",cashSeries,"Trésorerie par entité");chart("cashChart2",cashSeries,"Trésorerie par entité");
+ const cashSeries=[{fn:x=>x.cashAvailableAgency,color:"#2d7d77"},{fn:x=>x.cashH,color:"#cf9c42"},{fn:x=>x.cashAvailableGroup,color:"#5b87bc",weight:3.4}];
+ chart("cashChart",cashSeries,"Trésorerie mobilisable hors URSSAF");
+ chart("cashChart2",[{fn:x=>x.cashA,color:"#2d7d77"},{fn:x=>x.cashAvailableAgency,color:"#5b87bc",weight:3},{fn:x=>x.cashH,color:"#cf9c42"},{fn:x=>x.cashAvailableGroup,color:"#8397af"}],"Compte bancaire et trésorerie mobilisable"); 
+ chart("urssafChart",[{fn:x=>x.socialDue,color:"#cf9c42",weight:3},{fn:x=>x.socialPay,color:"#b13e38",weight:2}],"Dette sociale provisionnée et règlements URSSAF");
+ document.getElementById("urssafSummary").innerHTML=[
+  '<div><small>PROVISION URSSAF FIN A1</small><strong>'+euro(h[11].socialDue)+'</strong><small>Montant non encore réglé</small></div>',
+  '<div><small>URSSAF PAYÉE A1</small><strong>'+euro(h.slice(0,12).reduce((s,x)=>s+x.socialPay,0))+'</strong><small>Sorties bancaires distinctes</small></div>',
+  '<div><small>AGENCE DISPONIBLE FIN A1</small><strong>'+euro(h[11].cashAvailableAgency)+'</strong><small>Hors URSSAF à payer et avant réserve</small></div>'
+ ].join("");
  document.getElementById("yearCards").innerHTML=[1,2,3].map(y=>{
   let ar=h.filter(x=>x.yr===y),end=ar[11],avg=ar.reduce((a,x)=>a+x.clients,0)/12,margin=ar.reduce((a,x)=>a+x.billed-x.direct,0);
-  return '<div class="year"><span>ANNÉE '+y+'</span><strong>'+end.clients+' clients</strong><small>'+fmt(avg)+' clients/mois en moyenne</small><div style="margin-top:13px;border-top:1px solid #d8e3e5;padding-top:12px">Marge après redevance : <b>'+euro(margin-ar.reduce((s,x)=>s+x.royalty,0))+'</b><br>Redevance enseigne : <b>'+euro(ar.reduce((s,x)=>s+x.royalty,0))+'</b><br>Marge cible mensuelle : <b>'+euro(marginTarget(y).group)+'</b><br>Cash agence : <b>'+euro(end.cashA)+'</b><br>Cash holding : <b style="color:'+(end.cashH<0?'#b13e38':'inherit')+'">'+euro(end.cashH)+'</b></div></div>';
+  return '<div class="year"><span>ANNÉE '+y+'</span><strong>'+end.clients+' clients</strong><small>'+fmt(avg)+' clients/mois en moyenne</small><div style="margin-top:13px;border-top:1px solid #d8e3e5;padding-top:12px">Marge après redevance : <b>'+euro(margin-ar.reduce((s,x)=>s+x.royalty,0))+'</b><br>Redevance enseigne : <b>'+euro(ar.reduce((s,x)=>s+x.royalty,0))+'</b><br>Marge cible mensuelle : <b>'+euro(marginTarget(y).group)+'</b><br>Banque agence : <b>'+euro(end.cashA)+'</b><br>URSSAF à régler : <b>'+euro(end.socialDue)+'</b><br>Disponible agence : <b>'+euro(end.cashAvailableAgency)+'</b><br>Cash holding : <b style="color:'+(end.cashH<0?'#b13e38':'inherit')+'">'+euro(end.cashH)+'</b></div></div>';
  }).join("");
  let warn=[];
+ if(num(o.urssafPerHour)===0)warn.push("URSSAF AV : coût horaire encore à 0. Importez votre profil privé mis à jour ou renseignez le coût par heure dans « Mes hypothèses ».");
+ if(h.some(x=>x.direct+0.001<x.hours*Math.max(0,num(o.urssafPerHour))))warn.push("Le taux URSSAF/h dépasse le coût direct AV/h : la provision serait plafonnée au coût AV complet.");
  if([1,2,3].every(y=>royaltyRate(y)===0))warn.push("Redevance d’enseigne : taux encore à 0 %. Renseignez les pourcentages A1, A2 et A3 dans « Liste des dépenses ». Le point d’équilibre reste provisoire.");
  if([1,2,3].some(y=>effectiveMarginPerHour(y)<=0))warn.push("La redevance dépasse la marge horaire disponible : les seuils clients ne sont pas atteignables avec ces hypothèses.");
  if(minH<0)warn.push('La holding atteint un point bas de '+euro(minH)+'. Vous pouvez augmenter sa réserve initiale, prévoir des remboursements de l’avance ou renseigner des dividendes confirmés.');
- if(minA<num(o.reserve))warn.push('L’agence passe sous son seuil de trésorerie cible ('+euro(o.reserve)+').');
+ if(minFreeA<num(o.reserve))warn.push('La trésorerie réellement disponible de l’agence, après URSSAF à régler, passe sous la réserve cible ('+euro(o.reserve)+').');
  if(!warn.length)warn.push('Les deux structures conservent une trésorerie non négative dans les hypothèses actuelles. Vérifiez les coûts manquants et les conditions bancaires.');
  document.getElementById("warningBox").innerHTML='<strong>À surveiller :</strong> '+warn.join(' ');
  document.getElementById("cashKpis").innerHTML=[
-  kpi("Financement agence initial",euro(h[0].agencyReceived),"Avance holding + prêt création + apport",false),
-  kpi("Solde agence fin A2",euro(h[23].cashA),"Après droit d’entrée et crédit agence",h[23].cashA<0),
-  kpi("1re annuité capital holding",firstCapRecord?euro(firstCapRecord.holdAnnuity):"—","Mois "+firstCap+" · échéance hypothétique",false),
-  kpi("Point bas groupe",euro(minG),"Cash holding + cash agence",minG<0),
-  kpi("Point bas holding",euro(minH),"Après remboursements d’avance simulés",minH<0)
+  kpi("Banque agence · fin A2",euro(h[23].cashA),"Solde réel simulé, cotisations URSSAF conservées",h[23].cashA<0),
+  kpi("URSSAF AV à régler · fin A2",euro(h[23].socialDue),"Dette sociale incluse dans le coût économique des AV",false),
+  kpi("Disponible agence · fin A2",euro(h[23].cashAvailableAgency),"Banque agence moins dette URSSAF AV",h[23].cashAvailableAgency<num(o.reserve)),
+  kpi("Point bas groupe disponible",euro(minFreeG),"Banque groupe diminuée de l’URSSAF non réglée",minFreeG<0),
+  kpi("Point bas holding",euro(minH),"Transferts limités aux excédents réels de l’agence",minH<0)
  ].join("");
- document.getElementById("monthly").innerHTML=h.map(x=>'<tr><td><b>M'+x.m+'</b> · A'+x.yr+'</td><td>'+x.clients+'</td><td>'+euro(x.billed)+'</td><td>'+euro(x.income)+'</td><td>'+euro(x.direct)+'</td><td>'+euro(x.royalty)+'</td><td>'+euro(x.fixedCost+x.comm)+'</td><td>'+euro(x.oneoff)+'</td><td>'+euro(x.entry)+'</td><td>'+euro(x.zeroPay)+'</td><td><b>'+euro(x.holdOut)+'</b></td><td>'+euro(x.advanceRepayment)+'</td><td class="'+(x.cashA<0?'neg':'pos')+'">'+euro(x.cashA)+'</td><td class="'+(x.cashH<0?'neg':'pos')+'">'+euro(x.cashH)+'</td><td class="'+(x.cashG<0?'neg':'pos')+'">'+euro(x.cashG)+'</td></tr>').join("");
+ document.getElementById("monthly").innerHTML=h.map(x=>'<tr><td><b>M'+x.m+'</b> · A'+x.yr+'</td>'+
+ '<td>'+x.clients+'</td><td>'+euro(x.billed)+'</td><td>'+euro(x.income)+'</td><td>'+euro(x.direct)+'</td>'+
+ '<td>'+euro(x.socialAccrued)+'</td><td>'+euro(x.socialPay)+'</td><td>'+euro(x.socialDue)+'</td>'+
+ '<td>'+euro(x.royalty)+'</td><td>'+euro(x.fixedCost+x.comm)+'</td><td>'+euro(x.oneoff)+'</td><td>'+euro(x.entry)+'</td>'+
+ '<td>'+euro(x.zeroPay)+'</td><td>'+euro(x.holdOut)+'</td><td>'+euro(x.advanceRepayment)+'</td>'+
+ '<td class="'+(x.cashA<0?'neg':'pos')+'">'+euro(x.cashA)+'</td>'+
+ '<td class="'+(x.cashAvailableAgency<0?'neg':'pos')+'">'+euro(x.cashAvailableAgency)+'</td><td>'+euro(x.cashAfterReserve)+'</td>'+
+ '<td class="'+(x.cashH<0?'neg':'pos')+'">'+euro(x.cashH)+'</td><td>'+euro(x.cashG)+'</td>'+
+ '<td class="'+(x.cashAvailableGroup<0?'neg':'pos')+'">'+euro(x.cashAvailableGroup)+'</td></tr>').join("");
  const privacy=document.getElementById("privacyNote");privacy.innerHTML='<strong>Vos données restent locales.</strong> Aucun chiffre importé n’est déposé sur GitHub. Pour continuer sur un autre appareil, cliquez sur « Sauvegarder mes hypothèses », puis importez le fichier JSON privé sur cet appareil.';
 }
 function escapeText(s){return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
@@ -347,7 +367,7 @@ function drawExpenses(){
 const fields={
  commercial:[
  ["Heures / client / mois","commercial.hoursPerClient","h"],["CA / heure HT","commercial.caPerHour","€"],["Marge / heure","commercial.marginPerHour","€"],["Délai d’encaissement","commercial.paymentLag","mois (0 à 2)"]],
- operations:[["Indexation des charges mensuelles","operations.annualIndex","%"],["Droit entrée · 1er mois","operations.entryFrom","M"],["Droit entrée · dernier mois","operations.entryTo","M"],["Réserve minimale agence","operations.reserve","€"]],
+ operations:[["Indexation des charges mensuelles","operations.annualIndex","%"],["Droit entrée · 1er mois","operations.entryFrom","M"],["Droit entrée · dernier mois","operations.entryTo","M"],["Réserve minimale agence","operations.reserve","€"],["Cotisations URSSAF AV provisionnées","operations.urssafPerHour","€/h produite"],["Décalage du règlement après trimestre","operations.urssafPaymentLagMonths","mois (1 à 3)"]],
  costs:[
  ["Salaire brut responsable","salary"],["Charges employeur","employer"],["Mutuelle","mutuelle"],["IK / déplacements","travel"],["Loyer","rent"],["Charges locatives","rentCharges"],["Ximi","ximi"],
  ["Téléphonie","phone"],["Expert-comptable","accountant"],["Paie / DSN","payroll"],["Frais bancaires","bankFees"],["Fournitures","supplies"],["Électricité","electricity"],["Internet","internet"],["Assurance","insurance"],["Autres charges","other"]
@@ -388,6 +408,8 @@ function drawFields(){
  document.querySelectorAll("[data-input]").forEach(el=>el.addEventListener("input",()=>{
   let x=num(el.value),p=el.dataset.input;
   if(p==="commercial.paymentLag")x=Math.max(0,Math.min(2,Math.round(x)));
+  if(p==="operations.urssafPaymentLagMonths")x=Math.max(1,Math.min(3,Math.round(x)));
+  if(p==="operations.urssafPerHour")x=Math.max(0,x);
   if(p==="finance.firstCapitalMonth")x=x===12?12:24;
   pathSet(p,x);save();render();el.value=x;
  }));
