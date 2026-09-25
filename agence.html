@@ -272,11 +272,11 @@ function drawExpenses(){
  const body=document.getElementById("expenseTable");if(!body)return;
  const names={monthly:"Mensuel",annual:"Annuel",communication:"Communication",oneoff:"Ponctuel",entry:"Droit d’entrée",cash:"Dépôt / trésorerie"};
  body.innerHTML=state.expenses.map(row=>{
-  const canDelete=!["entree","comm-local"].includes(row.id),choice=Object.keys(names).map(t=>'<option value="'+t+'"'+(t===row.type?' selected':'')+'>'+names[t]+'</option>').join("");
+  const locked=["entree","comm-local","comm-region"].includes(row.id),canDelete=!locked,choice=Object.keys(names).map(t=>'<option value="'+t+'"'+(t===row.type?' selected':'')+'>'+names[t]+'</option>').join("");
   const safe=escapeText(row.id);
   return '<tr data-row="'+safe+'"><td>'+escapeText(row.cat)+'</td>'+
    '<td><input class="exp-label" aria-label="Libellé de dépense" data-exp-name="'+safe+'" value="'+escapeText(row.label)+'"></td>'+
-   '<td><select aria-label="Nature" data-exp-type="'+safe+'">'+choice+'</select></td>'+
+   '<td><select aria-label="Nature" data-exp-type="'+safe+'" '+(locked?'disabled':'')+'>'+choice+'</select></td>'+
    row.values.map((v,i)=>'<td><input class="exp-col" type="number" min="0" step="0.01" aria-label="Année '+(i+1)+'" data-exp-id="'+safe+'" data-exp-year="'+i+'" value="'+v+'"></td>').join("")+
    '<td><input class="exp-month" type="number" min="1" max="12" step="1" data-exp-month="'+safe+'" value="'+row.month+'" '+(!["oneoff","annual","cash"].includes(row.type)?"disabled":"")+'></td>'+
    '<td>'+(canDelete?'<button type="button" data-exp-del="'+safe+'" aria-label="Supprimer cette dépense">×</button>':'')+'</td></tr>';
