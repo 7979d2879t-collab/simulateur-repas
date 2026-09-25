@@ -194,8 +194,11 @@ function compute(){
  const ins=mixed?num(f.insuranceHolding):num(f.insuranceHoldingOnly),fees=(mixed?num(f.feesHolding):num(f.feesHoldingOnly))+num(f.shares),ann=annuity(holding,num(f.annualRate),num(f.years),num(f.firstCapitalMonth));
  let cashA=0,cashH=0,advanceOutstanding=transfer,history=[],invoices=[];
  for(let m=1;m<=36;m++){
- const yr=Math.ceil(m/12),mi=(m-1)%12,clients=ramp(c[state.growth],m),hours=clients*num(c.hoursPerClient),billed=hours*num(c.caPerHour),direct=hours*Math.max(0,num(c.caPerHour)-num(c.marginPerHour));
+ const yr=Math.ceil(m/12),mi=(m-1)%12,clients=ramp(c[state.growth],m),hours=clients*num(c.hoursPerClient),billed=hours*num(c.caPerHour);
+ const pct=royaltyRate(yr),baseAdjust=num(o.royaltyAlreadyInMargin)===1?pct*num(c.caPerHour):0;
+ const direct=hours*Math.max(0,num(c.caPerHour)-num(c.marginPerHour)-baseAdjust);
  invoices.push(billed);const lag=Math.max(0,Math.min(2,Math.round(num(c.paymentLag)))),income=m-lag>=1?invoices[m-1-lag]:0;
+ const royaltyBase=o.royaltyBase==="collected"?income:billed,royalty=royaltyBase*pct;
  const fixedCost=state.expenses.filter(x=>x.type==="monthly").reduce((a,x)=>a+num(x.values[yr-1]),0)*Math.pow(1+num(o.annualIndex)/100,yr-1);
  const comm=state.expenses.filter(x=>x.type==="communication").reduce((a,x)=>{const v=num(x.values[yr-1]);return a+(o.communicationPayment==="annual"?(mi===0?v:0):o.communicationPayment==="quarterly"?(mi%3===0?v/4:0):v/12);},0);
  const entry=state.expenses.filter(x=>x.type==="entry").reduce((a,x)=>a+(m>=num(o.entryFrom)&&m<=num(o.entryTo)?num(x.values[yr-1])/Math.max(1,num(o.entryTo)-num(o.entryFrom)+1):0),0);
@@ -206,13 +209,15 @@ function compute(){
  const holdInsurance=m<=num(f.years)*12?ins:0,holdFees=m===1?fees:0;
  const dividendC=m%12===0?num(f.dividendClermont[yr-1]):0,dividendA=m%12===0?num(f.dividendAgency[yr-1]):0;
  const holdDraw=m===1?holding+num(f.holdingEquity):0,holdTransfer=m===1?transfer:0,agencyLoan=m===1?loan+num(f.agencyEquity):0,agencyReceived=holdTransfer+agencyLoan;
- const holdOut=holdInterest+holdAnnuity+holdInsurance+holdFees,agencyOut=direct+fixedCost+comm+entry+oneoff+zeroPay+zeroFees+dividendA;
+ const holdOut=holdInterest+holdAnnuity+holdInsurance+holdFees,agencyOut=direct+royalty+fixedCost+comm+entry+oneoff+zeroPay+zeroFees+dividendA;
  cashH+=holdDraw-holdTransfer-holdOut+dividendC+dividendA;cashA+=income+agencyReceived-agencyOut;
  const targetHolding=Math.max(0,num(f.holdingReserve)),availableAgency=Math.max(0,cashA-Math.max(0,num(o.reserve)));
  const advanceRepayment=f.autoAdvanceRepayment!==0?Math.min(Math.max(0,targetHolding-cashH),availableAgency,advanceOutstanding):0;
  cashA-=advanceRepayment;cashH+=advanceRepayment;advanceOutstanding-=advanceRepayment;
- const target=marginTarget(yr),perClient=num(c.hoursPerClient)*num(c.marginPerHour),operationalPE=perClient?target.operating/perClient:0,groupPE=target.clients,agencyPE=perClient?(fixedCost+comm+entry+zeroPay)/perClient:0;
- history.push({m,yr,clients,hours,billed,direct,income,fixedCost,comm,entry,oneoff,zeroPay,agencyOut,holdOut,holdAnnuity,holdInterest,holdInsurance,dividendC,dividendA,agencyReceived,advanceRepayment,advanceOutstanding,cashA,cashH,cashG:cashA+cashH,operationalPE,agencyPE,groupPE,monthPE:perClient?(fixedCost+comm+entry+zeroPay+holdOut)/perClient:0,marginTarget:target.group});
+ const target=marginTarget(yr),perClient=effectiveMarginPerHour(yr)*num(c.hoursPerClient);
+ const operationalPE=perClient>0?target.operating/perClient:null,groupPE=target.clients;
+ const agencyPE=perClient>0?(fixedCost+comm+entry+zeroPay)/perClient:null;
+ history.push({m,yr,clients,hours,billed,direct,income,royalty,royaltyRate:pct,fixedCost,comm,entry,oneoff,zeroPay,agencyOut,holdOut,holdAnnuity,holdInterest,holdInsurance,dividendC,dividendA,agencyReceived,advanceRepayment,advanceOutstanding,cashA,cashH,cashG:cashA+cashH,operationalPE,agencyPE,groupPE,monthPE:perClient>0?(fixedCost+comm+entry+zeroPay+holdOut)/perClient:null,marginTarget:target.group});
  }return history;
 }
 function points(arr,w,h,pad,min,max){const span=Math.max(1e-6,max-min),dx=(w-pad*2)/Math.max(1,arr.length-1);return arr.map((v,i)=>(pad+i*dx).toFixed(1)+","+(h-pad-(v-min)/span*(h-2*pad)).toFixed(1)).join(" ");}
