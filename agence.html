@@ -452,5 +452,39 @@ document.getElementById("addExpenseBtn").addEventListener("click",()=>{
  state.expenses.push(makeRow("custom-"+Date.now(),document.getElementById("newExpenseCat").value,name,document.getElementById("newExpenseType").value,[0,0,0]));
  document.getElementById("newExpenseName").value="";save();drawExpenses();render();
 });
+
+// Lien d'import prive, sans publication du profil dans le depot GitHub.
+// Le fragment #import= n'est jamais envoye au serveur web ; on l'efface
+// immediatement de la barre d'adresse, puis on memorise le profil localement.
+async function importPrivateLink(){
+ const match=location.hash.match(/^#import=([A-Za-z0-9_-]{1,15000})$/);
+ if(!match)return false;
+ try{history.replaceState(null,"",location.pathname+location.search);}catch(e){}
+ try{
+  const encoded=match[1].replace(/-/g,"+").replace(/_/g,"/");
+  const padded=encoded.padEnd(Math.ceil(encoded.length/4)*4,"=");
+  const compressed=Uint8Array.from(atob(padded),x=>x.charCodeAt(0));
+  const stream=new Blob([compressed]).stream().pipeThrough(new DecompressionStream("deflate"));
+  const raw=await new Response(stream).text();
+  const p=JSON.parse(raw);
+  if(!p||!p.commercial||!p.operations||!p.finance||!p.operations.costs||
+     !Array.isArray(p.commercial.central)||!Array.isArray(p.finance.dividendClermont)||
+     !Array.isArray(p.expenses))throw Error("Profil prive incompatible");
+  if(p.expenses.length>300)throw Error("Profil anormalement long");
+  state=p;
+  state.growth=state.growth||"central";
+  state.financing=state.financing||"mixte";
+  ensureTransferSettings();ensureBudget();save();
+  drawFields();drawExpenses();render();
+  const notice=document.getElementById("privacyNote");
+  if(notice)notice.innerHTML='<strong>Votre profil prive V10 est charge.</strong> Il est memorise uniquement dans ce navigateur. Vous pouvez modifier vos depenses, votre emprunt et vos hypotheses des maintenant.';
+  return true;
+ }catch(error){
+  alert("Le lien d'import n'a pas pu etre lu : "+error.message+
+   ". Utilisez « Importer mon profil » avec le fichier JSON.");
+  return false;
+ }
+}
 drawFields();drawExpenses();render();
+importPrivateLink();
 </script></body></html>
