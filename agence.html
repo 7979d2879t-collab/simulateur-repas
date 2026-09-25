@@ -151,6 +151,10 @@ function legacyExpenses(s){
 }
 function ensureBudget(){
  const f=state.finance,o=state.operations;
+ // Les profils existants restent intacts ; l'URSSAF est initialement à 0
+ // pour les visiteurs sans profil privé importé.
+ if(o.urssafPerHour==null)o.urssafPerHour=0;
+ if(o.urssafPaymentLagMonths==null)o.urssafPaymentLagMonths=2;
  if(f.totalBorrowed==null)f.totalBorrowed=state.financing==="holding"?num(f.holdingOnly):num(f.holding)+Math.min(num(f.eligible)*num(f.zeroPercent)/100,num(f.zeroCap));
  if(f.cashKeptHolding==null)f.cashKeptHolding=Math.max(0,num(f.holding)-num(f.transferMixte));
  if(!Array.isArray(state.expenses))state.expenses=legacyExpenses(state);
@@ -192,13 +196,23 @@ function marginTarget(year){
 function compute(){
  const c=state.commercial,o=state.operations,f=state.finance,sp=loanSplit(),loan=sp.creation,holding=sp.holding,transfer=sp.transfer,mixed=state.financing==="mixte";
  const ins=mixed?num(f.insuranceHolding):num(f.insuranceHoldingOnly),fees=(mixed?num(f.feesHolding):num(f.feesHoldingOnly))+num(f.shares),ann=annuity(holding,num(f.annualRate),num(f.years),num(f.firstCapitalMonth));
- let cashA=0,cashH=0,advanceOutstanding=transfer,history=[],invoices=[];
+ let cashA=0,cashH=0,advanceOutstanding=transfer,socialDue=0,history=[],invoices=[],socialAccruals=[];
  for(let m=1;m<=36;m++){
  const yr=Math.ceil(m/12),mi=(m-1)%12,clients=ramp(c[state.growth],m),hours=clients*num(c.hoursPerClient),billed=hours*num(c.caPerHour);
  const pct=royaltyRate(yr),baseAdjust=num(o.royaltyAlreadyInMargin)===1?pct*num(c.caPerHour):0;
  const direct=hours*Math.max(0,num(c.caPerHour)-num(c.marginPerHour)-baseAdjust);
  invoices.push(billed);const lag=Math.max(0,Math.min(2,Math.round(num(c.paymentLag)))),income=m-lag>=1?invoices[m-1-lag]:0;
  const royaltyBase=o.royaltyBase==="collected"?income:billed,royalty=royaltyBase*pct;
+ // Le coût social AV est déjà contenu dans « direct » (coût complet des AV).
+ // Le modèle décale uniquement sa SORTIE de banque jusqu'au paiement URSSAF.
+ const socialPerHour=Math.max(0,num(o.urssafPerHour));
+ const socialAccrued=Math.min(direct,hours*socialPerHour);
+ socialAccruals.push(socialAccrued);
+ const socialLag=Math.max(1,Math.min(3,Math.round(num(o.urssafPaymentLagMonths))));
+ const socialPay=m>=3+socialLag&&(m-3-socialLag)%3===0
+  ?socialAccruals.slice(m-socialLag-3,m-socialLag).reduce((a,x)=>a+x,0):0;
+ socialDue=Math.max(0,socialDue+socialAccrued-socialPay);
+ const directBank=direct-socialAccrued;
  const fixedCost=state.expenses.filter(x=>x.type==="monthly").reduce((a,x)=>a+num(x.values[yr-1]),0)*Math.pow(1+num(o.annualIndex)/100,yr-1);
  const comm=state.expenses.filter(x=>x.type==="communication").reduce((a,x)=>{const v=num(x.values[yr-1]);return a+(o.communicationPayment==="annual"?(mi===0?v:0):o.communicationPayment==="quarterly"?(mi%3===0?v/4:0):v/12);},0);
  const entry=state.expenses.filter(x=>x.type==="entry").reduce((a,x)=>a+(m>=num(o.entryFrom)&&m<=num(o.entryTo)?num(x.values[yr-1])/Math.max(1,num(o.entryTo)-num(o.entryFrom)+1):0),0);
@@ -209,15 +223,17 @@ function compute(){
  const holdInsurance=m<=num(f.years)*12?ins:0,holdFees=m===1?fees:0;
  const dividendC=m%12===0?num(f.dividendClermont[yr-1]):0,dividendA=m%12===0?num(f.dividendAgency[yr-1]):0;
  const holdDraw=m===1?holding+num(f.holdingEquity):0,holdTransfer=m===1?transfer:0,agencyLoan=m===1?loan+num(f.agencyEquity):0,agencyReceived=holdTransfer+agencyLoan;
- const holdOut=holdInterest+holdAnnuity+holdInsurance+holdFees,agencyOut=direct+royalty+fixedCost+comm+entry+oneoff+zeroPay+zeroFees+dividendA;
+ const holdOut=holdInterest+holdAnnuity+holdInsurance+holdFees,agencyOut=directBank+socialPay+royalty+fixedCost+comm+entry+oneoff+zeroPay+zeroFees+dividendA;
  cashH+=holdDraw-holdTransfer-holdOut+dividendC+dividendA;cashA+=income+agencyReceived-agencyOut;
- const targetHolding=Math.max(0,num(f.holdingReserve)),availableAgency=Math.max(0,cashA-Math.max(0,num(o.reserve)));
+ const targetHolding=Math.max(0,num(f.holdingReserve)),availableAgency=Math.max(0,cashA-socialDue-Math.max(0,num(o.reserve)));
  const advanceRepayment=f.autoAdvanceRepayment!==0?Math.min(Math.max(0,targetHolding-cashH),availableAgency,advanceOutstanding):0;
  cashA-=advanceRepayment;cashH+=advanceRepayment;advanceOutstanding-=advanceRepayment;
+ const cashAvailableAgency=cashA-socialDue,cashAvailableGroup=cashA+cashH-socialDue;
+ const cashAfterReserve=Math.max(0,cashAvailableAgency-Math.max(0,num(o.reserve)));
  const target=marginTarget(yr),perClient=effectiveMarginPerHour(yr)*num(c.hoursPerClient);
  const operationalPE=perClient>0?target.operating/perClient:null,groupPE=target.clients;
  const agencyPE=perClient>0?(fixedCost+comm+entry+zeroPay)/perClient:null;
- history.push({m,yr,clients,hours,billed,direct,income,royalty,royaltyRate:pct,fixedCost,comm,entry,oneoff,zeroPay,agencyOut,holdOut,holdAnnuity,holdInterest,holdInsurance,dividendC,dividendA,agencyReceived,advanceRepayment,advanceOutstanding,cashA,cashH,cashG:cashA+cashH,operationalPE,agencyPE,groupPE,monthPE:perClient>0?(fixedCost+comm+entry+zeroPay+holdOut)/perClient:null,marginTarget:target.group});
+ history.push({m,yr,clients,hours,billed,direct,directBank,income,socialAccrued,socialPay,socialDue,cashAvailableAgency,cashAvailableGroup,cashAfterReserve,royalty,royaltyRate:pct,fixedCost,comm,entry,oneoff,zeroPay,agencyOut,holdOut,holdAnnuity,holdInterest,holdInsurance,dividendC,dividendA,agencyReceived,advanceRepayment,advanceOutstanding,cashA,cashH,cashG:cashA+cashH,operationalPE,agencyPE,groupPE,monthPE:perClient>0?(fixedCost+comm+entry+zeroPay+holdOut)/perClient:null,marginTarget:target.group});
  }return history;
 }
 function points(arr,w,h,pad,min,max){const span=Math.max(1e-6,max-min),dx=(w-pad*2)/Math.max(1,arr.length-1);return arr.map((v,i)=>(pad+i*dx).toFixed(1)+","+(h-pad-(v-min)/span*(h-2*pad)).toFixed(1)).join(" ");}
