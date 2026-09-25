@@ -72,7 +72,7 @@ details{border:1px solid var(--line);border-radius:13px;margin:10px 0;background
 <section id="overview" class="tabpane show">
  <div class="cards" id="kpis"></div>
  <div class="grid">
-  <div class="panel"><span class="badge">Commercial</span><h2 style="margin-top:12px">Clients & point d’équilibre</h2><div class="subtitle">Le seuil groupe lissé répartit l’annuité holding sur 12 mois. Le mois de l’échéance réelle apparaît dans la trésorerie.</div><div id="clientChart" class="chart"></div><div class="legend"><span><i class="dot" style="background:#2d7d77"></i>Clients</span><span><i class="dot" style="background:#cf9c42"></i>PE groupe lissé</span></div></div>
+  <div class="panel"><span class="badge">Commercial</span><h2 style="margin-top:12px">Clients & point d’équilibre</h2><div class="subtitle">Le seuil groupe répartit sur 12 mois les annuités et les dépenses annuelles. Le paiement réel du crédit reste visible dans la trésorerie.</div><div id="clientChart" class="chart"></div><div class="legend"><span><i class="dot" style="background:#2d7d77"></i>Clients</span><span><i class="dot" style="background:#cf9c42"></i>PE groupe lissé</span></div></div>
   <div class="panel"><span class="badge">Liquidités</span><h2 style="margin-top:12px">Deux trésoreries à surveiller</h2><div class="subtitle">Les transferts entre holding et agence ne créent pas de liquidités nouvelles pour le groupe.</div><div id="cashChart" class="chart"></div><div class="legend"><span><i class="dot" style="background:#2d7d77"></i>Agence</span><span><i class="dot" style="background:#cf9c42"></i>Holding</span><span><i class="dot" style="background:#5b87bc"></i>Groupe</span></div></div>
  </div>
  <div class="panel"><h2>Atterrissage par année</h2><div class="subtitle">Les chiffres HT tiennent compte des coûts directs payés dès le mois de l’intervention et du délai d’encaissement choisi.</div><div class="yeargrid" id="yearCards"></div></div>
@@ -81,7 +81,7 @@ details{border:1px solid var(--line);border-radius:13px;margin:10px 0;background
 <section id="cash" class="tabpane">
  <div class="cards" id="cashKpis"></div>
  <div class="panel"><h2>Trésorerie M1–M36</h2><p class="subtitle">Visualisez les 12 mois de différé, le versement d’intérêts éventuel, la première annuité avec capital et le remboursement du prêt création.</p><div id="cashChart2" class="chart"></div></div>
- <div class="panel"><h2>Tableau mensuel détaillé</h2><div class="subtitle">Les mois 12, 24 et 36 font apparaître les sorties bancaires annuelles. Scroll horizontal sur mobile.</div><div class="tablewrap"><table><thead><tr><th>Mois</th><th>Clients</th><th>CA facturé HT</th><th>Encaissements HT</th><th>Coûts directs</th><th>Charges + com</th><th>Droit d’entrée</th><th>Dette agence</th><th>Dette holding</th><th>Remb. avance → holding</th><th>Cash agence</th><th>Cash holding</th><th>Cash groupe</th></tr></thead><tbody id="monthly"></tbody></table></div></div>
+ <div class="panel"><h2>Tableau mensuel détaillé</h2><div class="subtitle">Les mois 12, 24 et 36 font apparaître les sorties bancaires annuelles. Scroll horizontal sur mobile.</div><div class="tablewrap"><table><thead><tr><th>Mois</th><th>Clients</th><th>CA facturé HT</th><th>Encaissements HT</th><th>Coûts directs</th><th>Charges + com</th><th>Frais ponctuels</th><th>Droit d’entrée</th><th>Dette agence</th><th>Dette holding</th><th>Remb. avance → holding</th><th>Cash agence</th><th>Cash holding</th><th>Cash groupe</th></tr></thead><tbody id="monthly"></tbody></table></div></div>
 </section>
 <section id="expenses" class="tabpane">
  <div class="panel"><h2>Mes dépenses · A1 à A3</h2><p class="subtitle">Modifiez chaque poste directement, ajoutez vos propres lignes et retrouvez immédiatement leur impact sur la marge nécessaire et la trésorerie. Dépenses fournisseurs en HT ; salaires, charges et indemnités en coût réel.</p>
@@ -224,7 +224,10 @@ function chart(target,series,labels){
 }
 function kpi(label,value,sub,warn){return '<article class="card '+(warn?"warn":"")+'"><div class="label">'+label+'</div><div class="big">'+value+'</div><div class="micro">'+sub+'</div></article>';}
 function render(){
- last=compute();let h=last,c=state.commercial,f=state.finance,o=state.operations;
+ last=compute();let h=last,c=state.commercial,f=state.finance,o=state.operations,sp=loanSplit();
+ const totalEl=document.getElementById("loanTotalInput");if(document.activeElement!==totalEl)totalEl.value=sp.total;
+ document.getElementById("loanSplit").innerHTML='<span>Holding : <b>'+euro(sp.holding)+'</b></span><span>Prêt création : <b>'+euro(sp.creation)+'</b></span><span>Gardé holding : <b>'+euro(sp.holding-sp.transfer)+'</b></span>';
+ renderExpenseTotals();
  document.querySelectorAll("[data-growth]").forEach(b=>b.classList.toggle("on",b.dataset.growth===state.growth));
  document.querySelectorAll("[data-finance]").forEach(b=>b.classList.toggle("on",b.dataset.finance===state.financing));
  let minA=Math.min(...h.map(x=>x.cashA)),minH=Math.min(...h.map(x=>x.cashH)),minG=Math.min(...h.map(x=>x.cashG));
@@ -232,21 +235,21 @@ function render(){
  let firstCap=Math.max(1,Math.round(num(f.firstCapitalMonth)));
  let firstCapRecord=h.find(x=>x.m===firstCap);
  document.getElementById("kpis").innerHTML=[
-  kpi("Clients fin A1",h[11].clients,"Scénario "+state.growth,false),
-  kpi("PE exploitation A1",fmt(h[5].operationalPE),"Clients pour couvrir les frais opérationnels",false),
-  kpi("PE groupe lissé A2",fmt(groupYear2),"Inclut la dette holding lissée sur 12 mois",false),
-  kpi("Point bas trésorerie agence",euro(minA),"Sur les 36 premiers mois",minA<num(o.reserve)),
-  kpi("Point bas trésorerie holding",euro(minH),"Après remboursements d’avance simulés",minH<0)
+  kpi("Emprunt total",euro(sp.total),"Holding + éventuel prêt création",false),
+  kpi("Marge agence / mois · A1",euro(marginTarget(1).group),fmt(marginTarget(1).hours)+" h · "+fmt(marginTarget(1).clients)+" clients",false),
+  kpi("Marge agence / mois · A2",euro(marginTarget(2).group),fmt(marginTarget(2).hours)+" h · "+fmt(marginTarget(2).clients)+" clients",false),
+  kpi("Marge agence / mois · A3",euro(marginTarget(3).group),fmt(marginTarget(3).hours)+" h · "+fmt(marginTarget(3).clients)+" clients",false),
+  kpi("Point bas holding",euro(minH),"Après remboursement de l’avance",minH<0)
  ].join("");
  chart("clientChart",[{fn:x=>x.clients,color:"#2d7d77",weight:3.2},{fn:x=>x.groupPE,color:"#cf9c42"}],"Trajectoire clients et point d'équilibre");
  const cashSeries=[{fn:x=>x.cashA,color:"#2d7d77"},{fn:x=>x.cashH,color:"#cf9c42"},{fn:x=>x.cashG,color:"#5b87bc",weight:3.4}];
  chart("cashChart",cashSeries,"Trésorerie par entité");chart("cashChart2",cashSeries,"Trésorerie par entité");
  document.getElementById("yearCards").innerHTML=[1,2,3].map(y=>{
   let ar=h.filter(x=>x.yr===y),end=ar[11],avg=ar.reduce((a,x)=>a+x.clients,0)/12,margin=ar.reduce((a,x)=>a+x.billed-x.direct,0);
-  return '<div class="year"><span>ANNÉE '+y+'</span><strong>'+end.clients+' clients</strong><small>'+fmt(avg)+' clients/mois en moyenne</small><div style="margin-top:13px;border-top:1px solid #d8e3e5;padding-top:12px">Marge théorique : <b>'+euro(margin)+'</b><br>Cash agence : <b>'+euro(end.cashA)+'</b><br>Cash holding : <b style="color:'+(end.cashH<0?'#b13e38':'inherit')+'">'+euro(end.cashH)+'</b></div></div>';
+  return '<div class="year"><span>ANNÉE '+y+'</span><strong>'+end.clients+' clients</strong><small>'+fmt(avg)+' clients/mois en moyenne</small><div style="margin-top:13px;border-top:1px solid #d8e3e5;padding-top:12px">Marge théorique : <b>'+euro(margin)+'</b><br>Marge cible mensuelle : <b>'+euro(marginTarget(y).group)+'</b><br>Cash agence : <b>'+euro(end.cashA)+'</b><br>Cash holding : <b style="color:'+(end.cashH<0?'#b13e38':'inherit')+'">'+euro(end.cashH)+'</b></div></div>';
  }).join("");
  let warn=[];
- if(minH<0)warn.push('La holding atteint un point bas de '+euro(minH)+'. Sans distribution confirmée ni fonds conservés suffisants, son annuité ne peut pas être supposée financée.');
+ if(minH<0)warn.push('La holding atteint un point bas de '+euro(minH)+'. Vous pouvez augmenter sa réserve initiale, prévoir des remboursements de l’avance ou renseigner des dividendes confirmés.');
  if(minA<num(o.reserve))warn.push('L’agence passe sous son seuil de trésorerie cible ('+euro(o.reserve)+').');
  if(!warn.length)warn.push('Les deux structures conservent une trésorerie non négative dans les hypothèses actuelles. Vérifiez les coûts manquants et les conditions bancaires.');
  document.getElementById("warningBox").innerHTML='<strong>À surveiller :</strong> '+warn.join(' ');
@@ -257,7 +260,7 @@ function render(){
   kpi("Point bas groupe",euro(minG),"Cash holding + cash agence",minG<0),
   kpi("Point bas holding",euro(minH),"Après remboursements d’avance simulés",minH<0)
  ].join("");
- document.getElementById("monthly").innerHTML=h.map(x=>'<tr><td><b>M'+x.m+'</b> · A'+x.yr+'</td><td>'+x.clients+'</td><td>'+euro(x.billed)+'</td><td>'+euro(x.income)+'</td><td>'+euro(x.direct)+'</td><td>'+euro(x.fixedCost+x.comm)+'</td><td>'+euro(x.entry)+'</td><td>'+euro(x.zeroPay)+'</td><td><b>'+euro(x.holdOut)+'</b></td><td>'+euro(x.advanceRepayment)+'</td><td class="'+(x.cashA<0?'neg':'pos')+'">'+euro(x.cashA)+'</td><td class="'+(x.cashH<0?'neg':'pos')+'">'+euro(x.cashH)+'</td><td class="'+(x.cashG<0?'neg':'pos')+'">'+euro(x.cashG)+'</td></tr>').join("");
+ document.getElementById("monthly").innerHTML=h.map(x=>'<tr><td><b>M'+x.m+'</b> · A'+x.yr+'</td><td>'+x.clients+'</td><td>'+euro(x.billed)+'</td><td>'+euro(x.income)+'</td><td>'+euro(x.direct)+'</td><td>'+euro(x.fixedCost+x.comm)+'</td><td>'+euro(x.oneoff)+'</td><td>'+euro(x.entry)+'</td><td>'+euro(x.zeroPay)+'</td><td><b>'+euro(x.holdOut)+'</b></td><td>'+euro(x.advanceRepayment)+'</td><td class="'+(x.cashA<0?'neg':'pos')+'">'+euro(x.cashA)+'</td><td class="'+(x.cashH<0?'neg':'pos')+'">'+euro(x.cashH)+'</td><td class="'+(x.cashG<0?'neg':'pos')+'">'+euro(x.cashG)+'</td></tr>').join("");
  const privacy=document.getElementById("privacyNote");privacy.innerHTML='<strong>Vos données restent locales.</strong> Aucun chiffre importé n’est déposé sur GitHub. Pour continuer sur un autre appareil, cliquez sur « Sauvegarder mes hypothèses », puis importez le fichier JSON privé sur cet appareil.';
 }
 function escapeText(s){return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
