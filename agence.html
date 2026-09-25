@@ -260,6 +260,46 @@ function render(){
  document.getElementById("monthly").innerHTML=h.map(x=>'<tr><td><b>M'+x.m+'</b> · A'+x.yr+'</td><td>'+x.clients+'</td><td>'+euro(x.billed)+'</td><td>'+euro(x.income)+'</td><td>'+euro(x.direct)+'</td><td>'+euro(x.fixedCost+x.comm)+'</td><td>'+euro(x.entry)+'</td><td>'+euro(x.zeroPay)+'</td><td><b>'+euro(x.holdOut)+'</b></td><td>'+euro(x.advanceRepayment)+'</td><td class="'+(x.cashA<0?'neg':'pos')+'">'+euro(x.cashA)+'</td><td class="'+(x.cashH<0?'neg':'pos')+'">'+euro(x.cashH)+'</td><td class="'+(x.cashG<0?'neg':'pos')+'">'+euro(x.cashG)+'</td></tr>').join("");
  const privacy=document.getElementById("privacyNote");privacy.innerHTML='<strong>Vos données restent locales.</strong> Aucun chiffre importé n’est déposé sur GitHub. Pour continuer sur un autre appareil, cliquez sur « Sauvegarder mes hypothèses », puis importez le fichier JSON privé sur cet appareil.';
 }
+function escapeText(s){return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
+function renderExpenseTotals(){
+ const el=document.getElementById("expenseTotals");if(!el)return;
+ el.innerHTML=[1,2,3].map(y=>'<div><small>SORTIES A'+y+'</small><strong>'+euro(expenseAnnualTotal(y))+'</strong><small>Hors dette · dépôt éventuel inclus</small></div>').join("");
+}
+function drawExpenses(){
+ const body=document.getElementById("expenseTable");if(!body)return;
+ const names={monthly:"Mensuel",annual:"Annuel",communication:"Communication",oneoff:"Ponctuel",entry:"Droit d’entrée",cash:"Dépôt / trésorerie"};
+ body.innerHTML=state.expenses.map(row=>{
+  const canDelete=!["entree","comm-local"].includes(row.id),choice=Object.keys(names).map(t=>'<option value="'+t+'"'+(t===row.type?' selected':'')+'>'+names[t]+'</option>').join("");
+  const safe=escapeText(row.id);
+  return '<tr data-row="'+safe+'"><td>'+escapeText(row.cat)+'</td>'+
+   '<td><input class="exp-label" aria-label="Libellé de dépense" data-exp-name="'+safe+'" value="'+escapeText(row.label)+'"></td>'+
+   '<td><select aria-label="Nature" data-exp-type="'+safe+'">'+choice+'</select></td>'+
+   row.values.map((v,i)=>'<td><input class="exp-col" type="number" min="0" step="0.01" aria-label="Année '+(i+1)+'" data-exp-id="'+safe+'" data-exp-year="'+i+'" value="'+v+'"></td>').join("")+
+   '<td><input class="exp-month" type="number" min="1" max="12" step="1" data-exp-month="'+safe+'" value="'+row.month+'" '+(!["oneoff","annual","cash"].includes(row.type)?"disabled":"")+'></td>'+
+   '<td>'+(canDelete?'<button type="button" data-exp-del="'+safe+'" aria-label="Supprimer cette dépense">×</button>':'')+'</td></tr>';
+ }).join("");
+ body.querySelectorAll("[data-exp-id]").forEach(el=>el.addEventListener("input",()=>{
+  let row=state.expenses.find(x=>x.id===el.dataset.expId);if(!row)return;
+  row.values[+el.dataset.expYear]=Math.max(0,num(el.value));save();render();
+ }));
+ body.querySelectorAll("[data-exp-month]").forEach(el=>el.addEventListener("change",()=>{
+  let row=state.expenses.find(x=>x.id===el.dataset.expMonth);if(!row)return;
+  row.month=Math.min(12,Math.max(1,Math.round(num(el.value))));el.value=row.month;save();render();
+ }));
+ body.querySelectorAll("[data-exp-name]").forEach(el=>el.addEventListener("change",()=>{
+  let row=state.expenses.find(x=>x.id===el.dataset.expName);if(!row)return;
+  row.label=String(el.value).trim().slice(0,95)||row.label;el.value=row.label;save();render();
+ }));
+ body.querySelectorAll("[data-exp-type]").forEach(el=>el.addEventListener("change",()=>{
+  let row=state.expenses.find(x=>x.id===el.dataset.expType);if(!row)return;
+  row.type=el.value;save();drawExpenses();render();
+ }));
+ body.querySelectorAll("[data-exp-del]").forEach(el=>el.addEventListener("click",()=>{
+  if(!confirm("Supprimer cette ligne de dépense ?"))return;
+  state.expenses=state.expenses.filter(x=>x.id!==el.dataset.expDel);save();drawExpenses();render();
+ }));
+ renderExpenseTotals();
+}
 const fields={
  commercial:[
  ["Heures / client / mois","commercial.hoursPerClient","h"],["CA / heure HT","commercial.caPerHour","€"],["Marge / heure","commercial.marginPerHour","€"],["Délai d’encaissement","commercial.paymentLag","mois (0 à 2)"]],
@@ -331,14 +371,23 @@ document.getElementById("importFile").addEventListener("change",async e=>{
  try{
   const p=JSON.parse(await file.text());
   if(!p||!p.commercial||!p.operations||!p.finance||!p.operations.costs||!p.commercial.central||!p.finance.dividendClermont)throw Error("Fichier incompatible");
-  state=p;state.growth=state.growth||"central";state.financing=state.financing||"mixte";ensureTransferSettings();
-  save();drawFields();render();alert("Profil privé chargé. Les valeurs sont mémorisées sur cet appareil.");
+  state=p;state.growth=state.growth||"central";state.financing=state.financing||"mixte";ensureTransferSettings();ensureBudget();
+  save();drawFields();drawExpenses();render();alert("Profil privé chargé. Les valeurs sont mémorisées sur cet appareil.");
  }catch(err){alert("Import impossible : "+err.message)}
  e.target.value="";
 });
 document.getElementById("resetBtn").addEventListener("click",()=>{
  if(!confirm("Effacer les valeurs de cet appareil et revenir à la démonstration ? Exportez votre profil avant si nécessaire."))return;
- state=clone(DEMO);save();drawFields();render();
+ state=clone(DEMO);ensureBudget();save();drawFields();drawExpenses();render();
 });
-drawFields();render();
+document.getElementById("loanTotalInput").addEventListener("input",e=>{
+ const val=e.target.value;if(val==="")return;state.finance.totalBorrowed=Math.max(0,num(val));save();render();
+});
+document.getElementById("addExpenseBtn").addEventListener("click",()=>{
+ const name=document.getElementById("newExpenseName").value.trim().slice(0,95);
+ if(!name){alert("Indiquez le nom de la nouvelle dépense.");return;}
+ state.expenses.push(makeRow("custom-"+Date.now(),document.getElementById("newExpenseCat").value,name,document.getElementById("newExpenseType").value,[0,0,0]));
+ document.getElementById("newExpenseName").value="";save();drawExpenses();render();
+});
+drawFields();drawExpenses();render();
 </script></body></html>
