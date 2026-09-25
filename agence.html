@@ -303,24 +303,19 @@ function drawExpenses(){
 const fields={
  commercial:[
  ["Heures / client / mois","commercial.hoursPerClient","h"],["CA / heure HT","commercial.caPerHour","€"],["Marge / heure","commercial.marginPerHour","€"],["Délai d’encaissement","commercial.paymentLag","mois (0 à 2)"]],
- operations:[
- ["Indexation charges / an","operations.annualIndex","%"],
- ["Com A1 · à notre charge","operations.communication.0","€ HT"],["Com A2 · total","operations.communication.1","€ HT"],["Com A3 · total","operations.communication.2","€ HT"],
- ["Droit d’entrée","operations.entryFee","€ HT"],["Droit entrée · 1er mois","operations.entryFrom","M"],["Droit entrée · dernier mois","operations.entryTo","M"],
- ["Frais ponctuels au lancement","operations.startup","€ HT"],["Autres frais annuels A2","operations.annualOtherY2","€"],["Autres frais annuels A3","operations.annualOtherY3","€"],["Réserve cible agence","operations.reserve","€"]
- ],
+ operations:[["Indexation des charges mensuelles","operations.annualIndex","%"],["Droit entrée · 1er mois","operations.entryFrom","M"],["Droit entrée · dernier mois","operations.entryTo","M"],["Réserve minimale agence","operations.reserve","€"]],
  costs:[
  ["Salaire brut responsable","salary"],["Charges employeur","employer"],["Mutuelle","mutuelle"],["IK / déplacements","travel"],["Loyer","rent"],["Charges locatives","rentCharges"],["Ximi","ximi"],
  ["Téléphonie","phone"],["Expert-comptable","accountant"],["Paie / DSN","payroll"],["Frais bancaires","bankFees"],["Fournitures","supplies"],["Électricité","electricity"],["Internet","internet"],["Assurance","insurance"],["Autres charges","other"]
  ],
  finance:[
- ["Prêt holding mixte","finance.holding","€"],["Holding seule · prêt","finance.holdingOnly","€"],["Taux nominal annuel","finance.annualRate","%"],
+ ["Dépenses éligibles au prêt création","finance.eligible","€"],["Part création","finance.zeroPercent","%"],["Plafond création","finance.zeroCap","€"],
+ ["Somme à garder dans la holding","finance.cashKeptHolding","€"],["Taux nominal annuel holding","finance.annualRate","%"],
  ["Durée holding","finance.years","ans"],["1re annuité avec capital","finance.firstCapitalMonth","M12 ou M24"],
  ["Assurance holding mixte","finance.insuranceHolding","€/mois"],["Assurance holding seule","finance.insuranceHoldingOnly","€/mois"],
  ["Frais dossier holding mixte","finance.feesHolding","€"],["Frais dossier holding seule","finance.feesHoldingOnly","€"],["Parts sociales","finance.shares","€"],
- ["Avance holding vers agence · mixte","finance.transferMixte","€"],["Avance holding vers agence · holding seule","finance.transferHolding","€"],
- ["Dépenses éligibles prêt création","finance.eligible","€"],["Taux finançable création","finance.zeroPercent","%"],["Plafond prêt création","finance.zeroCap","€"],
- ["Durée prêt création supposée","finance.zeroMonths","mois"],["1re mensualité création","finance.zeroStartMonth","M"],["Assurance prêt création","finance.zeroInsurance","€/mois"],
+ ["Durée prêt création provisoire","finance.zeroMonths","mois"],["1re mensualité création","finance.zeroStartMonth","M"],
+ ["Assurance prêt création","finance.zeroInsurance","€/mois"],["Frais dossier prêt création","finance.zeroFees","€"],
  ["Apport extérieur holding","finance.holdingEquity","€"],["Apport extérieur agence","finance.agencyEquity","€"]
  ]
 };
@@ -335,7 +330,7 @@ function drawFields(){
  document.getElementById("commercialFields").innerHTML=fields.commercial.map(x=>makeField(...x)).join("");
  document.getElementById("operatingFields").innerHTML=fields.operations.map(x=>makeField(...x)).join("")+
  addSelect("Paiement communication","operations.communicationPayment",[["monthly","Mensuel"],["quarterly","Trimestriel"],["annual","Annuel"]]);
- document.getElementById("costFields").innerHTML=fields.costs.map(x=>makeField(x[0],"operations.costs."+x[1],"€/mois")).join("");
+ /* Pas de double saisie : les dépenses se modifient uniquement dans leur liste. */
  document.getElementById("rampFields").innerHTML=["prudent","central","ambitieux"].map(g=>[1,12,24,36].map((m,i)=>makeField(g.charAt(0).toUpperCase()+g.slice(1)+" · M"+m,"commercial."+g+"."+i,"clients")).join("")).join("");
  document.getElementById("financeFields").innerHTML=fields.finance.map(x=>makeField(...x)).join("")+
  addSelect("Intérêts payés à M12","finance.interestYear1",[[1,"Oui, hypothèse intérêt seul"],[0,"Non — faire confirmer le coût du différé"]]);
@@ -344,7 +339,7 @@ function drawFields(){
  addSelect("Remboursement automatique de l’avance","finance.autoAdvanceRepayment",[[1,"Oui · surplus disponibles"],[0,"Non · aucun remboursement"]])+
  [1,2,3].map((n,i)=>makeField("Dividendes autres filiales A"+n,"finance.dividendClermont."+i,"€/an")).join("")+
  [1,2,3].map((n,i)=>makeField("Dividendes agence vers holding A"+n,"finance.dividendAgency."+i,"€/an")).join("");
- document.querySelectorAll("[data-input]").forEach(el=>el.addEventListener("change",()=>{
+ document.querySelectorAll("[data-input]").forEach(el=>el.addEventListener("input",()=>{
   let x=num(el.value),p=el.dataset.input;
   if(p==="commercial.paymentLag")x=Math.max(0,Math.min(2,Math.round(x)));
   if(p==="finance.firstCapitalMonth")x=x===12?12:24;
