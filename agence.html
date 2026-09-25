@@ -1,0 +1,296 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#17324d">
+<title>Simulateur financier · Agence</title>
+<style>
+:root{--navy:#17324d;--deep:#102638;--teal:#2d7d77;--mint:#e9f6f3;--bg:#f4f7f8;--card:#fff;--line:#dce5e8;--sub:#667985;--green:#19734a;--amber:#a46b15;--red:#b13e38;--blue:#3e81ae}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;color:#273947;font-size:14px}button,input,select{font:inherit}
+a{color:inherit}button{cursor:pointer}
+.sitebar{background:var(--deep);color:white;padding:15px max(16px,calc((100vw - 1330px)/2));display:flex;align-items:center;gap:14px;flex-wrap:wrap}.sitebar .brand{font-size:15px;font-weight:800;letter-spacing:.1px;white-space:nowrap;margin-right:auto}
+.sitebar a{border:1px solid #ffffff30;padding:9px 13px;border-radius:9px;text-decoration:none;color:#cdddde;font-weight:650}.sitebar a.active{background:#ffffff18;color:white;border-color:#77aaa5}
+.hero{background:linear-gradient(120deg,#17324d,#215669 75%,#2d7d77);color:white;padding:33px max(18px,calc((100vw - 1330px)/2)) 30px}.hero .kicker{color:#bcece2;letter-spacing:2px;text-transform:uppercase;font-size:11px;font-weight:900}.hero h1{font-size:clamp(25px,3.7vw,43px);margin:8px 0 10px;line-height:1.08}.hero p{color:#d4e6e8;max-width:770px;line-height:1.6;margin:0}
+.wrap{max-width:1360px;margin:0 auto;padding:22px 16px 70px}
+.nav{display:flex;gap:8px;flex-wrap:wrap;margin:-18px 0 22px;position:relative}
+.nav button{background:white;color:#456;box-shadow:0 5px 20px #14253312;border:1px solid #dce6e8;border-radius:12px;padding:12px 17px;font-weight:800}.nav button.active{background:var(--teal);border-color:var(--teal);color:white}
+.controls{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:0 0 18px}.seg{display:inline-flex;align-items:center;gap:3px;padding:4px;background:#e8eff0;border-radius:12px}.seg button{border:0;background:transparent;border-radius:9px;padding:9px 13px;color:#586b73;font-weight:750}.seg button.on{background:white;color:var(--navy);box-shadow:0 2px 8px #122a3419}.grow{flex:1}
+.btn{border:1px solid #c9d8dc;border-radius:10px;background:white;padding:10px 13px;color:var(--navy);font-weight:750}.btn.primary{background:var(--teal);border-color:var(--teal);color:white}.btn:hover,.nav button:hover{filter:brightness(.97)}.quiet{color:var(--sub)}
+.cards{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:13px;margin:15px 0 18px}.card{background:white;border:1px solid var(--line);border-radius:18px;padding:20px;box-shadow:0 4px 22px #163c4810;min-width:0}.card .label{font-size:12px;font-weight:800;color:#71838a;margin-bottom:10px}.card .big{font-size:clamp(22px,2.6vw,35px);font-weight:850;letter-spacing:-1px;color:var(--navy)}.card .micro{font-size:12px;color:#7d8b94;margin-top:6px;line-height:1.5}.card.warn .big{color:var(--red)}.card.good .big{color:var(--green)}
+.grid{display:grid;grid-template-columns:1.15fr 1fr;gap:15px}.panel{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:21px;box-shadow:0 4px 22px #163c480d;min-width:0;margin-bottom:15px}.panel h2{font-size:19px;color:var(--navy);margin:0 0 5px}.panel .subtitle{font-size:12px;color:#7e8d95;margin-bottom:15px;line-height:1.5}
+.badge{font-size:11px;font-weight:850;letter-spacing:.3px;display:inline-block;background:#e7f6f0;color:#167151;border-radius:99px;padding:6px 9px}.badge.amber{background:#fff3d9;color:#945d12}
+.chart{width:100%;min-height:230px;overflow:hidden}.chart svg{width:100%;height:auto;display:block}.legend{display:flex;gap:15px;align-items:center;flex-wrap:wrap;font-size:12px;color:#617785;margin-top:4px}.dot{width:9px;height:9px;border-radius:50%;display:inline-block;margin-right:5px}
+.yeargrid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.year{padding:16px;background:#f5f8f9;border:1px solid #e6eef0;border-radius:13px}.year span{font-size:12px;color:#74858d}.year strong{display:block;font-size:22px;margin:8px 0 6px;color:var(--navy)}.year small{font-size:12px;color:#75858b}
+.note{border-radius:12px;background:#eff7f3;border:1px solid #bcded0;padding:13px 16px;line-height:1.55;color:#36594f;font-size:13px;margin:14px 0}.note.warn{background:#fff7e5;color:#78571d;border-color:#efdbac}.note.red{background:#fff0ee;color:#8f3531;border-color:#efcbc6}
+.tablewrap{overflow:auto;max-height:630px;border-radius:11px;border:1px solid var(--line)}table{border-collapse:collapse;min-width:1040px;width:100%;background:white;font-size:12px}th{background:#eaf2f2;color:#254756;position:sticky;top:0;z-index:1;text-align:right;padding:13px 11px;white-space:nowrap}td{text-align:right;padding:11px;border-bottom:1px solid #e8eef0;white-space:nowrap;font-variant-numeric:tabular-nums}th:first-child,td:first-child{text-align:left;position:sticky;left:0;background:inherit}tbody tr:nth-child(even){background:#f9fbfb}tbody tr:hover{background:#eaf6f2}td.neg{color:var(--red);font-weight:800}td.pos{color:var(--green);font-weight:750}tbody tr:nth-child(12n){border-bottom:3px solid #8eaba8}
+.formgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:11px}.field{display:block;background:#f8fafb;padding:11px;border-radius:11px;border:1px solid #e8eff1}.field .lab{display:block;font-size:12px;font-weight:750;color:#536773;margin:0 0 8px;min-height:31px}.field .unit{font-size:11px;color:#75858b;margin:5px 0 0;display:block}.field input,.field select{width:100%;border:1px solid #cddddd;background:white;border-radius:9px;padding:10px 11px;outline:none;color:var(--navy);font-weight:750;min-width:0}.field input:focus,.field select:focus{border-color:var(--teal);box-shadow:0 0 0 3px #2d7d771f}
+details{border:1px solid var(--line);border-radius:13px;margin:10px 0;background:#fff}summary{cursor:pointer;font-size:15px;font-weight:800;color:var(--navy);padding:15px 16px}details .inside{padding:5px 15px 15px}
+.tabpane{display:none}.tabpane.show{display:block}.stack{display:grid;gap:15px}
+.footer{color:#8999a2;text-align:center;font-size:12px;line-height:1.6;margin-top:30px}
+@media(max-width:1060px){.cards{grid-template-columns:repeat(3,1fr)}.grid{grid-template-columns:1fr}.formgrid{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:680px){.hero{padding:25px 16px 38px}.cards{grid-template-columns:repeat(2,1fr)}.card{padding:14px}.formgrid{grid-template-columns:repeat(2,1fr)}.yeargrid{grid-template-columns:1fr}.sitebar .brand{width:100%}.sitebar a{flex:1;text-align:center}.nav button{flex:1}.panel{padding:15px}.field{padding:9px}}
+@media(max-width:420px){.formgrid{grid-template-columns:1fr}.cards{grid-template-columns:1fr 1fr}}
+@media print{.sitebar,.hero,.controls,.nav,.footer,.no-print{display:none!important}.tabpane{display:block!important}.panel{box-shadow:none;break-inside:avoid}}
+</style>
+</head>
+<body>
+<header class="sitebar">
+ <div class="brand">◈ Mes simulateurs</div>
+ <a href="./index.html">🥗 Menus de la semaine</a>
+ <a class="active" href="./agence.html">📊 Simulateur financier</a>
+</header>
+<section class="hero"><div class="kicker">Piloter · anticiper · comparer</div>
+<h1>Simulateur de lancement<br>d’agence</h1>
+<p>Trois années de prévisionnel, deux structures et des échéances bancaires annuelles. Ajustez les hypothèses et visualisez immédiatement votre trésorerie et vos points d’équilibre.</p>
+</section>
+<main class="wrap">
+<nav class="nav" aria-label="Pages du simulateur">
+ <button type="button" data-tab="overview" class="active">⌂ Vue d’ensemble</button>
+ <button type="button" data-tab="cash">◷ Trésorerie M1–M36</button>
+ <button type="button" data-tab="settings">⚙ Mes hypothèses</button>
+</nav>
+<div class="controls">
+ <div class="seg" aria-label="Scénario commercial">
+  <button data-growth="prudent">Prudent</button><button data-growth="central">Central</button><button data-growth="ambitieux">Ambitieux</button>
+ </div>
+ <div class="seg" aria-label="Montage financier">
+  <button data-finance="mixte">Holding + création</button><button data-finance="holding">Holding seule</button>
+ </div>
+ <span class="grow"></span>
+ <button id="exportBtn" type="button" class="btn">↓ Sauvegarder mes hypothèses</button>
+ <button id="importBtn" type="button" class="btn primary">↑ Importer mon profil</button>
+ <input type="file" id="importFile" accept=".json,application/json" hidden>
+</div>
+<div class="note warn" id="privacyNote"><strong>Version de démonstration.</strong> Ce site est public ; vos chiffres personnels ne figurent pas dans son code. Importez votre profil privé avec le bouton ci-dessus. Vos modifications sont ensuite mémorisées localement sur cet appareil et peuvent être sauvegardées dans un fichier JSON.</div>
+<section id="overview" class="tabpane show">
+ <div class="cards" id="kpis"></div>
+ <div class="grid">
+  <div class="panel"><span class="badge">Commercial</span><h2 style="margin-top:12px">Clients & point d’équilibre</h2><div class="subtitle">Le seuil groupe lissé répartit l’annuité holding sur 12 mois. Le mois de l’échéance réelle apparaît dans la trésorerie.</div><div id="clientChart" class="chart"></div><div class="legend"><span><i class="dot" style="background:#2d7d77"></i>Clients</span><span><i class="dot" style="background:#cf9c42"></i>PE groupe lissé</span></div></div>
+  <div class="panel"><span class="badge">Liquidités</span><h2 style="margin-top:12px">Deux trésoreries à surveiller</h2><div class="subtitle">Le transfert holding → agence ne constitue pas une entrée d’argent supplémentaire pour le groupe.</div><div id="cashChart" class="chart"></div><div class="legend"><span><i class="dot" style="background:#2d7d77"></i>Agence</span><span><i class="dot" style="background:#cf9c42"></i>Holding</span><span><i class="dot" style="background:#5b87bc"></i>Groupe</span></div></div>
+ </div>
+ <div class="panel"><h2>Atterrissage par année</h2><div class="subtitle">Les chiffres HT tiennent compte des coûts directs payés dès le mois de l’intervention et du délai d’encaissement choisi.</div><div class="yeargrid" id="yearCards"></div></div>
+ <div id="warningBox" class="note warn"></div>
+</section>
+<section id="cash" class="tabpane">
+ <div class="cards" id="cashKpis"></div>
+ <div class="panel"><h2>Trésorerie M1–M36</h2><p class="subtitle">Visualisez les 12 mois de différé, le versement d’intérêts éventuel, la première annuité avec capital et le remboursement du prêt création.</p><div id="cashChart2" class="chart"></div></div>
+ <div class="panel"><h2>Tableau mensuel détaillé</h2><div class="subtitle">Les mois 12, 24 et 36 font apparaître les sorties bancaires annuelles. Scroll horizontal sur mobile.</div><div class="tablewrap"><table><thead><tr><th>Mois</th><th>Clients</th><th>CA facturé HT</th><th>Encaissements HT</th><th>Coûts directs</th><th>Charges + com</th><th>Droit d’entrée</th><th>Dette agence</th><th>Dette holding</th><th>Cash agence</th><th>Cash holding</th><th>Cash groupe</th></tr></thead><tbody id="monthly"></tbody></table></div></div>
+</section>
+<section id="settings" class="tabpane">
+ <div class="note">Les cellules financières sont des <b>hypothèses modifiables</b> ; le simulateur n’est pas une offre bancaire. Notamment, la durée du prêt création, la date exacte de la première annuité et les dividendes futurs doivent encore être confirmés.</div>
+ <div class="panel"><h2>01 · Commercial & facturation</h2><p class="subtitle">Profil commercial choisi en haut de page ; chaque profil suit une trajectoire linéaire entre les quatre jalons.</p><div class="formgrid" id="commercialFields"></div><details><summary>Définir les trois trajectoires clients</summary><div class="inside formgrid" id="rampFields"></div></details></div>
+ <div class="panel"><h2>02 · Frais de fonctionnement & réseau</h2><p class="subtitle">Tous les montants de fournisseurs sont exprimés HT ; frais bancaires et paie en coût réel.</p><div class="formgrid" id="operatingFields"></div><details><summary>Voir le détail des charges fixes mensuelles</summary><div class="inside formgrid" id="costFields"></div></details></div>
+ <div class="panel"><h2>03 · Crédit holding & prêt création</h2><p class="subtitle">Prêt création : 30 % des dépenses éligibles, dans la limite de 30 000 €. La holding ne peut pas le souscrire. Le différé est modélisé avec intérêts M12 et première annuité avec capital M24, sous réserve de confirmation.</p><div class="formgrid" id="financeFields"></div></div>
+ <div class="panel"><h2>04 · Transferts & dividendes</h2><p class="subtitle">Les dividendes sont à zéro tant que leur calendrier et leur distribution ne sont pas établis. Les montants saisis transitent entre les entités sans être comptés deux fois dans le groupe.</p><div class="formgrid" id="divFields"></div></div>
+ <div class="note warn">Manquent toujours au modèle tant que vous ne les renseignez pas : fiscalité/TVA détaillée, éventuels coûts supplémentaires de l’agence existante, garanties bancaires et décalages de paiement réels des fournisseurs. Le modèle raisonne en trésorerie HT simplifiée.</div>
+ <button class="btn" id="resetBtn" type="button">↺ Revenir aux valeurs de démonstration</button>
+</section>
+<div class="footer">Simulateur autonome, sans serveur ni compte. Les données saisies sont stockées dans ce navigateur uniquement ; exportez votre fichier privé pour les retrouver sur un autre appareil.</div>
+</main>
+<script>
+"use strict";
+const KEY="sim_agence_v1";
+const DEMO={
+ growth:"central",financing:"mixte",
+ commercial:{prudent:[1,18,33,45],central:[2,22,40,55],ambitieux:[3,28,52,70],hoursPerClient:30,caPerHour:30,marginPerHour:11,paymentLag:1},
+ operations:{costs:{salary:2500,employer:850,mutuelle:80,travel:600,rent:650,rentCharges:150,ximi:600,phone:40,accountant:300,payroll:50,bankFees:50,supplies:100,electricity:0,internet:0,insurance:0,other:0},
+ annualIndex:0,communication:[7500,20000,24000],communicationPayment:"monthly",entryFee:15000,entryFrom:13,entryTo:24,startup:12000,annualOtherY2:150,annualOtherY3:150,reserve:10000},
+ finance:{holding:90000,holdingOnly:120000,annualRate:4.7,years:7,firstCapitalMonth:24,interestYear1:1,insuranceHolding:43,insuranceHoldingOnly:56,feesHolding:900,feesHoldingOnly:1200,shares:30,transferMixte:80000,transferHolding:105000,eligible:100000,zeroPercent:30,zeroCap:30000,zeroMonths:60,zeroStartMonth:1,zeroInsurance:0,zeroFees:0,dividendClermont:[0,0,0],dividendAgency:[0,0,0],holdingEquity:0,agencyEquity:0}
+};
+const clone=x=>JSON.parse(JSON.stringify(x));
+function load(){
+ try{let s=localStorage.getItem(KEY);if(!s)return clone(DEMO);let p=JSON.parse(s);if(!p||!p.commercial||!p.operations||!p.finance)throw Error("Format non reconnu");return p;}catch(e){return clone(DEMO);}
+}
+let state=load(),last=[];
+const euro=x=>new Intl.NumberFormat("fr-FR",{style:"currency",currency:"EUR",maximumFractionDigits:0}).format(x);
+const fmt=x=>new Intl.NumberFormat("fr-FR",{maximumFractionDigits:1}).format(x);
+const num=x=>Number.isFinite(+x)?+x:0;
+const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(state))}catch(e){}};
+function pathGet(p){return p.split(".").reduce((v,k)=>v==null?undefined:v[k],state)}
+function pathSet(p,v){let a=p.split("."),obj=state;for(let i=0;i<a.length-1;i++)obj=obj[a[i]];obj[a[a.length-1]]=v;}
+function zeroLoan(f){return Math.min(Math.max(0,num(f.eligible))*num(f.zeroPercent)/100,num(f.zeroCap));}
+function annuity(amount,rate,years,nth){let n=nth===12?years:years-1,r=rate/100;return n>0?(r===0?amount/n:amount*r/(1-Math.pow(1+r,-n))):0;}
+function ramp(p,m){if(m<=12)return Math.round(p[0]+(m-1)*(p[1]-p[0])/11);if(m<=24)return Math.round(p[1]+(m-12)*(p[2]-p[1])/12);return Math.round(p[2]+(m-24)*(p[3]-p[2])/12);}
+function compute(){
+ const c=state.commercial,o=state.operations,f=state.finance,mixed=state.financing==="mixte";
+ const loan=mixed?zeroLoan(f):0,holding=mixed?num(f.holding):num(f.holdingOnly),transfer=mixed?num(f.transferMixte):num(f.transferHolding);
+ const insHold=mixed?num(f.insuranceHolding):num(f.insuranceHoldingOnly),feesHold=(mixed?num(f.feesHolding):num(f.feesHoldingOnly))+num(f.shares);
+ const debtYear=annuity(holding,num(f.annualRate),num(f.years),num(f.firstCapitalMonth));
+ const fixed=Object.values(o.costs).reduce((a,x)=>a+num(x),0);
+ const perClient=num(c.hoursPerClient)*num(c.marginPerHour),loanPayment=loan/Math.max(1,num(f.zeroMonths));
+ let cashA=0,cashH=0,history=[],invoiceHistory=[];
+ for(let m=1;m<=36;m++){
+  const yr=Math.ceil(m/12),monthIn=(m-1)%12;
+  const clients=ramp(c[state.growth],m),hours=clients*num(c.hoursPerClient);
+  const billed=hours*num(c.caPerHour),direct=hours*Math.max(0,num(c.caPerHour)-num(c.marginPerHour));
+  invoiceHistory.push(billed);
+  const lag=Math.max(0,Math.min(2,Math.round(num(c.paymentLag)))),income=(m-lag>=1)?invoiceHistory[m-1-lag]:0;
+  const fixedCost=fixed*Math.pow(1+num(o.annualIndex)/100,yr-1);
+  const annualComm=num(o.communication[yr-1]),step=o.communicationPayment;
+  const comm=step==="annual"?(monthIn===0?annualComm:0):step==="quarterly"?(monthIn%3===0?annualComm/4:0):annualComm/12;
+  const entry=m>=num(o.entryFrom)&&m<=num(o.entryTo)?num(o.entryFee)/Math.max(1,(num(o.entryTo)-num(o.entryFrom)+1)):0;
+  const oneoff=(m===1?num(o.startup):0)+(m===13?num(o.annualOtherY2):0)+(m===25?num(o.annualOtherY3):0);
+  const zeroPay=loan>0&&m>=num(f.zeroStartMonth)&&m<num(f.zeroStartMonth)+num(f.zeroMonths)?loanPayment+num(f.zeroInsurance):0;
+  const zeroFees=m===1&&mixed?num(f.zeroFees):0;
+  const holdInterest=m===12&&num(f.firstCapitalMonth)>12&&num(f.interestYear1)===1?holding*num(f.annualRate)/100:0;
+  const holdAnnuity=m>=num(f.firstCapitalMonth)&&(m-num(f.firstCapitalMonth))%12===0?debtYear:0;
+  const holdInsurance=m<=num(f.years)*12?insHold:0;
+  const holdFees=m===1?feesHold:0;
+  const dividendC=m%12===0?num(f.dividendClermont[yr-1]):0;
+  const dividendA=m%12===0?num(f.dividendAgency[yr-1]):0;
+  const holdDraw=m===1?holding+num(f.holdingEquity):0;
+  const holdTransfer=m===1?transfer:0;
+  const agencyLoan=m===1?loan+num(f.agencyEquity):0;
+  const agencyReceived=holdTransfer+agencyLoan;
+  const holdOut=holdInterest+holdAnnuity+holdInsurance+holdFees;
+  const agencyOut=direct+fixedCost+comm+entry+oneoff+zeroPay+zeroFees+dividendA;
+  cashH+=holdDraw-holdTransfer-holdOut+dividendC+dividendA;
+  cashA+=income+agencyReceived-agencyOut;
+  let operationalPE=perClient?(fixedCost+annualComm/12)/perClient:0;
+  let agencyPE=perClient?(fixedCost+annualComm/12+entry+zeroPay)/perClient:0;
+  let groupPE=perClient?(fixedCost+annualComm/12+entry+zeroPay+debtYear/12+insHold)/perClient:0;
+  history.push({m,yr,clients,hours,billed,direct,income,fixedCost,comm,entry,oneoff,zeroPay,agencyOut,holdOut,holdAnnuity,holdInterest,holdInsurance,
+   dividendC,dividendA,agencyReceived,cashA,cashH,cashG:cashA+cashH,operationalPE,agencyPE,groupPE,monthPE:perClient?(fixedCost+comm+entry+zeroPay+holdOut)/perClient:0});
+ }
+ return history;
+}
+function points(arr,w,h,pad,min,max){const span=Math.max(1e-6,max-min),dx=(w-pad*2)/Math.max(1,arr.length-1);return arr.map((v,i)=>(pad+i*dx).toFixed(1)+","+(h-pad-(v-min)/span*(h-2*pad)).toFixed(1)).join(" ");}
+function chart(target,series,labels){
+ const el=document.getElementById(target);if(!el||!last.length)return;
+ const w=680,h=245,p=40;
+ const vals=series.flatMap(s=>last.map(x=>s.fn(x))).filter(Number.isFinite);
+ let min=Math.min(...vals,0),max=Math.max(...vals,0);
+ if(max===min){max+=1;min-=1}
+ const delta=max-min,minp=min-delta*.09,maxp=max+delta*.1;
+ let svg='<svg viewBox="0 0 '+w+' '+h+'" role="img" aria-label="'+labels+'">';
+ for(let k=0;k<=4;k++){
+  let v=minp+(maxp-minp)*k,y=h-p-(k/4)*(h-2*p);
+  svg+='<line x1="'+p+'" y1="'+y+'" x2="'+(w-p)+'" y2="'+y+'" stroke="#e4ecee" stroke-dasharray="3 4"/>';
+  svg+='<text x="'+(p-7)+'" y="'+(y+4)+'" text-anchor="end" fill="#90a0a8" font-size="10">'+(maxp>1000?Math.round(v/1000)+"k":Math.round(v))+'</text>';
+ }
+ for(let tick of [1,12,24,36]){
+  let x=p+(tick-1)*(w-2*p)/35;
+  svg+='<text x="'+x+'" y="'+(h-12)+'" text-anchor="middle" fill="#90a0a8" font-size="11">M'+tick+'</text>';
+ }
+ if(minp<0&&maxp>0){let y=h-p-(0-minp)/(maxp-minp)*(h-2*p);svg+='<line x1="'+p+'" x2="'+(w-p)+'" y1="'+y+'" y2="'+y+'" stroke="#b95b4f" stroke-dasharray="5 5" stroke-width="1.5"/>'}
+ for(let s of series){let d=points(last.map(s.fn),w,h,p,minp,maxp);svg+='<polyline points="'+d+'" fill="none" stroke="'+s.color+'" stroke-width="'+(s.weight||2.7)+'" stroke-linecap="round" stroke-linejoin="round"/>';}
+ svg+='</svg>';el.innerHTML=svg;
+}
+function kpi(label,value,sub,warn){return '<article class="card '+(warn?"warn":"")+'"><div class="label">'+label+'</div><div class="big">'+value+'</div><div class="micro">'+sub+'</div></article>';}
+function render(){
+ last=compute();let h=last,c=state.commercial,f=state.finance,o=state.operations;
+ document.querySelectorAll("[data-growth]").forEach(b=>b.classList.toggle("on",b.dataset.growth===state.growth));
+ document.querySelectorAll("[data-finance]").forEach(b=>b.classList.toggle("on",b.dataset.finance===state.financing));
+ let minA=Math.min(...h.map(x=>x.cashA)),minH=Math.min(...h.map(x=>x.cashH)),minG=Math.min(...h.map(x=>x.cashG));
+ let groupYear2=h.slice(12,24).reduce((a,x)=>a+x.groupPE,0)/12;
+ let firstCap=Math.max(1,Math.round(num(f.firstCapitalMonth)));
+ let firstCapRecord=h.find(x=>x.m===firstCap);
+ document.getElementById("kpis").innerHTML=[
+  kpi("Clients fin A1",h[11].clients,"Scénario "+state.growth,false),
+  kpi("PE exploitation A1",fmt(h[5].operationalPE),"Clients pour couvrir les frais opérationnels",false),
+  kpi("PE groupe lissé A2",fmt(groupYear2),"Inclut la dette holding lissée sur 12 mois",false),
+  kpi("Point bas trésorerie agence",euro(minA),"Sur les 36 premiers mois",minA<num(o.reserve)),
+  kpi("Point bas trésorerie holding",euro(minH),"Même si la trésorerie du groupe est positive",minH<0)
+ ].join("");
+ chart("clientChart",[{fn:x=>x.clients,color:"#2d7d77",weight:3.2},{fn:x=>x.groupPE,color:"#cf9c42"}],"Trajectoire clients et point d'équilibre");
+ const cashSeries=[{fn:x=>x.cashA,color:"#2d7d77"},{fn:x=>x.cashH,color:"#cf9c42"},{fn:x=>x.cashG,color:"#5b87bc",weight:3.4}];
+ chart("cashChart",cashSeries,"Trésorerie par entité");chart("cashChart2",cashSeries,"Trésorerie par entité");
+ document.getElementById("yearCards").innerHTML=[1,2,3].map(y=>{
+  let ar=h.filter(x=>x.yr===y),end=ar[11],avg=ar.reduce((a,x)=>a+x.clients,0)/12,margin=ar.reduce((a,x)=>a+x.billed-x.direct,0);
+  return '<div class="year"><span>ANNÉE '+y+'</span><strong>'+end.clients+' clients</strong><small>'+fmt(avg)+' clients/mois en moyenne</small><div style="margin-top:13px;border-top:1px solid #d8e3e5;padding-top:12px">Marge théorique : <b>'+euro(margin)+'</b><br>Cash agence : <b>'+euro(end.cashA)+'</b><br>Cash holding : <b style="color:'+(end.cashH<0?'#b13e38':'inherit')+'">'+euro(end.cashH)+'</b></div></div>';
+ }).join("");
+ let warn=[];
+ if(minH<0)warn.push('La holding atteint un point bas de '+euro(minH)+'. Sans distribution confirmée ni fonds conservés suffisants, son annuité ne peut pas être supposée financée.');
+ if(minA<num(o.reserve))warn.push('L’agence passe sous son seuil de trésorerie cible ('+euro(o.reserve)+').');
+ if(!warn.length)warn.push('Les deux structures conservent une trésorerie non négative dans les hypothèses actuelles. Vérifiez les coûts manquants et les conditions bancaires.');
+ document.getElementById("warningBox").innerHTML='<strong>À surveiller :</strong> '+warn.join(' ');
+ document.getElementById("cashKpis").innerHTML=[
+  kpi("Financement agence initial",euro(h[0].agencyReceived),"Avance holding + prêt création + apport",false),
+  kpi("Solde agence fin A2",euro(h[23].cashA),"Après droit d’entrée et crédit agence",h[23].cashA<0),
+  kpi("1re annuité capital holding",firstCapRecord?euro(firstCapRecord.holdAnnuity):"—","Mois "+firstCap+" · échéance hypothétique",false),
+  kpi("Point bas groupe",euro(minG),"Cash holding + cash agence",minG<0),
+  kpi("Point bas holding",euro(minH),"Dividendes non confirmés par défaut",minH<0)
+ ].join("");
+ document.getElementById("monthly").innerHTML=h.map(x=>'<tr><td><b>M'+x.m+'</b> · A'+x.yr+'</td><td>'+x.clients+'</td><td>'+euro(x.billed)+'</td><td>'+euro(x.income)+'</td><td>'+euro(x.direct)+'</td><td>'+euro(x.fixedCost+x.comm)+'</td><td>'+euro(x.entry)+'</td><td>'+euro(x.zeroPay)+'</td><td><b>'+euro(x.holdOut)+'</b></td><td class="'+(x.cashA<0?'neg':'pos')+'">'+euro(x.cashA)+'</td><td class="'+(x.cashH<0?'neg':'pos')+'">'+euro(x.cashH)+'</td><td class="'+(x.cashG<0?'neg':'pos')+'">'+euro(x.cashG)+'</td></tr>').join("");
+ const privacy=document.getElementById("privacyNote");privacy.innerHTML='<strong>Vos données restent locales.</strong> Aucun chiffre importé n’est déposé sur GitHub. Pour continuer sur un autre appareil, cliquez sur « Sauvegarder mes hypothèses », puis importez le fichier JSON privé sur cet appareil.';
+}
+const fields={
+ commercial:[
+ ["Heures / client / mois","commercial.hoursPerClient","h"],["CA / heure HT","commercial.caPerHour","€"],["Marge / heure","commercial.marginPerHour","€"],["Délai d’encaissement","commercial.paymentLag","mois (0 à 2)"]],
+ operations:[
+ ["Indexation charges / an","operations.annualIndex","%"],
+ ["Com A1 · à notre charge","operations.communication.0","€ HT"],["Com A2 · total","operations.communication.1","€ HT"],["Com A3 · total","operations.communication.2","€ HT"],
+ ["Droit d’entrée","operations.entryFee","€ HT"],["Droit entrée · 1er mois","operations.entryFrom","M"],["Droit entrée · dernier mois","operations.entryTo","M"],
+ ["Frais ponctuels au lancement","operations.startup","€ HT"],["Autres frais annuels A2","operations.annualOtherY2","€"],["Autres frais annuels A3","operations.annualOtherY3","€"],["Réserve cible agence","operations.reserve","€"]
+ ],
+ costs:[
+ ["Salaire brut responsable","salary"],["Charges employeur","employer"],["Mutuelle","mutuelle"],["IK / déplacements","travel"],["Loyer","rent"],["Charges locatives","rentCharges"],["Ximi","ximi"],
+ ["Téléphonie","phone"],["Expert-comptable","accountant"],["Paie / DSN","payroll"],["Frais bancaires","bankFees"],["Fournitures","supplies"],["Électricité","electricity"],["Internet","internet"],["Assurance","insurance"],["Autres charges","other"]
+ ],
+ finance:[
+ ["Prêt holding mixte","finance.holding","€"],["Holding seule · prêt","finance.holdingOnly","€"],["Taux nominal annuel","finance.annualRate","%"],
+ ["Durée holding","finance.years","ans"],["1re annuité avec capital","finance.firstCapitalMonth","M12 ou M24"],
+ ["Assurance holding mixte","finance.insuranceHolding","€/mois"],["Assurance holding seule","finance.insuranceHoldingOnly","€/mois"],
+ ["Frais dossier holding mixte","finance.feesHolding","€"],["Frais dossier holding seule","finance.feesHoldingOnly","€"],["Parts sociales","finance.shares","€"],
+ ["Avance holding vers agence · mixte","finance.transferMixte","€"],["Avance holding vers agence · holding seule","finance.transferHolding","€"],
+ ["Dépenses éligibles prêt création","finance.eligible","€"],["Taux finançable création","finance.zeroPercent","%"],["Plafond prêt création","finance.zeroCap","€"],
+ ["Durée prêt création supposée","finance.zeroMonths","mois"],["1re mensualité création","finance.zeroStartMonth","M"],["Assurance prêt création","finance.zeroInsurance","€/mois"],
+ ["Apport extérieur holding","finance.holdingEquity","€"],["Apport extérieur agence","finance.agencyEquity","€"]
+ ]
+};
+function makeField(label,path,unit){
+ let v=pathGet(path),step=unit==="%"?".1":"1";
+ return '<label class="field"><span class="lab">'+label+'</span><input type="number" step="'+step+'" data-input="'+path+'" value="'+num(v)+'"><span class="unit">'+unit+'</span></label>';
+}
+function addSelect(label,path,options){
+ const v=pathGet(path);return '<label class="field"><span class="lab">'+label+'</span><select data-select="'+path+'">'+options.map(x=>'<option value="'+x[0]+'"'+(x[0]===v?' selected':'')+'>'+x[1]+'</option>').join('')+'</select></label>';
+}
+function drawFields(){
+ document.getElementById("commercialFields").innerHTML=fields.commercial.map(x=>makeField(...x)).join("");
+ document.getElementById("operatingFields").innerHTML=fields.operations.map(x=>makeField(...x)).join("")+
+ addSelect("Paiement communication","operations.communicationPayment",[["monthly","Mensuel"],["quarterly","Trimestriel"],["annual","Annuel"]]);
+ document.getElementById("costFields").innerHTML=fields.costs.map(x=>makeField(x[0],"operations.costs."+x[1],"€/mois")).join("");
+ document.getElementById("rampFields").innerHTML=["prudent","central","ambitieux"].map(g=>[1,12,24,36].map((m,i)=>makeField(g.charAt(0).toUpperCase()+g.slice(1)+" · M"+m,"commercial."+g+"."+i,"clients")).join("")).join("");
+ document.getElementById("financeFields").innerHTML=fields.finance.map(x=>makeField(...x)).join("")+
+ addSelect("Intérêts payés à M12","finance.interestYear1",[[1,"Oui, hypothèse intérêt seul"],[0,"Non — faire confirmer le coût du différé"]]);
+ document.getElementById("divFields").innerHTML=
+ [1,2,3].map((n,i)=>makeField("Dividendes autres filiales A"+n,"finance.dividendClermont."+i,"€/an")).join("")+
+ [1,2,3].map((n,i)=>makeField("Dividendes agence vers holding A"+n,"finance.dividendAgency."+i,"€/an")).join("");
+ document.querySelectorAll("[data-input]").forEach(el=>el.addEventListener("change",()=>{
+  let x=num(el.value),p=el.dataset.input;
+  if(p==="commercial.paymentLag")x=Math.max(0,Math.min(2,Math.round(x)));
+  if(p==="finance.firstCapitalMonth")x=x===12?12:24;
+  pathSet(p,x);save();render();el.value=x;
+ }));
+ document.querySelectorAll("[data-select]").forEach(el=>el.addEventListener("change",()=>{
+  let p=el.dataset.select;pathSet(p,p==="finance.interestYear1"?num(el.value):el.value);save();render();
+ }));
+}
+document.querySelectorAll(".nav button").forEach(b=>b.addEventListener("click",()=>{
+ document.querySelectorAll(".nav button").forEach(x=>x.classList.toggle("active",x===b));
+ document.querySelectorAll(".tabpane").forEach(x=>x.classList.toggle("show",x.id===b.dataset.tab));
+ render();
+}));
+document.querySelectorAll("[data-growth]").forEach(b=>b.addEventListener("click",()=>{state.growth=b.dataset.growth;save();render()}));
+document.querySelectorAll("[data-finance]").forEach(b=>b.addEventListener("click",()=>{state.financing=b.dataset.finance;save();render()}));
+document.getElementById("exportBtn").addEventListener("click",()=>{
+ const blob=new Blob([JSON.stringify(state,null,2)],{type:"application/json;charset=utf-8"});
+ const url=URL.createObjectURL(blob),a=document.createElement("a");a.href=url;a.download="mes_hypotheses_agence_prive.json";a.click();setTimeout(()=>URL.revokeObjectURL(url),5000);
+});
+document.getElementById("importBtn").addEventListener("click",()=>document.getElementById("importFile").click());
+document.getElementById("importFile").addEventListener("change",async e=>{
+ const file=e.target.files[0];if(!file)return;
+ try{
+  const p=JSON.parse(await file.text());
+  if(!p||!p.commercial||!p.operations||!p.finance||!p.operations.costs||!p.commercial.central||!p.finance.dividendClermont)throw Error("Fichier incompatible");
+  state=p;state.growth=state.growth||"central";state.financing=state.financing||"mixte";
+  save();drawFields();render();alert("Profil privé chargé. Les valeurs sont mémorisées sur cet appareil.");
+ }catch(err){alert("Import impossible : "+err.message)}
+ e.target.value="";
+});
+document.getElementById("resetBtn").addEventListener("click",()=>{
+ if(!confirm("Effacer les valeurs de cet appareil et revenir à la démonstration ? Exportez votre profil avant si nécessaire."))return;
+ state=clone(DEMO);save();drawFields();render();
+});
+drawFields();render();
+</script></body></html>
