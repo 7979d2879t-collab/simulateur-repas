@@ -66,7 +66,7 @@ details{border:1px solid var(--line);border-radius:13px;margin:10px 0;background
  <div class="cards" id="kpis"></div>
  <div class="grid">
   <div class="panel"><span class="badge">Commercial</span><h2 style="margin-top:12px">Clients & point d’équilibre</h2><div class="subtitle">Le seuil groupe lissé répartit l’annuité holding sur 12 mois. Le mois de l’échéance réelle apparaît dans la trésorerie.</div><div id="clientChart" class="chart"></div><div class="legend"><span><i class="dot" style="background:#2d7d77"></i>Clients</span><span><i class="dot" style="background:#cf9c42"></i>PE groupe lissé</span></div></div>
-  <div class="panel"><span class="badge">Liquidités</span><h2 style="margin-top:12px">Deux trésoreries à surveiller</h2><div class="subtitle">Le transfert holding → agence ne constitue pas une entrée d’argent supplémentaire pour le groupe.</div><div id="cashChart" class="chart"></div><div class="legend"><span><i class="dot" style="background:#2d7d77"></i>Agence</span><span><i class="dot" style="background:#cf9c42"></i>Holding</span><span><i class="dot" style="background:#5b87bc"></i>Groupe</span></div></div>
+  <div class="panel"><span class="badge">Liquidités</span><h2 style="margin-top:12px">Deux trésoreries à surveiller</h2><div class="subtitle">Les transferts entre holding et agence ne créent pas de liquidités nouvelles pour le groupe.</div><div id="cashChart" class="chart"></div><div class="legend"><span><i class="dot" style="background:#2d7d77"></i>Agence</span><span><i class="dot" style="background:#cf9c42"></i>Holding</span><span><i class="dot" style="background:#5b87bc"></i>Groupe</span></div></div>
  </div>
  <div class="panel"><h2>Atterrissage par année</h2><div class="subtitle">Les chiffres HT tiennent compte des coûts directs payés dès le mois de l’intervention et du délai d’encaissement choisi.</div><div class="yeargrid" id="yearCards"></div></div>
  <div id="warningBox" class="note warn"></div>
@@ -74,14 +74,14 @@ details{border:1px solid var(--line);border-radius:13px;margin:10px 0;background
 <section id="cash" class="tabpane">
  <div class="cards" id="cashKpis"></div>
  <div class="panel"><h2>Trésorerie M1–M36</h2><p class="subtitle">Visualisez les 12 mois de différé, le versement d’intérêts éventuel, la première annuité avec capital et le remboursement du prêt création.</p><div id="cashChart2" class="chart"></div></div>
- <div class="panel"><h2>Tableau mensuel détaillé</h2><div class="subtitle">Les mois 12, 24 et 36 font apparaître les sorties bancaires annuelles. Scroll horizontal sur mobile.</div><div class="tablewrap"><table><thead><tr><th>Mois</th><th>Clients</th><th>CA facturé HT</th><th>Encaissements HT</th><th>Coûts directs</th><th>Charges + com</th><th>Droit d’entrée</th><th>Dette agence</th><th>Dette holding</th><th>Cash agence</th><th>Cash holding</th><th>Cash groupe</th></tr></thead><tbody id="monthly"></tbody></table></div></div>
+ <div class="panel"><h2>Tableau mensuel détaillé</h2><div class="subtitle">Les mois 12, 24 et 36 font apparaître les sorties bancaires annuelles. Scroll horizontal sur mobile.</div><div class="tablewrap"><table><thead><tr><th>Mois</th><th>Clients</th><th>CA facturé HT</th><th>Encaissements HT</th><th>Coûts directs</th><th>Charges + com</th><th>Droit d’entrée</th><th>Dette agence</th><th>Dette holding</th><th>Remb. avance → holding</th><th>Cash agence</th><th>Cash holding</th><th>Cash groupe</th></tr></thead><tbody id="monthly"></tbody></table></div></div>
 </section>
 <section id="settings" class="tabpane">
  <div class="note">Les cellules financières sont des <b>hypothèses modifiables</b> ; le simulateur n’est pas une offre bancaire. Notamment, la durée du prêt création, la date exacte de la première annuité et les dividendes futurs doivent encore être confirmés.</div>
  <div class="panel"><h2>01 · Commercial & facturation</h2><p class="subtitle">Profil commercial choisi en haut de page ; chaque profil suit une trajectoire linéaire entre les quatre jalons.</p><div class="formgrid" id="commercialFields"></div><details><summary>Définir les trois trajectoires clients</summary><div class="inside formgrid" id="rampFields"></div></details></div>
  <div class="panel"><h2>02 · Frais de fonctionnement & réseau</h2><p class="subtitle">Tous les montants de fournisseurs sont exprimés HT ; frais bancaires et paie en coût réel.</p><div class="formgrid" id="operatingFields"></div><details><summary>Voir le détail des charges fixes mensuelles</summary><div class="inside formgrid" id="costFields"></div></details></div>
  <div class="panel"><h2>03 · Crédit holding & prêt création</h2><p class="subtitle">Prêt création : 30 % des dépenses éligibles, dans la limite de 30 000 €. La holding ne peut pas le souscrire. Le différé est modélisé avec intérêts M12 et première annuité avec capital M24, sous réserve de confirmation.</p><div class="formgrid" id="financeFields"></div></div>
- <div class="panel"><h2>04 · Transferts & dividendes</h2><p class="subtitle">Les dividendes sont à zéro tant que leur calendrier et leur distribution ne sont pas établis. Les montants saisis transitent entre les entités sans être comptés deux fois dans le groupe.</p><div class="formgrid" id="divFields"></div></div>
+ <div class="panel"><h2>04 · Remboursement des avances & dividendes</h2><p class="subtitle">En présence d’une avance remboursable de la holding, le modèle peut financer ses annuités avec le surplus de trésorerie de l’agence, tout en conservant une réserve dans chaque société. Ce n’est pas un dividende : le mécanisme doit être validé par le comptable et la banque.</p><div class="formgrid" id="divFields"></div></div>
  <div class="note warn">Manquent toujours au modèle tant que vous ne les renseignez pas : fiscalité/TVA détaillée, éventuels coûts supplémentaires de l’agence existante, garanties bancaires et décalages de paiement réels des fournisseurs. Le modèle raisonne en trésorerie HT simplifiée.</div>
  <button class="btn" id="resetBtn" type="button">↺ Revenir aux valeurs de démonstration</button>
 </section>
@@ -95,13 +95,15 @@ const DEMO={
  commercial:{prudent:[1,18,33,45],central:[2,22,40,55],ambitieux:[3,28,52,70],hoursPerClient:30,caPerHour:30,marginPerHour:11,paymentLag:1},
  operations:{costs:{salary:2500,employer:850,mutuelle:80,travel:600,rent:650,rentCharges:150,ximi:600,phone:40,accountant:300,payroll:50,bankFees:50,supplies:100,electricity:0,internet:0,insurance:0,other:0},
  annualIndex:0,communication:[7500,20000,24000],communicationPayment:"monthly",entryFee:15000,entryFrom:13,entryTo:24,startup:12000,annualOtherY2:150,annualOtherY3:150,reserve:10000},
- finance:{holding:90000,holdingOnly:120000,annualRate:4.7,years:7,firstCapitalMonth:24,interestYear1:1,insuranceHolding:43,insuranceHoldingOnly:56,feesHolding:900,feesHoldingOnly:1200,shares:30,transferMixte:80000,transferHolding:105000,eligible:100000,zeroPercent:30,zeroCap:30000,zeroMonths:60,zeroStartMonth:1,zeroInsurance:0,zeroFees:0,dividendClermont:[0,0,0],dividendAgency:[0,0,0],holdingEquity:0,agencyEquity:0}
+ finance:{holding:90000,holdingOnly:120000,annualRate:4.7,years:7,firstCapitalMonth:24,interestYear1:1,insuranceHolding:43,insuranceHoldingOnly:56,feesHolding:900,feesHoldingOnly:1200,shares:30,transferMixte:80000,transferHolding:105000,autoAdvanceRepayment:1,holdingReserve:5000,eligible:100000,zeroPercent:30,zeroCap:30000,zeroMonths:60,zeroStartMonth:1,zeroInsurance:0,zeroFees:0,dividendClermont:[0,0,0],dividendAgency:[0,0,0],holdingEquity:0,agencyEquity:0}
 };
 const clone=x=>JSON.parse(JSON.stringify(x));
 function load(){
  try{let s=localStorage.getItem(KEY);if(!s)return clone(DEMO);let p=JSON.parse(s);if(!p||!p.commercial||!p.operations||!p.finance)throw Error("Format non reconnu");return p;}catch(e){return clone(DEMO);}
 }
 let state=load(),last=[];
+function ensureTransferSettings(){if(state.finance.autoAdvanceRepayment==null)state.finance.autoAdvanceRepayment=1;if(state.finance.holdingReserve==null)state.finance.holdingReserve=5000;}
+ensureTransferSettings();
 const euro=x=>new Intl.NumberFormat("fr-FR",{style:"currency",currency:"EUR",maximumFractionDigits:0}).format(x);
 const fmt=x=>new Intl.NumberFormat("fr-FR",{maximumFractionDigits:1}).format(x);
 const num=x=>Number.isFinite(+x)?+x:0;
@@ -118,7 +120,7 @@ function compute(){
  const debtYear=annuity(holding,num(f.annualRate),num(f.years),num(f.firstCapitalMonth));
  const fixed=Object.values(o.costs).reduce((a,x)=>a+num(x),0);
  const perClient=num(c.hoursPerClient)*num(c.marginPerHour),loanPayment=loan/Math.max(1,num(f.zeroMonths));
- let cashA=0,cashH=0,history=[],invoiceHistory=[];
+ let cashA=0,cashH=0,advanceOutstanding=transfer,history=[],invoiceHistory=[];
  for(let m=1;m<=36;m++){
   const yr=Math.ceil(m/12),monthIn=(m-1)%12;
   const clients=ramp(c[state.growth],m),hours=clients*num(c.hoursPerClient);
@@ -146,11 +148,16 @@ function compute(){
   const agencyOut=direct+fixedCost+comm+entry+oneoff+zeroPay+zeroFees+dividendA;
   cashH+=holdDraw-holdTransfer-holdOut+dividendC+dividendA;
   cashA+=income+agencyReceived-agencyOut;
+  // Sous réserve d'une avance juridiquement remboursable : transférer uniquement le surplus disponible.
+  const targetHolding=Math.max(0,num(f.holdingReserve));
+  const availableAgency=Math.max(0,cashA-Math.max(0,num(o.reserve)));
+  const advanceRepayment=f.autoAdvanceRepayment!==0?Math.min(Math.max(0,targetHolding-cashH),availableAgency,advanceOutstanding):0;
+  cashA-=advanceRepayment;cashH+=advanceRepayment;advanceOutstanding-=advanceRepayment;
   let operationalPE=perClient?(fixedCost+annualComm/12)/perClient:0;
   let agencyPE=perClient?(fixedCost+annualComm/12+entry+zeroPay)/perClient:0;
   let groupPE=perClient?(fixedCost+annualComm/12+entry+zeroPay+debtYear/12+insHold)/perClient:0;
   history.push({m,yr,clients,hours,billed,direct,income,fixedCost,comm,entry,oneoff,zeroPay,agencyOut,holdOut,holdAnnuity,holdInterest,holdInsurance,
-   dividendC,dividendA,agencyReceived,cashA,cashH,cashG:cashA+cashH,operationalPE,agencyPE,groupPE,monthPE:perClient?(fixedCost+comm+entry+zeroPay+holdOut)/perClient:0});
+   dividendC,dividendA,agencyReceived,advanceRepayment,advanceOutstanding,cashA,cashH,cashG:cashA+cashH,operationalPE,agencyPE,groupPE,monthPE:perClient?(fixedCost+comm+entry+zeroPay+holdOut)/perClient:0});
  }
  return history;
 }
@@ -190,7 +197,7 @@ function render(){
   kpi("PE exploitation A1",fmt(h[5].operationalPE),"Clients pour couvrir les frais opérationnels",false),
   kpi("PE groupe lissé A2",fmt(groupYear2),"Inclut la dette holding lissée sur 12 mois",false),
   kpi("Point bas trésorerie agence",euro(minA),"Sur les 36 premiers mois",minA<num(o.reserve)),
-  kpi("Point bas trésorerie holding",euro(minH),"Même si la trésorerie du groupe est positive",minH<0)
+  kpi("Point bas trésorerie holding",euro(minH),"Après remboursements d’avance simulés",minH<0)
  ].join("");
  chart("clientChart",[{fn:x=>x.clients,color:"#2d7d77",weight:3.2},{fn:x=>x.groupPE,color:"#cf9c42"}],"Trajectoire clients et point d'équilibre");
  const cashSeries=[{fn:x=>x.cashA,color:"#2d7d77"},{fn:x=>x.cashH,color:"#cf9c42"},{fn:x=>x.cashG,color:"#5b87bc",weight:3.4}];
@@ -209,9 +216,9 @@ function render(){
   kpi("Solde agence fin A2",euro(h[23].cashA),"Après droit d’entrée et crédit agence",h[23].cashA<0),
   kpi("1re annuité capital holding",firstCapRecord?euro(firstCapRecord.holdAnnuity):"—","Mois "+firstCap+" · échéance hypothétique",false),
   kpi("Point bas groupe",euro(minG),"Cash holding + cash agence",minG<0),
-  kpi("Point bas holding",euro(minH),"Dividendes non confirmés par défaut",minH<0)
+  kpi("Point bas holding",euro(minH),"Après remboursements d’avance simulés",minH<0)
  ].join("");
- document.getElementById("monthly").innerHTML=h.map(x=>'<tr><td><b>M'+x.m+'</b> · A'+x.yr+'</td><td>'+x.clients+'</td><td>'+euro(x.billed)+'</td><td>'+euro(x.income)+'</td><td>'+euro(x.direct)+'</td><td>'+euro(x.fixedCost+x.comm)+'</td><td>'+euro(x.entry)+'</td><td>'+euro(x.zeroPay)+'</td><td><b>'+euro(x.holdOut)+'</b></td><td class="'+(x.cashA<0?'neg':'pos')+'">'+euro(x.cashA)+'</td><td class="'+(x.cashH<0?'neg':'pos')+'">'+euro(x.cashH)+'</td><td class="'+(x.cashG<0?'neg':'pos')+'">'+euro(x.cashG)+'</td></tr>').join("");
+ document.getElementById("monthly").innerHTML=h.map(x=>'<tr><td><b>M'+x.m+'</b> · A'+x.yr+'</td><td>'+x.clients+'</td><td>'+euro(x.billed)+'</td><td>'+euro(x.income)+'</td><td>'+euro(x.direct)+'</td><td>'+euro(x.fixedCost+x.comm)+'</td><td>'+euro(x.entry)+'</td><td>'+euro(x.zeroPay)+'</td><td><b>'+euro(x.holdOut)+'</b></td><td>'+euro(x.advanceRepayment)+'</td><td class="'+(x.cashA<0?'neg':'pos')+'">'+euro(x.cashA)+'</td><td class="'+(x.cashH<0?'neg':'pos')+'">'+euro(x.cashH)+'</td><td class="'+(x.cashG<0?'neg':'pos')+'">'+euro(x.cashG)+'</td></tr>').join("");
  const privacy=document.getElementById("privacyNote");privacy.innerHTML='<strong>Vos données restent locales.</strong> Aucun chiffre importé n’est déposé sur GitHub. Pour continuer sur un autre appareil, cliquez sur « Sauvegarder mes hypothèses », puis importez le fichier JSON privé sur cet appareil.';
 }
 const fields={
@@ -254,6 +261,8 @@ function drawFields(){
  document.getElementById("financeFields").innerHTML=fields.finance.map(x=>makeField(...x)).join("")+
  addSelect("Intérêts payés à M12","finance.interestYear1",[[1,"Oui, hypothèse intérêt seul"],[0,"Non — faire confirmer le coût du différé"]]);
  document.getElementById("divFields").innerHTML=
+ makeField("Réserve minimale holding","finance.holdingReserve","€")+
+ addSelect("Remboursement automatique de l’avance","finance.autoAdvanceRepayment",[[1,"Oui · surplus disponibles"],[0,"Non · aucun remboursement"]])+
  [1,2,3].map((n,i)=>makeField("Dividendes autres filiales A"+n,"finance.dividendClermont."+i,"€/an")).join("")+
  [1,2,3].map((n,i)=>makeField("Dividendes agence vers holding A"+n,"finance.dividendAgency."+i,"€/an")).join("");
  document.querySelectorAll("[data-input]").forEach(el=>el.addEventListener("change",()=>{
@@ -263,7 +272,7 @@ function drawFields(){
   pathSet(p,x);save();render();el.value=x;
  }));
  document.querySelectorAll("[data-select]").forEach(el=>el.addEventListener("change",()=>{
-  let p=el.dataset.select;pathSet(p,p==="finance.interestYear1"?num(el.value):el.value);save();render();
+  let p=el.dataset.select;pathSet(p,(p==="finance.interestYear1"||p==="finance.autoAdvanceRepayment")?num(el.value):el.value);save();render();
  }));
 }
 document.querySelectorAll(".nav button").forEach(b=>b.addEventListener("click",()=>{
@@ -283,7 +292,7 @@ document.getElementById("importFile").addEventListener("change",async e=>{
  try{
   const p=JSON.parse(await file.text());
   if(!p||!p.commercial||!p.operations||!p.finance||!p.operations.costs||!p.commercial.central||!p.finance.dividendClermont)throw Error("Fichier incompatible");
-  state=p;state.growth=state.growth||"central";state.financing=state.financing||"mixte";
+  state=p;state.growth=state.growth||"central";state.financing=state.financing||"mixte";ensureTransferSettings();
   save();drawFields();render();alert("Profil privé chargé. Les valeurs sont mémorisées sur cet appareil.");
  }catch(err){alert("Import impossible : "+err.message)}
  e.target.value="";
