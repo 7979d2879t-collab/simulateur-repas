@@ -141,6 +141,8 @@ function legacyExpenses(s){
  rows.push(makeRow("comm-local","Communication","Communication locale","communication",real?[c[0],19000,23000]:[c[0],c[1],c[2]]));
  rows.push(makeRow("comm-region","Communication","Communication régionale","communication",real?[0,3000,5000]:[0,0,0]));
  rows.push(makeRow("entree","Réseau","Droit d’entrée","entry",[0,num(o.entryFee),0]));
+ rows.push(makeRow("royalty-brand","Réseau","Redevance enseigne (% CA HT)","royalty",[0,0,0]));
+ rows.push(makeRow("royalty-fixed","Réseau","Redevance enseigne fixe","monthly",[0,0,0]));
  if(real){rows.push(makeRow("formation","Réseau","Formation initiale responsable","oneoff",[5000,0,0]));rows.push(makeRow("ximi-install","Réseau","Installation Ximi","oneoff",[3500,0,0]));rows.push(makeRow("hardware","Local","Informatique / équipement","oneoff",[1500,0,0]));rows.push(makeRow("creation","Administration","Frais juridiques / création","oneoff",[1500,0,0]));}
  else rows.push(makeRow("startup-legacy","Autres","Frais de lancement (profil importé)","oneoff",[num(o.startup),0,0]));
  rows.push(makeRow("deposit","Local","Dépôt de garantie (cash)","cash",[0,0,0]));rows.push(makeRow("lease","Local","Frais de bail / agence","oneoff",[0,0,0]));rows.push(makeRow("cfe","Administration","CFE / taxes locales","annual",[0,0,0]));
@@ -152,7 +154,11 @@ function ensureBudget(){
  if(f.totalBorrowed==null)f.totalBorrowed=state.financing==="holding"?num(f.holdingOnly):num(f.holding)+Math.min(num(f.eligible)*num(f.zeroPercent)/100,num(f.zeroCap));
  if(f.cashKeptHolding==null)f.cashKeptHolding=Math.max(0,num(f.holding)-num(f.transferMixte));
  if(!Array.isArray(state.expenses))state.expenses=legacyExpenses(state);
+ if(!state.expenses.some(x=>x.id==="royalty-brand"))state.expenses.push(makeRow("royalty-brand","Réseau","Redevance enseigne (% CA HT)","royalty",[0,0,0]));
+ if(!state.expenses.some(x=>x.id==="royalty-fixed"))state.expenses.push(makeRow("royalty-fixed","Réseau","Redevance enseigne fixe","monthly",[0,0,0]));
  if(!o.communicationPayment)o.communicationPayment="monthly";
+ if(!o.royaltyBase)o.royaltyBase="billed";
+ if(o.royaltyAlreadyInMargin==null)o.royaltyAlreadyInMargin=0;
 }
 ensureBudget();
 function loanSplit(){
@@ -161,7 +167,12 @@ function loanSplit(){
  return {total,creation,holding,transfer};
 }
 function expenseByType(year,type){return state.expenses.filter(x=>x.type===type).reduce((a,x)=>a+Math.max(0,num(x.values[year-1])),0);}
-function expenseAnnualTotal(year){return state.expenses.reduce((a,x)=>a+(x.type==="monthly"?12:1)*Math.max(0,num(x.values[year-1])),0);}
+function expenseAnnualTotal(year){return state.expenses.filter(x=>x.type!=="royalty").reduce((a,x)=>a+(x.type==="monthly"?12:1)*Math.max(0,num(x.values[year-1])),0);}
+function royaltyRate(year){return state.expenses.filter(x=>x.type==="royalty").reduce((a,x)=>a+Math.max(0,num(x.values[year-1]))/100,0);}
+function effectiveMarginPerHour(year){
+ const c=state.commercial,o=state.operations;
+ return num(c.marginPerHour)-(num(o.royaltyAlreadyInMargin)===1?0:royaltyRate(year)*num(c.caPerHour));
+}
 function marginTarget(year){
  const f=state.finance,o=state.operations,sp=loanSplit(),monthly=expenseByType(year,"monthly")*Math.pow(1+num(o.annualIndex)/100,year-1);
  const annual=(expenseByType(year,"annual")+expenseByType(year,"communication")+expenseByType(year,"entry"))/12;
@@ -169,11 +180,15 @@ function marginTarget(year){
  const first=Math.max(12,num(f.firstCapitalMonth));
  const holdAnnual=(year*12<first?(year===1&&first>12&&num(f.interestYear1)===1?sp.holding*num(f.annualRate)/100:0):annuity(sp.holding,num(f.annualRate),num(f.years),first))/12;
  const ins=state.financing==="mixte"?num(f.insuranceHolding):num(f.insuranceHoldingOnly),div=Math.max(0,num(f.dividendClermont[year-1]))/12;
- const operating=monthly+annual+creation,group=Math.max(operating,operating+holdAnnual+ins-div);
- const perHour=num(state.commercial.marginPerHour),perClient=perHour*num(state.commercial.hoursPerClient);
- return {operating,group,hours:perHour>0?group/perHour:0,clients:perClient>0?group/perClient:0,holdingMonthly:holdAnnual};
+ const operating=monthly+annual+creation,cashNeeded=Math.max(operating,operating+holdAnnual+ins-div);
+ const perHour=effectiveMarginPerHour(year),perClient=perHour*num(state.commercial.hoursPerClient);
+ // "group" is the gross margin at this sales level using the configured Ximi margin/hour.
+ // When the margin/hour is before royalties, gross margin target includes the extra
+ // turnover required to pay royalties. If it already includes royalties, no second deduction.
+ const hours=perHour>0?cashNeeded/perHour:null,clients=perClient>0?cashNeeded/perClient:null;
+ const grossMargin=hours==null?null:hours*num(state.commercial.marginPerHour);
+ return {operating,group:grossMargin,netNeeded:cashNeeded,hours,clients,holdingMonthly:holdAnnual,royaltyRate:royaltyRate(year),effectiveMarginPerHour:perHour,impossible:hours==null};
 }
-
 function compute(){
  const c=state.commercial,o=state.operations,f=state.finance,sp=loanSplit(),loan=sp.creation,holding=sp.holding,transfer=sp.transfer,mixed=state.financing==="mixte";
  const ins=mixed?num(f.insuranceHolding):num(f.insuranceHoldingOnly),fees=(mixed?num(f.feesHolding):num(f.feesHoldingOnly))+num(f.shares),ann=annuity(holding,num(f.annualRate),num(f.years),num(f.firstCapitalMonth));
