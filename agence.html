@@ -31,6 +31,8 @@ details{border:1px solid var(--line);border-radius:13px;margin:10px 0;background
 @media(max-width:680px){.hero{padding:25px 16px 38px}.cards{grid-template-columns:repeat(2,1fr)}.card{padding:14px}.formgrid{grid-template-columns:repeat(2,1fr)}.yeargrid{grid-template-columns:1fr}.sitebar .brand{width:100%}.sitebar a{flex:1;text-align:center}.nav button{flex:1}.panel{padding:15px}.field{padding:9px}}
 @media(max-width:420px){.formgrid{grid-template-columns:1fr}.cards{grid-template-columns:1fr 1fr}}
 @media print{.sitebar,.hero,.controls,.nav,.footer,.no-print{display:none!important}.tabpane{display:block!important}.panel{box-shadow:none;break-inside:avoid}}
+.exp-wrap{overflow-x:auto;border:1px solid #dae6e7;border-radius:12px}
+.exp-table{min-width:960px}.exp-table th,.exp-table td{text-align:left}.exp-table th:nth-child(n+4),.exp-table td:nth-child(n+4){text-align:right}.exp-table input,.exp-table select{border:1px solid #d3dfe2;border-radius:7px;background:#fff;padding:8px;font-size:13px;width:100%;max-width:122px}.exp-table input.exp-label{min-width:170px;max-width:260px}.exp-table input.exp-month{max-width:58px}.exp-table .exp-col{min-width:108px}.exp-table button{border-radius:7px;border:1px solid #eed0cc;background:#fff4f2;color:#a33c35;padding:6px 9px}.expense-total{background:#e3f3ee!important;font-weight:800}.loan-main{background:linear-gradient(115deg,#17324d,#256c70);color:#fff;border-radius:17px;padding:20px;display:grid;grid-template-columns:1.2fr 1fr;gap:18px;margin-bottom:16px;align-items:center}.loan-main h2{margin:0 0 8px;font-size:17px}.loan-main p{margin:0;font-size:12px;color:#cae7e5;line-height:1.55}.loan-main input{border:2px solid #9cd4c8;background:#fff;border-radius:12px;font-size:31px;font-weight:850;color:#17324d;max-width:100%;width:100%;padding:13px 16px}.loan-split{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}.loan-split span{border:1px solid #ffffff40;background:#ffffff12;padding:7px 10px;border-radius:9px;font-size:12px}.expense-mini{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.expense-mini>div{padding:14px;background:#f3f8f6;border-radius:11px}.expense-mini strong{display:block;font-size:22px;color:#17324d;margin:6px 0}.expense-mini small{color:#6e8585}@media(max-width:680px){.loan-main{grid-template-columns:1fr}.expense-mini{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
@@ -47,6 +49,7 @@ details{border:1px solid var(--line);border-radius:13px;margin:10px 0;background
 <nav class="nav" aria-label="Pages du simulateur">
  <button type="button" data-tab="overview" class="active">⌂ Vue d’ensemble</button>
  <button type="button" data-tab="cash">◷ Trésorerie M1–M36</button>
+ <button type="button" data-tab="expenses">▤ Liste des dépenses</button>
  <button type="button" data-tab="settings">⚙ Mes hypothèses</button>
 </nav>
 <div class="controls">
@@ -62,6 +65,10 @@ details{border:1px solid var(--line);border-radius:13px;margin:10px 0;background
  <input type="file" id="importFile" accept=".json,application/json" hidden>
 </div>
 <div class="note warn" id="privacyNote"><strong>Version de démonstration.</strong> Ce site est public ; vos chiffres personnels ne figurent pas dans son code. Importez votre profil privé avec le bouton ci-dessus. Vos modifications sont ensuite mémorisées localement sur cet appareil et peuvent être sauvegardées dans un fichier JSON.</div>
+<section class="loan-main" aria-label="Financement total modifiable">
+ <div><h2>Montant total à emprunter</h2><p>Saisissez le financement global : le prêt création éventuel et le prêt de la holding se répartissent automatiquement.</p><div class="loan-split" id="loanSplit"></div></div>
+ <div><label for="loanTotalInput" style="font-size:12px;font-weight:800;display:block;margin-bottom:7px;color:#cce8e6">Emprunt global · €</label><input id="loanTotalInput" type="number" min="0" step="1000" inputmode="numeric" aria-label="Montant total de l'emprunt en euros"><p style="margin-top:8px">Le besoin mensuel de marge et la trésorerie seront recalculés automatiquement.</p></div>
+</section>
 <section id="overview" class="tabpane show">
  <div class="cards" id="kpis"></div>
  <div class="grid">
@@ -76,11 +83,22 @@ details{border:1px solid var(--line);border-radius:13px;margin:10px 0;background
  <div class="panel"><h2>Trésorerie M1–M36</h2><p class="subtitle">Visualisez les 12 mois de différé, le versement d’intérêts éventuel, la première annuité avec capital et le remboursement du prêt création.</p><div id="cashChart2" class="chart"></div></div>
  <div class="panel"><h2>Tableau mensuel détaillé</h2><div class="subtitle">Les mois 12, 24 et 36 font apparaître les sorties bancaires annuelles. Scroll horizontal sur mobile.</div><div class="tablewrap"><table><thead><tr><th>Mois</th><th>Clients</th><th>CA facturé HT</th><th>Encaissements HT</th><th>Coûts directs</th><th>Charges + com</th><th>Droit d’entrée</th><th>Dette agence</th><th>Dette holding</th><th>Remb. avance → holding</th><th>Cash agence</th><th>Cash holding</th><th>Cash groupe</th></tr></thead><tbody id="monthly"></tbody></table></div></div>
 </section>
+<section id="expenses" class="tabpane">
+ <div class="panel"><h2>Mes dépenses · A1 à A3</h2><p class="subtitle">Modifiez chaque poste directement, ajoutez vos propres lignes et retrouvez immédiatement leur impact sur la marge nécessaire et la trésorerie. Dépenses fournisseurs en HT ; salaires, charges et indemnités en coût réel.</p>
+ <div class="expense-mini" id="expenseTotals"></div>
+ <div class="note">Mensuel = montant par mois · Annuel = budget sur l’année · Ponctuel = payé une fois à la période indiquée · Droit d’entrée = réparti entre les mois définis dans « Mes hypothèses ». La réserve de trésorerie n’est jamais comptée comme dépense.</div>
+ <div class="exp-wrap"><table class="exp-table"><thead><tr><th>Catégorie</th><th>Dépense</th><th>Nature</th><th>A1 (€)</th><th>A2 (€)</th><th>A3 (€)</th><th>Mois*</th><th></th></tr></thead><tbody id="expenseTable"></tbody></table></div>
+ <div class="note warn" style="margin-top:15px">* Mois de paiement dans chaque année pour les dépenses ponctuelles et les cotisations annuelles. Les autres échéances utilisent les paramètres de financement et de communication.</div>
+ <div class="formgrid" style="margin-top:17px"><label class="field"><span class="lab">Nom de la nouvelle dépense</span><input id="newExpenseName" type="text" placeholder="Ex. formation RA Clermont" maxlength="95"></label>
+ <label class="field"><span class="lab">Catégorie</span><select id="newExpenseCat"><option>RH</option><option>Local</option><option>Réseau</option><option>Communication</option><option>Administration</option><option>Autres</option></select></label>
+ <label class="field"><span class="lab">Nature</span><select id="newExpenseType"><option value="monthly">Mensuel</option><option value="annual">Annuel</option><option value="oneoff">Ponctuel</option></select></label>
+ <div class="field" style="display:flex;align-items:end"><button id="addExpenseBtn" class="btn primary" type="button" style="width:100%">+ Ajouter une dépense</button></div></div></div>
+</section>
 <section id="settings" class="tabpane">
  <div class="note">Les cellules financières sont des <b>hypothèses modifiables</b> ; le simulateur n’est pas une offre bancaire. Notamment, la durée du prêt création, la date exacte de la première annuité et les dividendes futurs doivent encore être confirmés.</div>
  <div class="panel"><h2>01 · Commercial & facturation</h2><p class="subtitle">Profil commercial choisi en haut de page ; chaque profil suit une trajectoire linéaire entre les quatre jalons.</p><div class="formgrid" id="commercialFields"></div><details><summary>Définir les trois trajectoires clients</summary><div class="inside formgrid" id="rampFields"></div></details></div>
- <div class="panel"><h2>02 · Frais de fonctionnement & réseau</h2><p class="subtitle">Tous les montants de fournisseurs sont exprimés HT ; frais bancaires et paie en coût réel.</p><div class="formgrid" id="operatingFields"></div><details><summary>Voir le détail des charges fixes mensuelles</summary><div class="inside formgrid" id="costFields"></div></details></div>
- <div class="panel"><h2>03 · Crédit holding & prêt création</h2><p class="subtitle">Prêt création : 30 % des dépenses éligibles, dans la limite de 30 000 €. La holding ne peut pas le souscrire. Le différé est modélisé avec intérêts M12 et première annuité avec capital M24, sous réserve de confirmation.</p><div class="formgrid" id="financeFields"></div></div>
+ <div class="panel"><h2>02 · Paramètres des dépenses</h2><p class="subtitle">La liste modifiable de chaque coût A1/A2/A3 est désormais dans l’onglet « Liste des dépenses » : aucune double saisie nécessaire.</p><div class="formgrid" id="operatingFields"></div><div id="costFields" class="note">Ouvrez « Liste des dépenses » pour modifier salaires, loyer, Ximi, communication, frais ponctuels et droit d’entrée en direct.</div></div>
+ <div class="panel"><h2>03 · Crédit holding & prêt création</h2><p class="subtitle">Prêt création : 30 % des dépenses éligibles, dans la limite de 30 000 €. La holding ne peut pas le souscrire. Le différé est modélisé avec intérêts M12 et première annuité avec capital M24, sous réserve de confirmation.</p><div class="formgrid" id="financeFields"></div><div class="note">Le montant global se modifie dans la grande case en haut. Le prêt création à 0 % revient uniquement à l’exploitation, plafonné à 30 % des dépenses éligibles et à 30 000 €. La holding emprunte le solde et conserve la réserve que vous définissez ci-dessus.</div></div>
  <div class="panel"><h2>04 · Remboursement des avances & dividendes</h2><p class="subtitle">En présence d’une avance remboursable de la holding, le modèle peut financer ses annuités avec le surplus de trésorerie de l’agence, tout en conservant une réserve dans chaque société. Ce n’est pas un dividende : le mécanisme doit être validé par le comptable et la banque.</p><div class="formgrid" id="divFields"></div></div>
  <div class="note warn">Manquent toujours au modèle tant que vous ne les renseignez pas : fiscalité/TVA détaillée, éventuels coûts supplémentaires de l’agence existante, garanties bancaires et décalages de paiement réels des fournisseurs. Le modèle raisonne en trésorerie HT simplifiée.</div>
  <button class="btn" id="resetBtn" type="button">↺ Revenir aux valeurs de démonstration</button>
