@@ -81,13 +81,13 @@ details{border:1px solid var(--line);border-radius:13px;margin:10px 0;background
 <section id="cash" class="tabpane">
  <div class="cards" id="cashKpis"></div>
  <div class="panel"><h2>Trésorerie M1–M36</h2><p class="subtitle">Visualisez les 12 mois de différé, le versement d’intérêts éventuel, la première annuité avec capital et le remboursement du prêt création.</p><div id="cashChart2" class="chart"></div></div>
- <div class="panel"><h2>Tableau mensuel détaillé</h2><div class="subtitle">Les mois 12, 24 et 36 font apparaître les sorties bancaires annuelles. Scroll horizontal sur mobile.</div><div class="tablewrap"><table><thead><tr><th>Mois</th><th>Clients</th><th>CA facturé HT</th><th>Encaissements HT</th><th>Coûts directs</th><th>Charges + com</th><th>Frais ponctuels</th><th>Droit d’entrée</th><th>Dette agence</th><th>Dette holding</th><th>Remb. avance → holding</th><th>Cash agence</th><th>Cash holding</th><th>Cash groupe</th></tr></thead><tbody id="monthly"></tbody></table></div></div>
+ <div class="panel"><h2>Tableau mensuel détaillé</h2><div class="subtitle">Les mois 12, 24 et 36 font apparaître les sorties bancaires annuelles. Scroll horizontal sur mobile.</div><div class="tablewrap"><table><thead><tr><th>Mois</th><th>Clients</th><th>CA facturé HT</th><th>Encaissements HT</th><th>Coûts directs</th><th>Redevance enseigne</th><th>Charges + com</th><th>Frais ponctuels</th><th>Droit d’entrée</th><th>Dette agence</th><th>Dette holding</th><th>Remb. avance → holding</th><th>Cash agence</th><th>Cash holding</th><th>Cash groupe</th></tr></thead><tbody id="monthly"></tbody></table></div></div>
 </section>
 <section id="expenses" class="tabpane">
  <div class="panel"><h2>Mes dépenses · A1 à A3</h2><p class="subtitle">Modifiez chaque poste directement, ajoutez vos propres lignes et retrouvez immédiatement leur impact sur la marge nécessaire et la trésorerie. Dépenses fournisseurs en HT ; salaires, charges et indemnités en coût réel.</p>
  <div class="expense-mini" id="expenseTotals"></div>
- <div class="note">Mensuel = montant par mois · Annuel = budget sur l’année · Ponctuel = payé une fois à la période indiquée · Droit d’entrée = réparti entre les mois définis dans « Mes hypothèses ». La réserve de trésorerie n’est jamais comptée comme dépense.</div>
- <div class="exp-wrap"><table class="exp-table"><thead><tr><th>Catégorie</th><th>Dépense</th><th>Nature</th><th>A1 (€)</th><th>A2 (€)</th><th>A3 (€)</th><th>Mois*</th><th></th></tr></thead><tbody id="expenseTable"></tbody></table></div>
+ <div class="note">Mensuel = montant par mois · Annuel = budget sur l’année · Redevance % CA HT = taux appliqué chaque mois au chiffre d’affaires de l’agence · Ponctuel = payé une fois à la période indiquée · Droit d’entrée = réparti entre les mois définis dans « Mes hypothèses ». La réserve de trésorerie n’est jamais comptée comme dépense.</div>
+ <div class="exp-wrap"><table class="exp-table"><thead><tr><th>Catégorie</th><th>Dépense</th><th>Nature</th><th>A1 (€ / %)</th><th>A2 (€ / %)</th><th>A3 (€ / %)</th><th>Mois*</th><th></th></tr></thead><tbody id="expenseTable"></tbody></table></div>
  <div class="note warn" style="margin-top:15px">* Mois de paiement dans chaque année pour les dépenses ponctuelles et les cotisations annuelles. Les autres échéances utilisent les paramètres de financement et de communication.</div>
  <div class="formgrid" style="margin-top:17px"><label class="field"><span class="lab">Nom de la nouvelle dépense</span><input id="newExpenseName" type="text" placeholder="Ex. formation RA Clermont" maxlength="95"></label>
  <label class="field"><span class="lab">Catégorie</span><select id="newExpenseCat"><option>RH</option><option>Local</option><option>Réseau</option><option>Communication</option><option>Administration</option><option>Autres</option></select></label>
@@ -266,9 +266,11 @@ function render(){
  chart("cashChart",cashSeries,"Trésorerie par entité");chart("cashChart2",cashSeries,"Trésorerie par entité");
  document.getElementById("yearCards").innerHTML=[1,2,3].map(y=>{
   let ar=h.filter(x=>x.yr===y),end=ar[11],avg=ar.reduce((a,x)=>a+x.clients,0)/12,margin=ar.reduce((a,x)=>a+x.billed-x.direct,0);
-  return '<div class="year"><span>ANNÉE '+y+'</span><strong>'+end.clients+' clients</strong><small>'+fmt(avg)+' clients/mois en moyenne</small><div style="margin-top:13px;border-top:1px solid #d8e3e5;padding-top:12px">Marge théorique : <b>'+euro(margin)+'</b><br>Marge cible mensuelle : <b>'+euro(marginTarget(y).group)+'</b><br>Cash agence : <b>'+euro(end.cashA)+'</b><br>Cash holding : <b style="color:'+(end.cashH<0?'#b13e38':'inherit')+'">'+euro(end.cashH)+'</b></div></div>';
+  return '<div class="year"><span>ANNÉE '+y+'</span><strong>'+end.clients+' clients</strong><small>'+fmt(avg)+' clients/mois en moyenne</small><div style="margin-top:13px;border-top:1px solid #d8e3e5;padding-top:12px">Marge après redevance : <b>'+euro(margin-ar.reduce((s,x)=>s+x.royalty,0))+'</b><br>Redevance enseigne : <b>'+euro(ar.reduce((s,x)=>s+x.royalty,0))+'</b><br>Marge cible mensuelle : <b>'+euro(marginTarget(y).group)+'</b><br>Cash agence : <b>'+euro(end.cashA)+'</b><br>Cash holding : <b style="color:'+(end.cashH<0?'#b13e38':'inherit')+'">'+euro(end.cashH)+'</b></div></div>';
  }).join("");
  let warn=[];
+ if([1,2,3].every(y=>royaltyRate(y)===0))warn.push("Redevance d’enseigne : taux encore à 0 %. Renseignez les pourcentages A1, A2 et A3 dans « Liste des dépenses ». Le point d’équilibre reste provisoire.");
+ if([1,2,3].some(y=>effectiveMarginPerHour(y)<=0))warn.push("La redevance dépasse la marge horaire disponible : les seuils clients ne sont pas atteignables avec ces hypothèses.");
  if(minH<0)warn.push('La holding atteint un point bas de '+euro(minH)+'. Vous pouvez augmenter sa réserve initiale, prévoir des remboursements de l’avance ou renseigner des dividendes confirmés.');
  if(minA<num(o.reserve))warn.push('L’agence passe sous son seuil de trésorerie cible ('+euro(o.reserve)+').');
  if(!warn.length)warn.push('Les deux structures conservent une trésorerie non négative dans les hypothèses actuelles. Vérifiez les coûts manquants et les conditions bancaires.');
@@ -280,24 +282,27 @@ function render(){
   kpi("Point bas groupe",euro(minG),"Cash holding + cash agence",minG<0),
   kpi("Point bas holding",euro(minH),"Après remboursements d’avance simulés",minH<0)
  ].join("");
- document.getElementById("monthly").innerHTML=h.map(x=>'<tr><td><b>M'+x.m+'</b> · A'+x.yr+'</td><td>'+x.clients+'</td><td>'+euro(x.billed)+'</td><td>'+euro(x.income)+'</td><td>'+euro(x.direct)+'</td><td>'+euro(x.fixedCost+x.comm)+'</td><td>'+euro(x.oneoff)+'</td><td>'+euro(x.entry)+'</td><td>'+euro(x.zeroPay)+'</td><td><b>'+euro(x.holdOut)+'</b></td><td>'+euro(x.advanceRepayment)+'</td><td class="'+(x.cashA<0?'neg':'pos')+'">'+euro(x.cashA)+'</td><td class="'+(x.cashH<0?'neg':'pos')+'">'+euro(x.cashH)+'</td><td class="'+(x.cashG<0?'neg':'pos')+'">'+euro(x.cashG)+'</td></tr>').join("");
+ document.getElementById("monthly").innerHTML=h.map(x=>'<tr><td><b>M'+x.m+'</b> · A'+x.yr+'</td><td>'+x.clients+'</td><td>'+euro(x.billed)+'</td><td>'+euro(x.income)+'</td><td>'+euro(x.direct)+'</td><td>'+euro(x.royalty)+'</td><td>'+euro(x.fixedCost+x.comm)+'</td><td>'+euro(x.oneoff)+'</td><td>'+euro(x.entry)+'</td><td>'+euro(x.zeroPay)+'</td><td><b>'+euro(x.holdOut)+'</b></td><td>'+euro(x.advanceRepayment)+'</td><td class="'+(x.cashA<0?'neg':'pos')+'">'+euro(x.cashA)+'</td><td class="'+(x.cashH<0?'neg':'pos')+'">'+euro(x.cashH)+'</td><td class="'+(x.cashG<0?'neg':'pos')+'">'+euro(x.cashG)+'</td></tr>').join("");
  const privacy=document.getElementById("privacyNote");privacy.innerHTML='<strong>Vos données restent locales.</strong> Aucun chiffre importé n’est déposé sur GitHub. Pour continuer sur un autre appareil, cliquez sur « Sauvegarder mes hypothèses », puis importez le fichier JSON privé sur cet appareil.';
 }
 function escapeText(s){return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
 function renderExpenseTotals(){
  const el=document.getElementById("expenseTotals");if(!el)return;
- el.innerHTML=[1,2,3].map(y=>'<div><small>SORTIES A'+y+'</small><strong>'+euro(expenseAnnualTotal(y))+'</strong><small>Hors dette · dépôt éventuel inclus</small></div>').join("");
+ el.innerHTML=[1,2,3].map(y=>{
+  const royalty=last.filter(x=>x.yr===y).reduce((s,x)=>s+x.royalty,0);
+  return '<div><small>DÉPENSES A'+y+'</small><strong>'+euro(expenseAnnualTotal(y)+royalty)+'</strong><small>Dont redevance variable estimée : '+euro(royalty)+' · hors emprunts</small></div>';
+ }).join("");
 }
 function drawExpenses(){
  const body=document.getElementById("expenseTable");if(!body)return;
- const names={monthly:"Mensuel",annual:"Annuel",communication:"Communication",oneoff:"Ponctuel",entry:"Droit d’entrée",cash:"Dépôt / trésorerie"};
+ const names={monthly:"Mensuel",annual:"Annuel",communication:"Communication",royalty:"Redevance % CA HT",oneoff:"Ponctuel",entry:"Droit d’entrée",cash:"Dépôt / trésorerie"};
  body.innerHTML=state.expenses.map(row=>{
-  const locked=["entree","comm-local","comm-region"].includes(row.id),canDelete=!locked,choice=Object.keys(names).map(t=>'<option value="'+t+'"'+(t===row.type?' selected':'')+'>'+names[t]+'</option>').join("");
+  const locked=["entree","comm-local","comm-region","royalty-brand"].includes(row.id),canDelete=!locked,choice=Object.keys(names).map(t=>'<option value="'+t+'"'+(t===row.type?' selected':'')+'>'+names[t]+'</option>').join("");
   const safe=escapeText(row.id);
   return '<tr data-row="'+safe+'"><td>'+escapeText(row.cat)+'</td>'+
    '<td><input class="exp-label" aria-label="Libellé de dépense" data-exp-name="'+safe+'" value="'+escapeText(row.label)+'"></td>'+
    '<td><select aria-label="Nature" data-exp-type="'+safe+'" '+(locked?'disabled':'')+'>'+choice+'</select></td>'+
-   row.values.map((v,i)=>'<td><input class="exp-col" type="number" min="0" step="0.01" aria-label="Année '+(i+1)+'" data-exp-id="'+safe+'" data-exp-year="'+i+'" value="'+v+'"></td>').join("")+
+   row.values.map((v,i)=>'<td><input class="exp-col" type="number" min="0" step="0.01" title="'+(row.type==="royalty"?"Taux en % du CA HT":"Montant en euros")+'" aria-label="Année '+(i+1)+(row.type==="royalty"?" pourcentage":" montant en euros")+'" data-exp-id="'+safe+'" data-exp-year="'+i+'" value="'+v+'"></td>').join("")+
    '<td><input class="exp-month" type="number" min="1" max="12" step="1" data-exp-month="'+safe+'" value="'+row.month+'" '+(!["oneoff","annual","cash"].includes(row.type)?"disabled":"")+'></td>'+
    '<td>'+(canDelete?'<button type="button" data-exp-del="'+safe+'" aria-label="Supprimer cette dépense">×</button>':'')+'</td></tr>';
  }).join("");
@@ -352,7 +357,9 @@ function addSelect(label,path,options){
 function drawFields(){
  document.getElementById("commercialFields").innerHTML=fields.commercial.map(x=>makeField(...x)).join("");
  document.getElementById("operatingFields").innerHTML=fields.operations.map(x=>makeField(...x)).join("")+
- addSelect("Paiement communication","operations.communicationPayment",[["monthly","Mensuel"],["quarterly","Trimestriel"],["annual","Annuel"]]);
+ addSelect("Paiement communication","operations.communicationPayment",[["monthly","Mensuel"],["quarterly","Trimestriel"],["annual","Annuel"]])+
+ addSelect("Base de calcul redevance","operations.royaltyBase",[["billed","CA facturé HT"],["collected","CA encaissé HT"]])+
+ addSelect("Marge/h de départ","operations.royaltyAlreadyInMargin",[[0,"Avant redevance (valeur par défaut)"],[1,"Déjà nette de redevance"]]);
  /* Pas de double saisie : les dépenses se modifient uniquement dans leur liste. */
  document.getElementById("rampFields").innerHTML=["prudent","central","ambitieux"].map(g=>[1,12,24,36].map((m,i)=>makeField(g.charAt(0).toUpperCase()+g.slice(1)+" · M"+m,"commercial."+g+"."+i,"clients")).join("")).join("");
  document.getElementById("financeFields").innerHTML=fields.finance.map(x=>makeField(...x)).join("")+
@@ -369,7 +376,7 @@ function drawFields(){
   pathSet(p,x);save();render();el.value=x;
  }));
  document.querySelectorAll("[data-select]").forEach(el=>el.addEventListener("change",()=>{
-  let p=el.dataset.select;pathSet(p,(p==="finance.interestYear1"||p==="finance.autoAdvanceRepayment")?num(el.value):el.value);save();render();
+  let p=el.dataset.select;pathSet(p,(p==="finance.interestYear1"||p==="finance.autoAdvanceRepayment"||p==="operations.royaltyAlreadyInMargin")?num(el.value):el.value);save();render();
  }));
 }
 document.querySelectorAll(".nav button").forEach(b=>b.addEventListener("click",()=>{
