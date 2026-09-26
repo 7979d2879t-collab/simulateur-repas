@@ -473,8 +473,11 @@ function bestWholeDay(day,usage,restricted={}){
  return {open,best};
 }
 function breakfastType(r){
- if(r.id>=85&&r.id<=92)return 'both';
- if(r.id>=75&&r.id<=84)return 'savory';
+ // Classify the original recipe and all its portion variants by their actual type.
+ const sub=(r.sub||'').toUpperCase(),name=r.name.toLowerCase();
+ if(sub.includes('DUO')||name.startsWith('duo '))return 'both';
+ if(sub.includes('SALÉ')||/œuf|omelette|jambon|thon|croque|tartine|feta/.test(name))return 'savory';
+ if(sub.includes('SUCRÉ'))return 'sweet';
  return 'sweet';
 }
 function breakfastCandidates(){
@@ -494,7 +497,7 @@ function changeBreakfastMode(mode){
  localStorage.setItem('breakfastMode',mode);
  const eligible=breakfastCandidates();
  const unlocked=weeklySlotLocks().breakfast?[]:[...document.querySelectorAll('select[data-slot="breakfast"]')];
- if(!unlocked.length){update();return}
+ if(!unlocked.length){document.getElementById('slotChangeStatus').textContent='Petits-déjeuners verrouillés : décoche « Garder » avant de changer le type.';update();return}
  const history=JSON.parse(localStorage.getItem(RECIPE_HISTORY_KEY)||'{}');
  const oldAuto=JSON.parse(localStorage.getItem('mealAutoValuesV1')||'{}');
  // Optimize the breakfast pair against the rest of each day; leave all other meals unchanged.
@@ -512,11 +515,12 @@ function changeBreakfastMode(mode){
   scores+=Math.abs(count[0]-count[1])*.7;
   if(!best||scores<best.scores)best={scores,assign};
  }
+ if(!best){document.getElementById('slotChangeStatus').textContent='Pas assez de recettes compatibles avec ce choix. Les petits-déjeuners actuels sont conservés.';return}
  if(best){
   best.assign.forEach(({sel,r})=>{sel.innerHTML=opts(sel.dataset.cat,String(r.id));sel.value=String(r.id);oldAuto[sel.dataset.day+':breakfast']=String(r.id)});
   localStorage.setItem('mealAutoValuesV1',JSON.stringify(oldAuto));
  }
- update();updateFavButtons();
+ update();updateFavButtons();document.getElementById('slotChangeStatus').textContent='Petits-déjeuners '+({sweet:'sucrés',savory:'salés',both:'en duo',mix:'mixtes'}[mode])+ ' appliqués sur les sept jours. Vérifie les indicateurs de macros : les autres repas sont conservés.';
 }
 const APPROVED_WEEK_KEY='mealApprovedWeekV1';
 function weekValidation(){
