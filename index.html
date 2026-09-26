@@ -25,13 +25,13 @@ button{border:0;background:var(--teal);color:#fff;padding:9px 12px;border-radius
 .modal{display:none;position:fixed;inset:0;background:#0008;z-index:50;padding:20px;overflow:auto}.modal.open{display:block}.modalbox{background:#fff;max-width:680px;margin:5vh auto;padding:20px;border-radius:14px}.modalbox h2{color:var(--navy);margin-top:0}.close{float:right;background:#526b7a} @media(max-width:1100px){.week{grid-template-columns:repeat(2,1fr)}.top{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:650px){.week,.grid2,.top{grid-template-columns:1fr}}
 @media print{button{display:none} body{background:white} .day,.panel,.kpi{break-inside:avoid}}
-</style></head>
+.catalogue{margin:18px 0;padding:18px;background:white;border:1px solid #d9e1e4;border-radius:12px}.catalogue details{margin:10px 0;border:1px solid #d9e1e4;border-radius:8px;padding:10px}.catalogue summary{cursor:pointer;font-weight:750}.catalogue .entry{display:flex;align-items:center;gap:9px;padding:7px;border-bottom:1px solid #eee;flex-wrap:wrap}.catalogue .entry span{flex:1;min-width:170px}.catalogue input[type=checkbox]{width:18px;height:18px}.catalogue .mini{margin-left:auto}.catalogue .muted{opacity:.55}.catalogue .catalogue-grid{max-height:340px;overflow:auto}.catalogue input[type=search]{width:100%;padding:10px;margin:9px 0;border:1px solid #ccc;border-radius:8px}</style></head>
 <body>
 <header><h1>Simulateur repas semaine</h1>
 <p>Cibles actuelles : 2 050-2 150 kcal · 150-170 g protéines · 30-35 g fibres · 60-75 g lipides. Aucune calorie ajoutée automatiquement avec le sport.</p></header>
 <nav aria-label="Mes simulateurs" style="background:#102638;color:#fff;display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:12px 22px"><span style="font-weight:800;margin-right:10px">◈ Mes simulateurs</span><a href="./index.html" style="text-decoration:none;background:#2d7d77;color:#fff;padding:9px 13px;border-radius:9px;font-weight:750">🥗 Menus de la semaine</a><a href="./agence.html" style="text-decoration:none;background:#ffffff1f;color:#fff;padding:9px 13px;border-radius:9px;font-weight:750;border:1px solid #ffffff38">📊 Simulateur financier</a></nav>
 <main>
-<div class="top">
+<section class="catalogue"><h2>❤️ Mes aliments et mes recettes</h2><p class="note">Coche les favoris et décoche les aliments ou recettes que tu ne veux plus voir dans les propositions. Tes choix restent enregistrés sur cet appareil. Un aliment ajouté manuellement peut être utilisé dans tes préférences ; pour l'intégrer aux calculs nutritionnels, il faut aussi créer une recette avec ses macros.</p><div id="foodCatalogue"></div><div style="margin-top:12px"><input id="newFood" placeholder="Ajouter un aliment (ex. lentilles)" aria-label="Nouvel aliment"><select id="newFoodCat" aria-label="Catégorie de l'aliment"><option>Viandes et œufs</option><option>Poissons et fruits de mer</option><option>Produits laitiers et protéines</option><option>Féculents</option><option>Légumes</option><option>Fruits</option><option>Oléagineux et matières grasses</option><option>Sauces et assaisonnements</option><option>Autres</option></select><button type="button" onclick="addCustomFood()">Ajouter cet aliment</button></div><h2>📖 Toutes les recettes par catégorie</h2><input type="search" id="catalogSearch" placeholder="Rechercher une recette ou un ingrédient…" oninput="renderRecipeCatalogue()"><div id="recipeCatalogue"></div></section><div class="top">
 <div class="kpi"><span>Moyenne kcal/j</span><b id="avgK">-</b></div>
 <div class="kpi"><span>Protéines moy.</span><b id="avgP">-</b></div>
 <div class="kpi"><span>Fibres moy.</span><b id="avgFi">-</b></div>
@@ -90,9 +90,67 @@ function mealGroup(r){
  return 'AUTRES';
 }
 let FAVORITES=new Set(JSON.parse(localStorage.getItem('mealFavs')||'[]'));
+
+const FOOD_PREF_KEY='mealFoodPrefsV1',RECIPE_OFF_KEY='mealRecipeExcludedV1';
+const FOOD_PREF=JSON.parse(localStorage.getItem(FOOD_PREF_KEY)||'{"excluded":[],"favorites":[],"custom":[]}');
+const RECIPE_OFF=new Set(JSON.parse(localStorage.getItem(RECIPE_OFF_KEY)||'[]'));
+const FOOD_GROUPS={
+ 'Viandes et œufs':/porc|boeuf|bœuf|veau|agneau|canard|poulet|dinde|jambon|oeuf|œuf|steak/,
+ 'Poissons et fruits de mer':/saumon|thon|cabillaud|poisson|crevette|surimi/,
+ 'Produits laitiers et protéines':/fromage|skyr|yaourt|faisselle|whey|lait|crème|creme|feta|mozzarella|philadelphia|roquefort/,
+ 'Féculents':/riz|pâte|pate|avoine|pain|wrap|udon|nouille|semoule|polenta|gnocchi|pomme_terre|patate|tapioca|chapelure/,
+ 'Légumes':/courgette|poireau|carotte|champignon|brocoli|épinard|epinard|aubergine|salade|mâche|mache|tomate|oignon|maïs|mais/,
+ 'Fruits':/framboise|mangue|banane|kiwi|compote|poire|griotte|mirabelle|citron|nectarine/,
+ 'Oléagineux et matières grasses':/noix|amande|cacahu|chia|huile|avocat|coco_rapee|courge|tournesol/,
+ 'Sauces et assaisonnements':/curry|moutarde|poivre|ail|pesto|bouillon|stevia|cacao/
+};
+function foodCategory(key,name){
+ const label=(key+' '+name).toLowerCase();
+ return Object.entries(FOOD_GROUPS).find(([group,re])=>re.test(label))?.[0]||'Autres';
+}
+function excludedFood(key){return FOOD_PREF.excluded.includes(key)}
+function allowedRecipe(r){return !RECIPE_OFF.has(r.id)&&r.ings.every(x=>!excludedFood(x.key))}
+function persistFoods(){localStorage.setItem(FOOD_PREF_KEY,JSON.stringify(FOOD_PREF))}
+function toggleFood(key,kind,on){
+ let arr=FOOD_PREF[kind];FOOD_PREF[kind]=on?[...new Set([...arr,key])]:arr.filter(x=>x!==key);
+ persistFoods();refreshChoices();renderFoodCatalogue();renderRecipeCatalogue();
+}
+function addCustomFood(){
+ const input=document.getElementById('newFood'),name=input.value.trim(),category=document.getElementById('newFoodCat').value;
+ if(!name)return;
+ if(FOOD_PREF.custom.some(x=>x.name.toLowerCase()===name.toLowerCase())){alert('Cet aliment est déjà ajouté.');return}
+ FOOD_PREF.custom.push({key:'custom_'+Date.now(),name,category});persistFoods();input.value='';renderFoodCatalogue();
+}
+function removeCustomFood(key){FOOD_PREF.custom=FOOD_PREF.custom.filter(x=>x.key!==key);FOOD_PREF.excluded=FOOD_PREF.excluded.filter(x=>x!==key);FOOD_PREF.favorites=FOOD_PREF.favorites.filter(x=>x!==key);persistFoods();renderFoodCatalogue()}
+function renderFoodCatalogue(){
+ const root=document.getElementById('foodCatalogue');if(!root)return;
+ const foods=[...Object.entries(META).map(([key,m])=>({key,name:m.name,category:foodCategory(key,m.name)})),...FOOD_PREF.custom];
+ root.innerHTML=Object.keys({...FOOD_GROUPS,Autres:1}).map(group=>{
+ const arr=foods.filter(f=>f.category===group).sort((a,b)=>a.name.localeCompare(b.name,'fr'));
+ return '<details><summary>'+group+' ('+arr.length+')</summary><div class="catalogue-grid">'+arr.map(f=>'<div class="entry '+(excludedFood(f.key)?'muted':'')+'"><label><input type="checkbox" '+(!excludedFood(f.key)?'checked':'')+' onchange="toggleFood(\''+f.key+'\',\'excluded\',!this.checked)"> Autorisé</label><label><input type="checkbox" '+(FOOD_PREF.favorites.includes(f.key)?'checked':'')+' onchange="toggleFood(\''+f.key+'\',\'favorites\',this.checked)"> ⭐</label><span>'+f.name+'</span>'+(f.key.startsWith('custom_')?'<button class="mini" onclick="removeCustomFood(\''+f.key+'\')">Supprimer</button>':'')+'</div>').join('')+'</div></details>';
+ }).join('');
+}
+function toggleRecipeCatalogue(id,kind,on){
+ if(kind==='off'){on?RECIPE_OFF.delete(id):RECIPE_OFF.add(id);localStorage.setItem(RECIPE_OFF_KEY,JSON.stringify([...RECIPE_OFF]));}
+ else{on?FAVORITES.add(id):FAVORITES.delete(id);localStorage.setItem('mealFavs',JSON.stringify([...FAVORITES]));}
+ refreshChoices();updateFavButtons();renderRecipeCatalogue();
+}
+function renderRecipeCatalogue(){
+ const root=document.getElementById('recipeCatalogue');if(!root)return;
+ const q=(document.getElementById('catalogSearch')?.value||'').trim().toLowerCase();
+ root.innerHTML=[...new Set(RECIPES.map(r=>r.cat))].map(cat=>{
+ const arr=RECIPES.filter(r=>r.cat===cat&&(!q||(r.name+' '+r.ings.map(x=>META[x.key]?.name||x.key).join(' ')).toLowerCase().includes(q)));
+ if(!arr.length)return '';
+ return '<details '+(q?'open':'')+'><summary>'+cat+' ('+arr.length+')</summary><div class="catalogue-grid">'+arr.map(r=>'<div class="entry '+(!allowedRecipe(r)?'muted':'')+'"><label><input type="checkbox" '+(!RECIPE_OFF.has(r.id)?'checked':'')+' onchange="toggleRecipeCatalogue('+r.id+',\'off\',this.checked)"> Proposer</label><label><input type="checkbox" '+(FAVORITES.has(r.id)?'checked':'')+' onchange="toggleRecipeCatalogue('+r.id+',\'fav\',this.checked)"> ⭐</label><span>'+r.name+' · '+r.macros.kcal+' kcal · '+Math.round(r.macros.protein)+' g prot.</span><button class="mini" onclick="showRecipeById('+r.id+')">📖 Fiche</button></div>').join('')+'</div></details>';
+ }).join('');
+}
+function showRecipeById(id){
+ const select=document.createElement('select');select.innerHTML='<option value="'+id+'"></option>';select.value=String(id);showRecipe(select);
+}
+
 function opts(cat,current='',q='',favOnly=false){
  q=(q||'').trim().toLowerCase();
- let arr=RECIPES.filter(r=>r.cat===cat && (!q||r.name.toLowerCase().includes(q)||(r.sub||'').toLowerCase().includes(q)) && (!favOnly||FAVORITES.has(r.id)));
+ let arr=RECIPES.filter(r=>allowedRecipe(r) && r.cat===cat && (!q||r.name.toLowerCase().includes(q)||(r.sub||'').toLowerCase().includes(q)) && (!favOnly||FAVORITES.has(r.id)));
  if(current!==''&&!arr.some(r=>String(r.id)===String(current))){let r=RECIPES.find(x=>String(x.id)===String(current));if(r)arr.unshift(r)}
  let groups={};arr.forEach(r=>{let g=mealGroup(r);(groups[g]||(groups[g]=[])).push(r)});
  let html='<option value="">-- aucun --</option>';
@@ -248,7 +306,7 @@ function dayDistance(t){
  return d;
 }
 function candidatePool(cat,usage,limit=14){
- let arr=RECIPES.filter(r=>r.cat===cat);
+ let arr=RECIPES.filter(r=>allowedRecipe(r)&&r.cat===cat);
  return arr.map(r=>({r,s:(usage[r.id]||0)*(r.cat==='DÉJEUNERS & BATCH COOKING'?0.35:1.1)-(FAVORITES.has(r.id)?.12:0)})).sort((a,b)=>a.s-b.s).slice(0,limit).map(x=>x.r);
 }
 function bestWholeDay(day,usage,restricted={}){
@@ -288,16 +346,16 @@ function breakfastType(r){
 }
 function breakfastCandidates(){
  const mode=document.getElementById('breakfastMode').value;
- return RECIPES.filter(r=>r.cat==='PETITS-DÉJEUNERS'&&(mode==='mix'||breakfastType(r)===mode));
+ return RECIPES.filter(r=>allowedRecipe(r)&&r.cat==='PETITS-DÉJEUNERS'&&(mode==='mix'||breakfastType(r)===mode));
 }
 function autoWeek(){
  const all=[...document.querySelectorAll('select[data-slot]')];
  const configs=[
   {slot:'breakfast',label:'Petits-déjeuners',pool:breakfastCandidates(),target:430},
-  {slot:'lunch',label:'Déjeuners',pool:RECIPES.filter(r=>r.cat==='DÉJEUNERS & BATCH COOKING'),target:650},
-  {slot:'snack1',label:'Desserts du déjeuner',pool:RECIPES.filter(r=>r.cat==='DESSERTS & COLLATIONS'),target:240},
-  {slot:'dinner',label:'Dîners',pool:RECIPES.filter(r=>r.cat==='DÎNERS RAPIDES'),target:650},
-  {slot:'snack2',label:'Desserts du dîner',pool:RECIPES.filter(r=>r.cat==='DESSERTS & COLLATIONS'),target:240}
+  {slot:'lunch',label:'Déjeuners',pool:RECIPES.filter(r=>allowedRecipe(r)&&r.cat==='DÉJEUNERS & BATCH COOKING'),target:650},
+  {slot:'snack1',label:'Desserts du déjeuner',pool:RECIPES.filter(r=>allowedRecipe(r)&&r.cat==='DESSERTS & COLLATIONS'),target:240},
+  {slot:'dinner',label:'Dîners',pool:RECIPES.filter(r=>allowedRecipe(r)&&r.cat==='DÎNERS RAPIDES'),target:650},
+  {slot:'snack2',label:'Desserts du dîner',pool:RECIPES.filter(r=>allowedRecipe(r)&&r.cat==='DESSERTS & COLLATIONS'),target:240}
  ];
  const panel=document.getElementById('suggestPanel'),box=document.getElementById('suggestions');
  const selectedFor=slot=>[...new Set(all.filter(s=>s.dataset.slot===slot&&s.value).map(s=>+s.value))];
@@ -476,5 +534,5 @@ function load(){
  }catch(e){}
 }
 function resetWeek(){localStorage.removeItem('mealV1');localStorage.removeItem('mealV2');localStorage.removeItem('mealV3');document.querySelectorAll('select[data-slot]').forEach(x=>x.value='');update();}
-build();
+build();renderFoodCatalogue();renderRecipeCatalogue();
 </script></body></html>
