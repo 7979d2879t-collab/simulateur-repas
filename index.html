@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Simulateur repas semaine - V4.7</title>
+<title>Simulateur repas semaine - V4.8</title>
 <style>
 :root{--bg:#f4f7f8;--card:#fff;--navy:#17324d;--teal:#2d7d77;--line:#d9e1e4;--ok:#e8f5ec;--warn:#fff4dd;--bad:#fde8e7}
 *{box-sizing:border-box} body{margin:0;font-family:Arial,sans-serif;background:var(--bg);color:#26333c}
@@ -251,13 +251,13 @@ function candidatePool(cat,usage,limit=14){
  let arr=RECIPES.filter(r=>r.cat===cat);
  return arr.map(r=>({r,s:(usage[r.id]||0)*(r.cat==='DÉJEUNERS & BATCH COOKING'?0.35:1.1)-(FAVORITES.has(r.id)?.12:0)})).sort((a,b)=>a.s-b.s).slice(0,limit).map(x=>x.r);
 }
-function bestWholeDay(day,usage){
+function bestWholeDay(day,usage,restricted={}){
  const sels=[...document.querySelectorAll(`select[data-day="${day}"]`)];
  let fixed={k:0,p:0,fi:0,f:0,c:0,cost:0}, open=[];
  sels.forEach(s=>{if(s.value){fixed=addMeal(fixed,RECIPES.find(r=>r.id===+s.value))}else open.push(s)});
  // Search practical combinations. Breakfast and snack2 may be empty; lunch/dinner/snack1 are filled.
  const pools=open.map(s=>{
-   let p=candidatePool(s.dataset.cat,usage,s.dataset.slot==='snack2'?10:14);
+   let p=restricted[s.dataset.slot] ? RECIPES.filter(r=>restricted[s.dataset.slot].includes(r.id)) : candidatePool(s.dataset.cat,usage,s.dataset.slot==='snack2'?10:14);
    if(s.dataset.slot==='breakfast'||s.dataset.slot==='snack2')p=[null,...p];
    return p;
  });
@@ -281,12 +281,29 @@ function bestWholeDay(day,usage){
  return {open,best};
 }
 function autoWeek(){
+ // Two rotating breakfasts and two rotating desserts, shared by both dessert slots.
+ // Keep existing manual selections and include them in the restricted choices.
+ const picks=(cat,slots)=>{
+   let existing=[...new Set([...document.querySelectorAll('select[data-slot]')].filter(s=>slots.includes(s.dataset.slot)&&s.value).map(s=>+s.value))];
+   let pool=RECIPES.filter(r=>r.cat===cat).sort((a,b)=>{
+     const rank=r=>(FAVORITES.has(r.id)?-30:0)+Math.abs(r.macros.protein-(cat==='PETITS-DÉJEUNERS'?32:24))*.65+Math.abs(r.macros.kcal-(cat==='PETITS-DÉJEUNERS'?390:240))*.035;
+     return rank(a)-rank(b);
+   });
+   // Do not silently replace a user's manually chosen recipes.
+   return [...existing,...pool.map(r=>r.id).filter(id=>!existing.includes(id))].slice(0,Math.max(2,existing.length));
+ };
+ const breakfast=picks('PETITS-DÉJEUNERS',['breakfast']);
+ const desserts=picks('DESSERTS & COLLATIONS',['snack1','snack2']);
  let usage=usageCounts();
  for(let d=0;d<7;d++){
-   let res=bestWholeDay(d,usage);
+   let res=bestWholeDay(d,usage,{breakfast,dessert:desserts,snack1:desserts,snack2:desserts});
    res.open.forEach((s,i)=>{let r=res.best.choices[i];if(r){s.value=String(r.id);usage[r.id]=(usage[r.id]||0)+1}});
  }
  update();updateFavButtons();
+ const panel=document.getElementById('suggestPanel'),box=document.getElementById('suggestions');
+ panel.style.display='block';
+ const names=ids=>ids.map(id=>RECIPES.find(r=>r.id===id)?.name).filter(Boolean).join(' / ');
+ box.innerHTML='<p><b>🔁 Rotation anti-gaspillage :</b> 2 petits-déjeuners et 2 desserts/collations réutilisés sur la semaine (y compris la deuxième collation). Les repas déjà choisis manuellement sont conservés.</p><p><b>Petits-déjeuners :</b> '+names(breakfast)+'</p><p><b>Desserts :</b> '+names(desserts)+'</p><p class="note">Les cibles nutritionnelles restent prioritaires dans chaque journée. Pour changer les deux recettes de base, réinitialise la semaine puis relance la proposition.</p>';
 }
 function smartSuggestions(){
  let out=[];
