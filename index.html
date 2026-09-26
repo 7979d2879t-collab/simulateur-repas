@@ -443,11 +443,16 @@ function selected(){
 }
 function quality(k,p,fi,f){
  if(k===0)return '';
- if(k>=2050&&k<=2150&&p>=150&&p<=170&&fi>=30&&fi<=35&&f>=60&&f<=75)return 'ok';
+ if(inTargets({k,p,fi,f}))return 'ok';
  if(k<1900||k>2300||p<135||fi<25||f>85)return 'bad';
  return 'warn';
 }
 const TARGET={k:2100,p:160,fi:32,f:68};
+// A single day may vary; the seven-day average remains closer to the goal.
+const DAY_RANGE={k:[1950,2250],p:[145,175],fi:[27,38],f:[55,80]};
+const WEEK_RANGE={k:[2050,2150],p:[150,170],fi:[30,35],f:[60,75]};
+function withinRange(t,range){return Object.keys(range).every(k=>t[k]>=range[k][0]&&t[k]<=range[k][1])}
+function weeklyTargets(t){return withinRange(t,WEEK_RANGE)};
 function dayTotalsFromSelects(day){
  let t={k:0,p:0,fi:0,f:0,c:0,cost:0};
  document.querySelectorAll(`select[data-day="${day}"]`).forEach(s=>{if(s.value){let r=RECIPES.find(x=>x.id===+s.value);t.k+=r.macros.kcal;t.p+=r.macros.protein;t.fi+=r.macros.fiber;t.f+=r.macros.fat;t.c+=r.macros.carbs;t.cost+=r.macros.cost}});
@@ -460,7 +465,7 @@ function rangePenalty(v,min,max,hard=1){
 }
 function fitScore(t){
  // Overshoots are deliberately penalised more than modest shortfalls.
- return rangePenalty(t.k,2050,2150,3.2)+rangePenalty(t.p,150,170,2.4)+rangePenalty(t.fi,30,35,1.5)+rangePenalty(t.f,60,75,3.2);
+ return rangePenalty(t.k,...DAY_RANGE.k,3.2)+rangePenalty(t.p,...DAY_RANGE.p,2.4)+rangePenalty(t.fi,...DAY_RANGE.fi,1.5)+rangePenalty(t.f,...DAY_RANGE.f,3.2);
 }
 function addMeal(t,r){return {k:t.k+r.macros.kcal,p:t.p+r.macros.protein,fi:t.fi+r.macros.fiber,f:t.f+r.macros.fat,c:t.c+r.macros.carbs,cost:t.cost+r.macros.cost}}
 function usageCounts(){let u={};document.querySelectorAll('select[data-slot]').forEach(s=>{if(s.value)u[s.value]=(u[s.value]||0)+1});return u}
@@ -476,7 +481,7 @@ function bestForSelect(sel,base,usage={}){
    if(FAVORITES.has(r.id))score-=.10;if(r.generated&&FOOD_PREF.favorites.some(k=>r.ings.some(x=>x.key===k)))score-=.25;
    return {r,score}}).sort((x,y)=>x.score-y.score)[0]?.r;
 }
-function inTargets(t){return t.k>=2050&&t.k<=2150&&t.p>=150&&t.p<=170&&t.fi>=30&&t.fi<=35&&t.f>=60&&t.f<=75}
+function inTargets(t){return withinRange(t,DAY_RANGE)}
 function dayDistance(t){
  let d=fitScore(t);
  // Strongly reward an actually valid day.
@@ -556,7 +561,7 @@ function weekValidation(){
  const bad=[...Array(7)].map((_,d)=>({day:d,t:dayTotalsFromSelects(d)})).filter(x=>!inTargets(x.t));
  const wrong=SLOTS.filter(slot=>new Set(sels.filter(s=>s.dataset.slot===slot[0]&&s.value).map(s=>s.value)).size!==2);
  const avg={k:0,p:0,fi:0,f:0};for(let d=0;d<7;d++){const t=dayTotalsFromSelects(d);Object.keys(avg).forEach(k=>avg[k]+=t[k]/7)}
- return {ok:!missing.length&&!bad.length&&!wrong.length&&inTargets(avg),missing,bad,wrong,avg};
+ return {ok:!missing.length&&!bad.length&&!wrong.length&&weeklyTargets(avg),missing,bad,wrong,avg};
 }
 function approveWholeWeek(on){
  const box=document.getElementById('approveWeek'),status=document.getElementById('approvalStatus');
@@ -734,10 +739,10 @@ function autoWeek(){
    if(counts.some(n=>n===0))totalScore+=10000;
   }
   const avg=Object.fromEntries(Object.entries(week).map(([k,v])=>[k,v/7]));
-  totalScore+=fitScore(avg)*55;
+  totalScore+=Object.keys(WEEK_RANGE).reduce((sum,k)=>sum+rangePenalty(avg[k],...WEEK_RANGE[k],3.2),0)*55;
   const allDaysValid=assignment.every((row,d)=>{const t=emptyTotal();for(const slot of SLOTS){const r=RECIPES.find(x=>x.id===row[slot[0]]);if(!r)return false;Object.assign(t,addMeal(t,r))}return inTargets(t)});
   const pairsValid=configs.every(cfg=>new Set(assignment.map(row=>row[cfg.slot])).size===2);
-  return {score:totalScore,assignment,avg,chosen,valid:allDaysValid&&inTargets(avg)&&pairsValid};
+  return {score:totalScore,assignment,avg,chosen,valid:allDaysValid&&weeklyTargets(avg)&&pairsValid};
  };
  let best=null, bestValid=null;
  // Deterministic but diverse joint search, with a limited budget on the browser.
@@ -768,7 +773,7 @@ function autoWeek(){
  const validation=weekValidation();
  const a=best.avg;
  box.innerHTML='<p><b>Proposition optimisée sur 7 jours.</b> Moyennes : '+Math.round(a.k)+' kcal, '+Math.round(a.p)+' g protéines, '+Math.round(a.fi)+' g fibres, '+Math.round(a.f)+' g lipides.</p>'+
- (validation.ok?'<p>✓ Les 7 journées, la moyenne et les deux recettes par repas respectent les règles.</p>':'<p>⚠ Proposition provisoire, non validée : '+validation.bad.map(x=>DAYS[x.day]).join(', ')+' hors macros'+(!inTargets(validation.avg)?' ; moyenne hebdomadaire hors cible':'')+(validation.wrong.length?' ; deux recettes distinctes non respectées pour '+validation.wrong.map(x=>x[1]).join(', '):'')+'. Consulte les substitutions proposées pour corriger les écarts.</p>')+
+ (validation.ok?'<p>✓ Les 7 journées, la moyenne et les deux recettes par repas respectent les règles.</p>':'<p>⚠ Proposition provisoire, non validée : '+validation.bad.map(x=>DAYS[x.day]).join(', ')+' hors macros'+(!weeklyTargets(validation.avg)?' ; moyenne hebdomadaire hors cible':'')+(validation.wrong.length?' ; deux recettes distinctes non respectées pour '+validation.wrong.map(x=>x[1]).join(', '):'')+'. Consulte les substitutions proposées pour corriger les écarts.</p>')+
  '<p>Le calcul compare les journées ET la moyenne de la semaine. Vérifie les indicateurs de chaque jour : aucune journée hors cible n’est présentée comme validée.</p>';
 }
 // Suggestions remain optional and never overwrite the saved original of a favorite.
@@ -803,7 +808,7 @@ function weeklySubstitutionOptions(){
     const newBad=revised.filter(t=>!inTargets(t)).length;
     const oldBad=before.filter(t=>!inTargets(t)).length;
     if(newBad>oldBad)continue;
-    out.push({slot,label,old,recipe,affected,revised,newAvg,improvement,newBad,allOk:newBad===0&&inTargets(newAvg)});
+    out.push({slot,label,old,recipe,affected,revised,newAvg,improvement,newBad,allOk:newBad===0&&weeklyTargets(newAvg)});
    }
   }
  }
