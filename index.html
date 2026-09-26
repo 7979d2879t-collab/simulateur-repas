@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Simulateur repas semaine - V4.8</title>
+<title>Simulateur repas semaine - V4.9</title>
 <style>
 :root{--bg:#f4f7f8;--card:#fff;--navy:#17324d;--teal:#2d7d77;--line:#d9e1e4;--ok:#e8f5ec;--warn:#fff4dd;--bad:#fde8e7}
 *{box-sizing:border-box} body{margin:0;font-family:Arial,sans-serif;background:var(--bg);color:#26333c}
@@ -41,10 +41,10 @@ button{border:0;background:var(--teal);color:#fff;padding:9px 12px;border-radius
 <div class="tools">
 <button onclick="autoWeek()">✨ Proposer ma semaine</button>
 <button onclick="smartSuggestions()">🎯 Compléter / optimiser</button>
-<span class="note">La proposition optimise maintenant chaque journée complète : priorité à 2 050–2 150 kcal, 150–170 g protéines, 30–35 g fibres et 60–75 g lipides. Ensuite seulement viennent batch cooking, variété et favoris.</span>
+<span class="note">La proposition teste plusieurs rotations de deux petits-déjeuners et deux desserts, avec une collation l’après-midi. Priorité à 2 050–2 150 kcal, 150–170 g protéines, 30–35 g fibres et 60–75 g lipides. Ensuite seulement viennent batch cooking, variété et favoris.</span>
 </div>
 <div class="panel" id="suggestPanel" style="display:none;margin-bottom:14px"><h2>🎯 Suggestions adaptées</h2><div id="suggestions"></div></div>
-<div class="week" id="week"></div>
+<div class="panel" style="margin-bottom:12px"><h2>🥣 Petits-déjeuners</h2><label for="breakfastMode">Type de petit-déjeuner pour les 2 recettes de la semaine :</label> <select id="breakfastMode" style="max-width:270px" onchange="localStorage.setItem('breakfastMode',this.value)"><option value="both">Salé et sucré (duo)</option><option value="savory">Salé uniquement</option><option value="sweet">Sucré uniquement</option><option value="mix">Libre : salé, sucré ou duo</option></select><p class="note">Deux recettes maximum pour les petits-déjeuners et deux desserts pour toute la semaine. Une collation est prévue chaque après-midi. Les recettes sélectionnées manuellement restent prioritaires.</p></div><div class="week" id="week"></div>
 <div class="grid2">
 <div class="panel"><h2>Liste de courses</h2><p class="note">Quantités théoriques nécessaires. Pour viande/poisson, achète le conditionnement commercial le plus proche; quelques grammes d'écart ne posent pas problème.</p>
 <table><thead><tr><th>Produit</th><th>Quantité</th><th>Coût estimé</th></tr></thead><tbody id="shopping"></tbody></table>
@@ -62,9 +62,10 @@ const DAYS=["Lundi","Mardi","Mercredi","Jeudi","Vendredi","Samedi","Dimanche"];
 const SLOTS=[
  ["breakfast","Petit-déjeuner","PETITS-DÉJEUNERS"],
  ["lunch","Déjeuner","DÉJEUNERS & BATCH COOKING"],
- ["snack1","Dessert / collation 1","DESSERTS & COLLATIONS"],
+ ["snack1","Dessert du déjeuner","DESSERTS & COLLATIONS"],
+ ["afternoon","Collation de l’après-midi","DESSERTS & COLLATIONS"],
  ["dinner","Dîner","DÎNERS RAPIDES"],
- ["snack2","Dessert / collation 2 (option)","DESSERTS & COLLATIONS"]
+ ["snack2","Dessert du dîner (optionnel)","DESSERTS & COLLATIONS"]
 ];
 function mealGroup(r){
  if(r.sub) return r.sub;
@@ -198,7 +199,7 @@ function build(){
    w.appendChild(el);
  });
  document.querySelectorAll('select[data-slot]').forEach(s=>s.addEventListener('change',()=>{update();updateFavButtons()}));
- load(); update(); updateFavButtons();
+ document.getElementById('breakfastMode').value=localStorage.getItem('breakfastMode')||'mix';load(); update(); updateFavButtons();
 }
 function selected(){
  let out=Array.from({length:7},()=>[]);
@@ -207,8 +208,8 @@ function selected(){
 }
 function quality(k,p,fi,f){
  if(k===0)return '';
- if(k>=1900&&k<=2200&&p>=145&&p<=175&&fi>=27&&fi<=38&&f>=50&&f<=80)return 'ok';
- if(k<1700||k>2350||p<125||fi<20)return 'bad';
+ if(k>=2050&&k<=2150&&p>=150&&p<=170&&fi>=30&&fi<=35&&f>=60&&f<=75)return 'ok';
+ if(k<1900||k>2300||p<135||fi<25||f>85)return 'bad';
  return 'warn';
 }
 const TARGET={k:2100,p:160,fi:32,f:68};
@@ -252,58 +253,87 @@ function candidatePool(cat,usage,limit=14){
  return arr.map(r=>({r,s:(usage[r.id]||0)*(r.cat==='DÉJEUNERS & BATCH COOKING'?0.35:1.1)-(FAVORITES.has(r.id)?.12:0)})).sort((a,b)=>a.s-b.s).slice(0,limit).map(x=>x.r);
 }
 function bestWholeDay(day,usage,restricted={}){
- const sels=[...document.querySelectorAll(`select[data-day="${day}"]`)];
- let fixed={k:0,p:0,fi:0,f:0,c:0,cost:0}, open=[];
- sels.forEach(s=>{if(s.value){fixed=addMeal(fixed,RECIPES.find(r=>r.id===+s.value))}else open.push(s)});
- // Search practical combinations. Breakfast and snack2 may be empty; lunch/dinner/snack1 are filled.
+ const sels=[...document.querySelectorAll('select[data-day="'+day+'"]')];
+ let fixed={k:0,p:0,fi:0,f:0,c:0,cost:0},open=[];
+ sels.forEach(s=>{if(s.value)fixed=addMeal(fixed,RECIPES.find(r=>r.id===+s.value));else open.push(s)});
  const pools=open.map(s=>{
-   let p=restricted[s.dataset.slot] ? RECIPES.filter(r=>restricted[s.dataset.slot].includes(r.id)) : candidatePool(s.dataset.cat,usage,s.dataset.slot==='snack2'?10:14);
+   let p=restricted[s.dataset.slot]?RECIPES.filter(r=>restricted[s.dataset.slot].includes(r.id)):candidatePool(s.dataset.cat,usage,s.dataset.slot==='lunch'?10:12);
    if(s.dataset.slot==='breakfast'||s.dataset.slot==='snack2')p=[null,...p];
    return p;
  });
- let best={score:Infinity,choices:[]};
- function walk(i,t,choices){
+ let best={score:Infinity,choices:[],tot:null},choices=[];
+ function walk(i,t){
    if(i===open.length){
-     // Core meals must be present.
-     for(let j=0;j<open.length;j++){let sl=open[j].dataset.slot;if(['lunch','dinner','snack1'].includes(sl)&&!choices[j])return}
-     let score=dayDistance(t);
-     choices.forEach((r,j)=>{if(!r)return;let used=usage[r.id]||0,sl=open[j].dataset.slot;if(sl==='lunch')score+=used===1?-.18:used>1?(used-1)*1.7:0;else score+=used*.8});
-     if(score<best.score)best={score,choices:[...choices],tot:t};return;
+     let score=fitScore(t)+(inTargets(t)?-100:0);
+     choices.forEach((r,j)=>{if(!r)return;let n=usage[r.id]||0,slot=open[j].dataset.slot;
+       if(slot==='lunch')score+=n===1?-.6:n>1?(n-1)*1.5:0;
+       else if(slot==='dinner')score+=n*.4;
+       else score+=n*.015;
+     });
+     if(score<best.score)best={score,choices:[...choices],tot:t};
+     return;
    }
    for(const r of pools[i]){
-     let nt=r?addMeal(t,r):t;
-     // prune clearly impossible overshoots
-     if(nt.k>2225||nt.p>185||nt.fi>42||nt.f>84)continue;
-     choices[i]=r;walk(i+1,nt,choices);
+     const nt=r?addMeal(t,r):t;
+     if(nt.k>2200||nt.p>178||nt.fi>40||nt.f>82)continue;
+     choices[i]=r;walk(i+1,nt);
    }
  }
- walk(0,fixed,[]);
+ walk(0,fixed);
  return {open,best};
 }
 function autoWeek(){
- // Two rotating breakfasts and two rotating desserts, shared by both dessert slots.
- // Keep existing manual selections and include them in the restricted choices.
- const picks=(cat,slots)=>{
-   let existing=[...new Set([...document.querySelectorAll('select[data-slot]')].filter(s=>slots.includes(s.dataset.slot)&&s.value).map(s=>+s.value))];
-   let pool=RECIPES.filter(r=>r.cat===cat).sort((a,b)=>{
-     const rank=r=>(FAVORITES.has(r.id)?-30:0)+Math.abs(r.macros.protein-(cat==='PETITS-DÉJEUNERS'?32:24))*.65+Math.abs(r.macros.kcal-(cat==='PETITS-DÉJEUNERS'?390:240))*.035;
-     return rank(a)-rank(b);
-   });
-   // Do not silently replace a user's manually chosen recipes.
-   return [...existing,...pool.map(r=>r.id).filter(id=>!existing.includes(id))].slice(0,Math.max(2,existing.length));
- };
- const breakfast=picks('PETITS-DÉJEUNERS',['breakfast']);
- const desserts=picks('DESSERTS & COLLATIONS',['snack1','snack2']);
- let usage=usageCounts();
- for(let d=0;d<7;d++){
-   let res=bestWholeDay(d,usage,{breakfast,dessert:desserts,snack1:desserts,snack2:desserts});
-   res.open.forEach((s,i)=>{let r=res.best.choices[i];if(r){s.value=String(r.id);usage[r.id]=(usage[r.id]||0)+1}});
+ const all=[...document.querySelectorAll('select[data-slot]')];
+ const used=(slots)=>[...new Set(all.filter(s=>slots.includes(s.dataset.slot)&&s.value).map(s=>+s.value))];
+ const existingB=used(['breakfast']),existingD=used(['snack1','snack2','afternoon']);
+ const bc=breakfastCandidates(),dc=RECIPES.filter(r=>r.cat==='DESSERTS & COLLATIONS');
+ if(existingB.length>2||existingD.length>2){
+   const panel=document.getElementById('suggestPanel'),box=document.getElementById('suggestions');
+   panel.style.display='block';box.innerHTML='<p>Pour respecter les deux recettes maximum, il faut d’abord réduire les sélections manuelles à deux petits-déjeuners et deux desserts/collations différents.</p>';return;
  }
+ if(existingB.some(id=>!bc.some(r=>r.id===id))){
+   const panel=document.getElementById('suggestPanel'),box=document.getElementById('suggestions');
+   panel.style.display='block';box.innerHTML='<p>Un petit-déjeuner déjà choisi ne correspond pas au type demandé. Modifie ce choix ou sélectionne le mode libre.</p>';return;
+ }
+ const rank=(r,target)=>Math.abs(r.macros.kcal-target)*.015+Math.abs(r.macros.protein-(target===430?34:24))*.25-(FAVORITES.has(r.id)?3:0);
+ const bPool=[...bc].sort((a,b)=>rank(a,430)-rank(b,430)).slice(0,12);
+ const dPool=[...dc].sort((a,b)=>rank(a,240)-rank(b,240)).slice(0,12);
+ const pairs=(existing,pool)=>{
+   if(existing.length===2)return [existing];
+   let base=existing.length?[RECIPES.find(r=>r.id===existing[0])]:pool.slice(0,6);
+   let result=[];
+   base.forEach(a=>pool.forEach(b=>{if(a.id!==b.id&&(!existing.length||a.id===existing[0]))result.push([a.id,b.id])}));
+   return result.slice(0,existing.length?10:25);
+ };
+ const bp=pairs(existingB,bPool),dp=pairs(existingD,dPool);
+ let best=null;
+ // Try several shared breakfast/dessert combinations. Score all seven days,
+ // never optimize a weekly average at the expense of an individual day.
+ for(const breakfasts of bp){
+   for(const desserts of dp){
+     let usage=usageCounts(),plans=[],score=0,valid=0;
+     for(let day=0;day<7;day++){
+       const result=bestWholeDay(day,usage,{breakfast:breakfasts,snack1:desserts,afternoon:desserts,snack2:desserts});
+       plans.push(result);
+       if(result.best.tot){
+         let t=result.best.tot;if(inTargets(t))valid++;
+         score+=Math.max(0,fitScore(t))+(inTargets(t)?0:8);
+         result.open.forEach((s,i)=>{let r=result.best.choices[i];if(r)usage[r.id]=(usage[r.id]||0)+1});
+       }else score+=100;
+     }
+     score+=(7-valid)*20;
+     if(!best||score<best.score)best={score,plans,breakfasts,desserts,valid};
+     if(valid===7)break;
+   }
+   if(best?.valid===7)break;
+ }
+ if(!best)return;
+ best.plans.forEach(res=>res.open.forEach((s,i)=>{let r=res.best.choices[i];if(r)s.value=String(r.id)}));
  update();updateFavButtons();
  const panel=document.getElementById('suggestPanel'),box=document.getElementById('suggestions');
  panel.style.display='block';
- const names=ids=>ids.map(id=>RECIPES.find(r=>r.id===id)?.name).filter(Boolean).join(' / ');
- box.innerHTML='<p><b>🔁 Rotation anti-gaspillage :</b> 2 petits-déjeuners et 2 desserts/collations réutilisés sur la semaine (y compris la deuxième collation). Les repas déjà choisis manuellement sont conservés.</p><p><b>Petits-déjeuners :</b> '+names(breakfast)+'</p><p><b>Desserts :</b> '+names(desserts)+'</p><p class="note">Les cibles nutritionnelles restent prioritaires dans chaque journée. Pour changer les deux recettes de base, réinitialise la semaine puis relance la proposition.</p>';
+ const names=ids=>ids.map(id=>RECIPES.find(r=>r.id===id)?.name).join(' / ');
+ box.innerHTML='<p><b>🔁 Rotation :</b> 2 petits-déjeuners et 2 desserts/collations pour la semaine, avec collation de l’après-midi.</p><p><b>Petits-déjeuners :</b> '+names(best.breakfasts)+'</p><p><b>Desserts/collations :</b> '+names(best.desserts)+'</p><p><b>Journées dans toutes les cibles :</b> '+best.valid+'/7. Les jours hors cible restent signalés dans le planning : la limitation à deux recettes peut empêcher un équilibre parfait avec des portions fixes.</p>';
 }
 function smartSuggestions(){
  let out=[];
@@ -399,8 +429,18 @@ function printShopping(){
  w.document.write(`<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>Liste de courses</title><style>body{font-family:Arial,sans-serif;padding:24px;color:#26333c}h1{color:#17324d}table{width:100%;border-collapse:collapse}th,td{padding:9px;border-bottom:1px solid #d9e1e4;text-align:left}th{background:#edf5f3}@media print{body{padding:0}}</style></head><body><h1>Liste de courses</h1><p>Simulateur repas semaine</p><table><thead><tr><th>Produit</th><th>Quantité</th><th>Coût estimé</th></tr></thead><tbody>${rows}</tbody></table><script>window.onload=()=>{window.print();window.onafterprint=()=>window.close()}<\/script></body></html>`);
  w.document.close();
 }
-function save(){let s=[];document.querySelectorAll('select').forEach(x=>s.push(x.value));localStorage.setItem('mealV2',JSON.stringify(s));}
-function load(){try{let a=JSON.parse(localStorage.getItem('mealV2')||localStorage.getItem('mealV1'));if(a)document.querySelectorAll('select').forEach((x,i)=>x.value=a[i]||'');}catch(e){}}
-function resetWeek(){localStorage.removeItem('mealV1');localStorage.removeItem('mealV2');document.querySelectorAll('select').forEach(x=>x.value='');update();}
+function save(){
+ const state={};document.querySelectorAll('select[data-slot]').forEach(s=>state[s.dataset.day+':'+s.dataset.slot]=s.value);
+ localStorage.setItem('mealV3',JSON.stringify(state));
+}
+function load(){
+ try{
+   let state=JSON.parse(localStorage.getItem('mealV3')||'null');
+   if(state){document.querySelectorAll('select[data-slot]').forEach(s=>s.value=state[s.dataset.day+':'+s.dataset.slot]||'');return}
+   let old=JSON.parse(localStorage.getItem('mealV2')||localStorage.getItem('mealV1')||'null');
+   if(old){const slots=['breakfast','lunch','snack1','dinner','snack2'];for(let d=0;d<7;d++)slots.forEach((slot,i)=>{let s=document.querySelector('select[data-day="'+d+'"][data-slot="'+slot+'"]');if(s)s.value=old[d*5+i]||''})}
+ }catch(e){}
+}
+function resetWeek(){localStorage.removeItem('mealV1');localStorage.removeItem('mealV2');localStorage.removeItem('mealV3');document.querySelectorAll('select').forEach(x=>x.value='');update();}
 build();
 </script></body></html>
