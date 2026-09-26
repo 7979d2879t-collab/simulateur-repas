@@ -493,7 +493,7 @@ function loadMealLocks(){
 function changeBreakfastMode(mode){
  localStorage.setItem('breakfastMode',mode);
  const eligible=breakfastCandidates();
- const unlocked=[...document.querySelectorAll('select[data-slot="breakfast"]')].filter(s=>!document.querySelector('.mealLock[data-day="'+s.dataset.day+'"][data-slot="breakfast"]')?.checked);
+ const unlocked=weeklySlotLocks().breakfast?[]:[...document.querySelectorAll('select[data-slot="breakfast"]')];
  if(!unlocked.length){update();return}
  const history=JSON.parse(localStorage.getItem(RECIPE_HISTORY_KEY)||'{}');
  const oldAuto=JSON.parse(localStorage.getItem('mealAutoValuesV1')||'{}');
@@ -543,8 +543,7 @@ function syncWeekApproval(){
  if(saved&&!box.checked){localStorage.removeItem(APPROVED_WEEK_KEY);document.getElementById('approvalStatus').textContent='La semaine a changé : nouvelle validation nécessaire.'}
 }
 function proposeOtherWeek(){
- const box=document.getElementById('approveWeek');
- if(box?.checked){document.getElementById('approvalStatus').textContent='Semaine validée : décoche la validation ou déverrouille les repas que tu souhaites changer.';return}
+ 
  autoWeek();
 }
 const SLOT_LOCK_KEY='mealWeeklySlotLocksV1';
