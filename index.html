@@ -188,7 +188,7 @@ function rebuildGeneratedRecipes(){
  const templates=[
   {cat:'PETITS-DÉJEUNERS',label:'Bol protéiné',groups:[['Produits laitiers et protéines',220],['Féculents',45],['Fruits',100],['Oléagineux et matières grasses',12]]},
   {cat:'PETITS-DÉJEUNERS',label:'Petit-déjeuner gourmand',groups:[['Produits laitiers et protéines',200],['Fruits',120],['Oléagineux et matières grasses',20]]},
-  {cat:'DÉJEUNERS & BATCH COOKING',label:'Assiette complète',groups:[['Viandes et œufs',160],['Féculents',65],['Légumes',200],['Sauces et assaisonnements',25]]},
+  {cat:'DÉJEUNERS & BATCH COOKING',label:'Assiette complète',groups:[['Viandes et œufs',160],['Féculents',65],['Légumes',200],['Légumes',100]]},
   {cat:'DÉJEUNERS & BATCH COOKING',label:'Bol équilibré',groups:[['Poissons et fruits de mer',160],['Féculents',65],['Légumes',200]]},
   {cat:'DÎNERS RAPIDES',label:'Poêlée complète',groups:[['Viandes et œufs',160],['Légumes',220],['Féculents',55]]},
   {cat:'DÎNERS RAPIDES',label:'Assiette de la mer',groups:[['Poissons et fruits de mer',160],['Légumes',220],['Féculents',55]]},
@@ -526,7 +526,7 @@ function autoWeek(){
      if(target){target.value=String(id);}
    }
  }
- const history=JSON.parse(localStorage.getItem(RECIPE_HISTORY_KEY)||'{}');Object.values(choices).flat().forEach(id=>{const name=RECIPES.find(r=>r.id===id)?.name;if(name)history[name]=(history[name]||0)+1});localStorage.setItem(RECIPE_HISTORY_KEY,JSON.stringify(history));localStorage.setItem('mealGenerationSeed',String((+localStorage.getItem('mealGenerationSeed')||0)+1));
+ const history=JSON.parse(localStorage.getItem(RECIPE_HISTORY_KEY)||'{}');Object.values(choices).flat().forEach(id=>{const name=RECIPES.find(r=>r.id===id)?.name;if(name)history[name]=(history[name]||0)+1});localStorage.setItem(RECIPE_HISTORY_KEY,JSON.stringify(history));
  update();updateFavButtons();panel.style.display='block';
  const names=ids=>ids.map(id=>RECIPES.find(r=>r.id===id)?.name).join(' / ');
  box.innerHTML='<p><b>🔁 Deux recettes différentes par semaine pour chaque repas :</b></p>'+
