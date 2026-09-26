@@ -610,7 +610,6 @@ function keepWeeklySlot(slot,on){
  localStorage.setItem(SLOT_LOCK_KEY,JSON.stringify(locks));
  document.querySelectorAll('.mealLock').forEach(c=>c.checked=!!locks[c.dataset.slot]);
  saveMealLocks();renderWeeklySlotControls();
- if(on){autoWeek()}
  document.getElementById('slotChangeStatus').textContent=on?'Les sept repas « '+SLOTS.find(x=>x[0]===slot)[1]+' » sont conservés. Les autres repas restent modifiables.':'Ce type de repas peut à nouveau être modifié.';
 }
 function changeWeeklySlot(slot){
@@ -622,16 +621,24 @@ function changeWeeklySlot(slot){
  if(pool.length<2){status.textContent='Il n’y a pas deux autres recettes disponibles avec tes restrictions.';return}
  const excluded=new Set(previous);
  // Re-run the weekly optimizer, excluding the previous pair for the requested slot.
+ // Keep every other meal row unchanged, regardless of its own Garder state.
+ const otherSlots=new Set([...document.querySelectorAll('select[data-slot]')].filter(s=>s.dataset.slot!==slot).map(s=>s.dataset.day+':'+s.dataset.slot));
  window.mealReroll={slot,excluded};
- autoWeek();
- window.mealReroll=null;
+ window.mealTemporaryLocks=otherSlots;
+ try{autoWeek()}finally{window.mealReroll=null;window.mealTemporaryLocks=null}
+ // Strict safety: the Changer button may never alter a different row.
+ document.querySelectorAll('select[data-slot]').forEach(s=>{
+  if(s.dataset.slot===slot)return;
+  const v=before[s.dataset.day+':'+s.dataset.slot];
+  if(s.value!==v){s.innerHTML=opts(s.dataset.cat,v);s.value=v}
+ });
  const after=[...new Set([...document.querySelectorAll('select[data-slot="'+slot+'"]')].map(s=>s.value).filter(Boolean))];
  if(after.length!==2||after.some(id=>previous.has(id))){
   document.querySelectorAll('select[data-slot]').forEach(s=>{const v=before[s.dataset.day+':'+s.dataset.slot];s.innerHTML=opts(s.dataset.cat,v);s.value=v});
   update();status.textContent='Impossible de trouver deux autres recettes compatibles. La semaine précédente est conservée.';return;
  }
  const validation=weekValidation();
- status.textContent=validation.ok?'✓ Deux nouvelles recettes proposées, les sept journées et la moyenne hebdomadaire sont dans les cibles.':'Deux nouvelles recettes proposées, mais '+validation.bad.length+' journée(s) restent hors cible. Vérifie les indicateurs avant de conserver.';
+ status.textContent=validation.ok?'✓ Deux nouvelles recettes sur cette ligne uniquement. Les autres repas sont inchangés et les macros restent dans les cibles.':'Deux nouvelles recettes sur cette ligne uniquement. Les autres repas sont inchangés, mais '+validation.bad.length+' journée(s) restent hors cible : les macros ne peuvent pas toujours être rééquilibrées sans modifier les autres lignes.';
  renderWeeklySlotControls();
 }
 function manualMealChanged(sel){
