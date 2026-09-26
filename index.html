@@ -718,7 +718,7 @@ function autoWeek(){
    open.forEach((sel,i)=>{const id=best.rs[i].id;row[sel.dataset.slot]=id;usage[id]=(usage[id]||0)+1});
    assignment.push(row);totalScore+=best.score;Object.keys(week).forEach(k=>week[k]+=best.total[k]);
   }
-  // Exactly two recipes per slot, both used across the seven days.
+  // Discourage repeating the same dessert recipes at lunch and dinner.\n  const dessertOverlap=chosen.snack1.filter(r=>chosen.snack2.some(x=>x.id===r.id)).length;\n  totalScore+=dessertOverlap*95;\n  // Exactly two recipes per slot, both used across the seven days.
   for(const cfg of configs){
    const counts=chosen[cfg.slot].map(r=>assignment.filter(d=>d[cfg.slot]===r.id).length);
    if(counts.some(n=>n===0))totalScore+=10000;
