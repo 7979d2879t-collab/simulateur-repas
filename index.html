@@ -100,7 +100,7 @@ function setRecipeFavorite(id,on){
  if(on){FAVORITES.add(id);saveFavoriteRecipe(id)}
  else{FAVORITES.delete(id);SAVED_FAV=SAVED_FAV.filter(r=>r.id!==id);localStorage.setItem(SAVED_FAV_KEY,JSON.stringify(SAVED_FAV))}
  localStorage.setItem('mealFavs',JSON.stringify([...FAVORITES]));
- refreshChoices();updateFavButtons();renderRecipeCatalogue();renderSavedFavorites();
+ refreshChoices();updateFavButtons();renderRecipeCatalogue();if(kind==='off')autoWeek();renderSavedFavorites();
 }
 function renderSavedFavorites(){
  const root=document.getElementById('savedFavorites');if(!root)return;
@@ -186,9 +186,9 @@ function addCustomFood(){
  const cost=+document.getElementById('newCost').value||0;
  FOOD_PREF.custom.push({key:'custom_'+Date.now(),name,category,nutrition,cost});
  persistFoods();input.value='';fields.forEach(k=>document.getElementById('new'+k).value='');document.getElementById('newCost').value='';
- rebuildGeneratedRecipes();refreshChoices();renderFoodCatalogue();renderFoodExtras();renderRecipeCatalogue();
+ rebuildGeneratedRecipes();refreshChoices();renderFoodCatalogue();renderRecipeCatalogue();autoWeek();
 }
-function removeCustomFood(key){FOOD_PREF.custom=FOOD_PREF.custom.filter(x=>x.key!==key);FOOD_PREF.excluded=FOOD_PREF.excluded.filter(x=>x!==key);FOOD_PREF.favorites=FOOD_PREF.favorites.filter(x=>x!==key);persistFoods();rebuildGeneratedRecipes();refreshChoices();renderFoodCatalogue();renderFoodExtras();renderRecipeCatalogue();update()}
+function removeCustomFood(key){FOOD_PREF.custom=FOOD_PREF.custom.filter(x=>x.key!==key);FOOD_PREF.excluded=FOOD_PREF.excluded.filter(x=>x!==key);FOOD_PREF.favorites=FOOD_PREF.favorites.filter(x=>x!==key);persistFoods();rebuildGeneratedRecipes();refreshChoices();renderFoodCatalogue();renderRecipeCatalogue();autoWeek()}
 const MEAL_EXTRAS_KEY='mealExtrasV1';
 let MEAL_EXTRAS=JSON.parse(localStorage.getItem(MEAL_EXTRAS_KEY)||'{}');
 function extraFor(day,slot){return MEAL_EXTRAS[day+':'+slot]||[]}
@@ -540,32 +540,14 @@ function loadMealLocks(){
 }
 function changeBreakfastMode(mode){
  localStorage.setItem('breakfastMode',mode);
- const eligible=breakfastCandidates();
- const unlocked=weeklySlotLocks().breakfast?[]:[...document.querySelectorAll('select[data-slot="breakfast"]')];
- if(!unlocked.length){document.getElementById('slotChangeStatus').textContent='Petits-déjeuners verrouillés : décoche « Garder » avant de changer le type.';update();return}
- const history=JSON.parse(localStorage.getItem(RECIPE_HISTORY_KEY)||'{}');
- const oldAuto=JSON.parse(localStorage.getItem('mealAutoValuesV1')||'{}');
- // Optimize the breakfast pair against the rest of each day; leave all other meals unchanged.
- const ranked=eligible.map(r=>({r,score:Math.abs(r.macros.kcal-410)/90+Math.abs(r.macros.protein-34)/16+(history[r.name]||0)*.2-(FAVORITES.has(r.id)?.6:0)})).sort((a,b)=>a.score-b.score).slice(0,16).map(x=>x.r);
- let best=null;
- for(let i=0;i<ranked.length;i++)for(let j=i+1;j<ranked.length;j++){
-  const pair=[ranked[i],ranked[j]],assign=[],count=[0,0],scores=0;
-  for(const sel of unlocked){
-   const day=+sel.dataset.day,old=RECIPES.find(r=>r.id===+sel.value),total=dayTotalsFromSelects(day);
-   if(old){total.k-=old.macros.kcal;total.p-=old.macros.protein;total.c-=old.macros.carbs;total.f-=old.macros.fat;total.fi-=old.macros.fiber;total.cost-=old.macros.cost}
-   const possibilities=pair.map((r,k)=>({r,k,score:fitScore(addMeal(total,r))*12+count[k]*.7}));
-   possibilities.sort((a,b)=>a.score-b.score);
-   const pick=possibilities[0];assign.push({sel,r:pick.r});count[pick.k]++;scores+=pick.score;
-  }
-  scores+=Math.abs(count[0]-count[1])*.7;
-  if(!best||scores<best.scores)best={scores,assign};
- }
- if(!best){document.getElementById('slotChangeStatus').textContent='Pas assez de recettes compatibles avec ce choix. Les petits-déjeuners actuels sont conservés.';return}
- if(best){
-  best.assign.forEach(({sel,r})=>{sel.innerHTML=opts(sel.dataset.cat,String(r.id));sel.value=String(r.id);oldAuto[sel.dataset.day+':breakfast']=String(r.id)});
-  localStorage.setItem('mealAutoValuesV1',JSON.stringify(oldAuto));
- }
- update();updateFavButtons();document.getElementById('slotChangeStatus').textContent='Petits-déjeuners '+({sweet:'sucrés',savory:'salés',both:'en duo',mix:'mixtes'}[mode])+ ' appliqués sur les sept jours. Vérifie les indicateurs de macros : les autres repas sont conservés.';
+ const status=document.getElementById('slotChangeStatus');
+ if(weeklySlotLocks().breakfast){status.textContent='Petits-déjeuners conservés : retire « Garder » pour appliquer le nouveau type.';return}
+ const available=breakfastCandidates();
+ if(available.length<2){status.textContent='Moins de deux petits-déjeuners disponibles pour ce type. Ajoute ou réactive des recettes.';return}
+ autoWeek();
+ const invalid=[...document.querySelectorAll('select[data-slot="breakfast"]')].some(s=>!available.some(r=>String(r.id)===s.value));
+ if(invalid)status.textContent='Attention : certains petits-déjeuners ne correspondent pas au type choisi. Vérifie les restrictions et les repas verrouillés.';
+ else status.textContent='Type de petit-déjeuner appliqué sur toute la semaine. Les autres repas non verrouillés ont été recalculés.';
 }
 const APPROVED_WEEK_KEY='mealApprovedWeekV1';
 function weekValidation(){
@@ -573,7 +555,8 @@ function weekValidation(){
  const missing=sels.filter(s=>!s.value);
  const bad=[...Array(7)].map((_,d)=>({day:d,t:dayTotalsFromSelects(d)})).filter(x=>!inTargets(x.t));
  const wrong=SLOTS.filter(slot=>new Set(sels.filter(s=>s.dataset.slot===slot[0]&&s.value).map(s=>s.value)).size!==2);
- return {ok:!missing.length&&!bad.length&&!wrong.length,missing,bad,wrong};
+ const avg={k:0,p:0,fi:0,f:0};for(let d=0;d<7;d++){const t=dayTotalsFromSelects(d);Object.keys(avg).forEach(k=>avg[k]+=t[k]/7)}
+ return {ok:!missing.length&&!bad.length&&!wrong.length&&inTargets(avg),missing,bad,wrong,avg};
 }
 function approveWholeWeek(on){
  const box=document.getElementById('approveWeek'),status=document.getElementById('approvalStatus');
@@ -627,6 +610,7 @@ function keepWeeklySlot(slot,on){
  localStorage.setItem(SLOT_LOCK_KEY,JSON.stringify(locks));
  document.querySelectorAll('.mealLock').forEach(c=>c.checked=!!locks[c.dataset.slot]);
  saveMealLocks();renderWeeklySlotControls();
+ if(on){autoWeek()}
  document.getElementById('slotChangeStatus').textContent=on?'Les sept repas « '+SLOTS.find(x=>x[0]===slot)[1]+' » sont conservés. Les autres repas restent modifiables.':'Ce type de repas peut à nouveau être modifié.';
 }
 function changeWeeklySlot(slot){
@@ -801,7 +785,7 @@ function substitutionSuggestions(){
 }
 function applySubstitution(day,slot,id){
  const sel=document.querySelector('select[data-day="'+day+'"][data-slot="'+slot+'"]');if(!sel)return;
- sel.innerHTML=opts(sel.dataset.cat,String(id));sel.value=String(id);update();updateFavButtons();
+ sel.innerHTML=opts(sel.dataset.cat,String(id));sel.value=String(id);manualMealChanged(sel);
 }
 function smartSuggestions(){
  let out=[];
