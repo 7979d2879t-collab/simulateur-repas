@@ -44,7 +44,7 @@ button{border:0;background:var(--teal);color:#fff;padding:9px 12px;border-radius
 <span class="note">La proposition teste plusieurs rotations de deux petits-déjeuners et deux desserts,  Priorité à 2 050–2 150 kcal, 150–170 g protéines, 30–35 g fibres et 60–75 g lipides. Ensuite seulement viennent batch cooking, variété et favoris.</span>
 </div>
 <div class="panel" id="suggestPanel" style="display:none;margin-bottom:14px"><h2>🎯 Suggestions adaptées</h2><div id="suggestions"></div></div>
-<div class="panel" style="margin-bottom:12px"><h2>🥣 Petits-déjeuners</h2><label for="breakfastMode">Type de petit-déjeuner pour les 2 recettes de la semaine :</label> <select id="breakfastMode" style="max-width:270px" onchange="changeBreakfastMode(this.value)"><option value="both">Salé et sucré (duo)</option><option value="savory">Salé uniquement</option><option value="sweet">Sucré uniquement</option><option value="mix">Libre : salé, sucré ou duo</option></select><p class="note">Deux recettes maximum pour les petits-déjeuners et deux desserts pour toute la semaine.  Les recettes sélectionnées manuellement restent prioritaires.</p></div><div class="week" id="week"></div>
+<div class="panel" style="margin-bottom:12px"><h2>🥣 Petits-déjeuners</h2><label for="breakfastMode">Type de petit-déjeuner pour les 2 recettes de la semaine :</label> <select id="breakfastMode" style="max-width:270px" onchange="changeBreakfastMode(this.value)"><option value="both">Salé et sucré (duo)</option><option value="savory">Salé uniquement</option><option value="sweet">Sucré uniquement</option><option value="mix">Libre : salé, sucré ou duo</option></select><p class="note">Deux recettes maximum pour les petits-déjeuners et deux desserts pour toute la semaine.  Les recettes sélectionnées manuellement restent prioritaires.</p></div><div class="panel" style="margin-bottom:12px"><label style="display:block;font-weight:bold"><input type="checkbox" id="approveWeek" onchange="approveWholeWeek(this.checked)"> ✅ Valider et conserver tous les repas proposés de la semaine</label><p class="note" id="approvalStatus">La validation exige que les 7 journées respectent les macros et que chaque type de repas utilise exactement deux recettes.</p><button type="button" onclick="proposeOtherWeek()">🔄 Proposer d'autres recettes pour les repas non verrouillés</button><p class="note">Les repas verrouillés restent inchangés. La validation ne se fait jamais si les macros sont hors cible.</p></div><div class="week" id="week"></div>
 <div class="grid2">
 <div class="panel"><h2>Liste de courses</h2><p class="note">Quantités théoriques nécessaires. Pour viande/poisson, achète le conditionnement commercial le plus proche; quelques grammes d'écart ne posent pas problème.</p>
 <table><thead><tr><th>Produit</th><th>Quantité</th><th>Coût estimé</th></tr></thead><tbody id="shopping"></tbody></table>
@@ -389,7 +389,7 @@ function build(){
    w.appendChild(el);
  });
  document.querySelectorAll('select[data-slot]').forEach(s=>s.addEventListener('change',()=>{update();updateFavButtons()}));loadMealLocks();
- document.getElementById('breakfastMode').value=localStorage.getItem('breakfastMode')||'mix';load(); update(); updateFavButtons();
+ document.getElementById('breakfastMode').value=localStorage.getItem('breakfastMode')||'mix';load(); update(); updateFavButtons();syncWeekApproval();
 }
 function selected(){
  let out=Array.from({length:7},()=>[]);
@@ -518,9 +518,39 @@ function changeBreakfastMode(mode){
  }
  update();updateFavButtons();
 }
+const APPROVED_WEEK_KEY='mealApprovedWeekV1';
+function weekValidation(){
+ const sels=[...document.querySelectorAll('select[data-slot]')];
+ const missing=sels.filter(s=>!s.value);
+ const bad=[...Array(7)].map((_,d)=>({day:d,t:dayTotalsFromSelects(d)})).filter(x=>!inTargets(x.t));
+ const wrong=SLOTS.filter(slot=>new Set(sels.filter(s=>s.dataset.slot===slot[0]&&s.value).map(s=>s.value)).size!==2);
+ return {ok:!missing.length&&!bad.length&&!wrong.length,missing,bad,wrong};
+}
+function approveWholeWeek(on){
+ const box=document.getElementById('approveWeek'),status=document.getElementById('approvalStatus');
+ if(!on){localStorage.removeItem(APPROVED_WEEK_KEY);document.querySelectorAll('.mealLock').forEach(c=>c.checked=false);saveMealLocks();status.textContent='Validation retirée. Tu peux modifier les repas.';return}
+ const result=weekValidation();
+ if(!result.ok){box.checked=false;status.textContent='Validation impossible : '+result.bad.map(x=>DAYS[x.day]+' hors macros').join(', ')+(result.wrong.length?' · Deux recettes distinctes requises pour : '+result.wrong.map(x=>x[1]).join(', '):'')+(result.missing.length?' · Repas manquants : '+result.missing.length:'');return}
+ document.querySelectorAll('.mealLock').forEach(c=>c.checked=true);saveMealLocks();
+ const values={};document.querySelectorAll('select[data-slot]').forEach(sel=>values[sel.dataset.day+':'+sel.dataset.slot]=sel.value);
+ localStorage.setItem(APPROVED_WEEK_KEY,JSON.stringify(values));status.textContent='✓ Semaine validée : repas verrouillés et macros vérifiées pour les 7 jours.';
+}
+function syncWeekApproval(){
+ const box=document.getElementById('approveWeek');if(!box)return;
+ const saved=JSON.parse(localStorage.getItem(APPROVED_WEEK_KEY)||'null');
+ const sels=[...document.querySelectorAll('select[data-slot]')];
+ box.checked=!!saved&&sels.every(s=>saved[s.dataset.day+':'+s.dataset.slot]===s.value)&&weekValidation().ok;
+ if(saved&&!box.checked){localStorage.removeItem(APPROVED_WEEK_KEY);document.getElementById('approvalStatus').textContent='La semaine a changé : nouvelle validation nécessaire.'}
+}
+function proposeOtherWeek(){
+ const box=document.getElementById('approveWeek');
+ if(box?.checked){document.getElementById('approvalStatus').textContent='Semaine validée : décoche la validation ou déverrouille les repas que tu souhaites changer.';return}
+ autoWeek();
+}
 function autoWeek(){
  const panel=document.getElementById('suggestPanel'),box=document.getElementById('suggestions');
  const all=[...document.querySelectorAll('select[data-slot]')];
+ const before=all.map(x=>x.value);
  const configs=[
   {slot:'breakfast',label:'Petits-déjeuners',pool:breakfastCandidates(),target:410,protein:34},
   {slot:'lunch',label:'Déjeuners',pool:RECIPES.filter(r=>allowedRecipe(r)&&r.cat==='DÉJEUNERS & BATCH COOKING'),target:590,protein:43},
@@ -603,7 +633,7 @@ function autoWeek(){
   const result=evaluate(chosen);
   if(result&&(!best||result.score<best.score))best=result;
  }
- if(!best){panel.style.display='block';box.textContent='Aucune combinaison disponible avec les restrictions actuelles.';return}
+ if(!best){all.forEach((sel,i)=>sel.value=before[i]);panel.style.display='block';box.textContent='Aucune combinaison disponible avec les restrictions actuelles. La semaine précédente a été conservée.';update();return}
  const auto={};
  days.forEach((sels,day)=>sels.forEach(sel=>{
   if(locked.has(day+':'+sel.dataset.slot))return;
@@ -739,6 +769,7 @@ function update(){
  paintBatch();
  save();
  substitutionSuggestions();
+ syncWeekApproval();
 }
 function printShopping(){
  const rows=document.getElementById('shopping').innerHTML;
@@ -758,6 +789,6 @@ function load(){
    if(old){const slots=['breakfast','lunch','snack1','dinner','snack2'];for(let d=0;d<7;d++)slots.forEach((slot,i)=>{let s=document.querySelector('select[data-day="'+d+'"][data-slot="'+slot+'"]');if(s)s.value=old[d*5+i]||''})}
  }catch(e){}
 }
-function resetWeek(){localStorage.removeItem('mealV1');localStorage.removeItem('mealV2');localStorage.removeItem('mealV3');localStorage.removeItem('mealAutoValuesV1');localStorage.removeItem(MEAL_LOCK_KEY);document.querySelectorAll('.mealLock').forEach(c=>c.checked=false);document.querySelectorAll('select[data-slot]').forEach(x=>x.value='');update();}
+function resetWeek(){localStorage.removeItem('mealV1');localStorage.removeItem('mealV2');localStorage.removeItem('mealV3');localStorage.removeItem('mealAutoValuesV1');localStorage.removeItem(MEAL_LOCK_KEY);localStorage.removeItem(APPROVED_WEEK_KEY);document.getElementById('approveWeek').checked=false;document.querySelectorAll('.mealLock').forEach(c=>c.checked=false);document.querySelectorAll('select[data-slot]').forEach(x=>x.value='');update();}
 rebuildGeneratedRecipes();build();renderFoodCatalogue();renderRecipeCatalogue();renderSavedFavorites();
 </script></body></html>
