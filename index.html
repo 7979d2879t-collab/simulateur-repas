@@ -684,9 +684,9 @@ function autoWeek(){
    r,score:Math.abs(r.macros.kcal-cfg.target)/75+Math.abs(r.macros.protein-cfg.protein)/15+
    Math.abs(r.macros.fat-(cfg.slot.startsWith('snack')?8:18))/12+
    (history[r.name]||0)*.5-(FAVORITES.has(r.id)?1.4:0)
-  })).sort((a,b)=>a.score-b.score).slice(0,9).map(x=>x.r);
+  })).sort((a,b)=>a.score-b.score).slice(0,18).map(x=>x.r);
   const fixedRecipes=fixed.map(id=>cfg.pool.find(r=>r.id===id)).filter(Boolean);
-  pools[cfg.slot]=fixedRecipes.concat(ranked).slice(0,Math.max(2,fixedRecipes.length+6));
+  pools[cfg.slot]=fixedRecipes.concat(ranked).slice(0,Math.max(2,fixedRecipes.length+12));
   if(pools[cfg.slot].length<2){all.forEach((sel,i)=>sel.value=before[i]);panel.style.display='block';box.textContent='Pas assez de recettes autorisées pour '+cfg.label+'. Réactive des aliments ou des recettes.';return}
  }
  const emptyTotal=()=>({k:0,p:0,c:0,f:0,fi:0,cost:0});
@@ -725,19 +725,24 @@ function autoWeek(){
    open.forEach((sel,i)=>{const id=best.rs[i].id;row[sel.dataset.slot]=id;usage[id]=(usage[id]||0)+1});
    assignment.push(row);totalScore+=best.score;Object.keys(week).forEach(k=>week[k]+=best.total[k]);
   }
-  // Discourage repeating the same dessert recipes at lunch and dinner.\n  const dessertOverlap=chosen.snack1.filter(r=>chosen.snack2.some(x=>x.id===r.id)).length;\n  totalScore+=dessertOverlap*95;\n  // Exactly two recipes per slot, both used across the seven days.
+  // Discourage repeating the same dessert recipes at lunch and dinner.
+  const dessertOverlap=chosen.snack1.filter(r=>chosen.snack2.some(x=>x.id===r.id)).length;
+  totalScore+=dessertOverlap*95;
+  // Exactly two recipes per slot, both used across the seven days.
   for(const cfg of configs){
    const counts=chosen[cfg.slot].map(r=>assignment.filter(d=>d[cfg.slot]===r.id).length);
    if(counts.some(n=>n===0))totalScore+=10000;
   }
   const avg=Object.fromEntries(Object.entries(week).map(([k,v])=>[k,v/7]));
   totalScore+=fitScore(avg)*55;
-  return {score:totalScore,assignment,avg,chosen};
+  const allDaysValid=assignment.every((row,d)=>{const t=emptyTotal();for(const slot of SLOTS){const r=RECIPES.find(x=>x.id===row[slot[0]]);if(!r)return false;Object.assign(t,addMeal(t,r))}return inTargets(t)});
+  const pairsValid=configs.every(cfg=>new Set(assignment.map(row=>row[cfg.slot])).size===2);
+  return {score:totalScore,assignment,avg,chosen,valid:allDaysValid&&inTargets(avg)&&pairsValid};
  };
- let best=null;
+ let best=null, bestValid=null;
  // Deterministic but diverse joint search, with a limited budget on the browser.
  const seed=+localStorage.getItem('mealWeekSearchSeed')||0;
- for(let attempt=0;attempt<350;attempt++){
+ for(let attempt=0;attempt<900;attempt++){
   const chosen={};
   configs.forEach((cfg,i)=>{
    const options=pairOptions[cfg.slot];
@@ -745,8 +750,10 @@ function autoWeek(){
   });
   const result=evaluate(chosen);
   if(result&&(!best||result.score<best.score))best=result;
+  if(result?.valid&&(!bestValid||result.score<bestValid.score))bestValid=result;
  }
- if(!best){all.forEach((sel,i)=>sel.value=before[i]);panel.style.display='block';box.textContent='Aucune combinaison disponible avec les restrictions actuelles. La semaine précédente a été conservée.';update();return}
+ if(!bestValid){all.forEach((sel,i)=>{const v=before[i];sel.innerHTML=opts(sel.dataset.cat,v);sel.value=v});panel.style.display='block';box.textContent='Aucune combinaison respectant à la fois les macros de chaque jour, la moyenne hebdomadaire et les deux recettes par repas avec les lignes conservées. La semaine précédente reste inchangée : déverrouille une ligne ou élargis les aliments autorisés.';update();return}
+ best=bestValid;
  const auto={};
  days.forEach((sels,day)=>sels.forEach(sel=>{
   if(locked.has(day+':'+sel.dataset.slot))return;
