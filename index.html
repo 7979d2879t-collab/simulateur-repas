@@ -303,7 +303,7 @@ function autoWeek(){
    let base=existing.length?[RECIPES.find(r=>r.id===existing[0])]:pool.slice(0,6);
    let result=[];
    base.forEach(a=>pool.forEach(b=>{if(a.id!==b.id&&(!existing.length||a.id===existing[0]))result.push([a.id,b.id])}));
-   return result.slice(0,existing.length?10:25);
+   return result.slice(0,existing.length?4:6);
  };
  const bp=pairs(existingB,bPool),dp=pairs(existingD,dPool);
  let best=null;
