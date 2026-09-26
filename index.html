@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Simulateur repas semaine - V5.0</title>
+<title>Simulateur repas semaine - V5.1</title>
 <style>
 :root{--bg:#f4f7f8;--card:#fff;--navy:#17324d;--teal:#2d7d77;--line:#d9e1e4;--ok:#e8f5ec;--warn:#fff4dd;--bad:#fde8e7}
 *{box-sizing:border-box} body{margin:0;font-family:Arial,sans-serif;background:var(--bg);color:#26333c}
@@ -41,10 +41,10 @@ button{border:0;background:var(--teal);color:#fff;padding:9px 12px;border-radius
 <div class="tools">
 <button onclick="autoWeek()">✨ Proposer ma semaine</button>
 <button onclick="smartSuggestions()">🎯 Compléter / optimiser</button>
-<span class="note">La proposition teste plusieurs rotations de deux petits-déjeuners et deux desserts, avec une collation l’après-midi. Priorité à 2 050–2 150 kcal, 150–170 g protéines, 30–35 g fibres et 60–75 g lipides. Ensuite seulement viennent batch cooking, variété et favoris.</span>
+<span class="note">La proposition teste plusieurs rotations de deux petits-déjeuners et deux desserts,  Priorité à 2 050–2 150 kcal, 150–170 g protéines, 30–35 g fibres et 60–75 g lipides. Ensuite seulement viennent batch cooking, variété et favoris.</span>
 </div>
 <div class="panel" id="suggestPanel" style="display:none;margin-bottom:14px"><h2>🎯 Suggestions adaptées</h2><div id="suggestions"></div></div>
-<div class="panel" style="margin-bottom:12px"><h2>🥣 Petits-déjeuners</h2><label for="breakfastMode">Type de petit-déjeuner pour les 2 recettes de la semaine :</label> <select id="breakfastMode" style="max-width:270px" onchange="localStorage.setItem('breakfastMode',this.value)"><option value="both">Salé et sucré (duo)</option><option value="savory">Salé uniquement</option><option value="sweet">Sucré uniquement</option><option value="mix">Libre : salé, sucré ou duo</option></select><p class="note">Deux recettes maximum pour les petits-déjeuners et deux desserts pour toute la semaine. Une collation est prévue chaque après-midi. Les recettes sélectionnées manuellement restent prioritaires.</p></div><div class="week" id="week"></div>
+<div class="panel" style="margin-bottom:12px"><h2>🥣 Petits-déjeuners</h2><label for="breakfastMode">Type de petit-déjeuner pour les 2 recettes de la semaine :</label> <select id="breakfastMode" style="max-width:270px" onchange="localStorage.setItem('breakfastMode',this.value)"><option value="both">Salé et sucré (duo)</option><option value="savory">Salé uniquement</option><option value="sweet">Sucré uniquement</option><option value="mix">Libre : salé, sucré ou duo</option></select><p class="note">Deux recettes maximum pour les petits-déjeuners et deux desserts pour toute la semaine.  Les recettes sélectionnées manuellement restent prioritaires.</p></div><div class="week" id="week"></div>
 <div class="grid2">
 <div class="panel"><h2>Liste de courses</h2><p class="note">Quantités théoriques nécessaires. Pour viande/poisson, achète le conditionnement commercial le plus proche; quelques grammes d'écart ne posent pas problème.</p>
 <table><thead><tr><th>Produit</th><th>Quantité</th><th>Coût estimé</th></tr></thead><tbody id="shopping"></tbody></table>
@@ -63,7 +63,6 @@ const SLOTS=[
  ["breakfast","Petit-déjeuner","PETITS-DÉJEUNERS"],
  ["lunch","Déjeuner","DÉJEUNERS & BATCH COOKING"],
  ["snack1","Dessert du déjeuner","DESSERTS & COLLATIONS"],
- ["afternoon","Collation de l’après-midi","DESSERTS & COLLATIONS"],
  ["dinner","Dîner","DÎNERS RAPIDES"],
  ["snack2","Dessert du dîner (optionnel)","DESSERTS & COLLATIONS"]
 ];
@@ -294,7 +293,7 @@ function breakfastCandidates(){
 function autoWeek(){
  const all=[...document.querySelectorAll('select[data-slot]')];
  const used=(slots)=>[...new Set(all.filter(s=>slots.includes(s.dataset.slot)&&s.value).map(s=>+s.value))];
- const existingB=used(['breakfast']),existingD=used(['snack1','snack2','afternoon']);
+ const existingB=used(['breakfast']),existingD=used(['snack1','snack2']);
  const bc=breakfastCandidates(),dc=RECIPES.filter(r=>r.cat==='DESSERTS & COLLATIONS');
  if(existingB.length>2||existingD.length>2){
    const panel=document.getElementById('suggestPanel'),box=document.getElementById('suggestions');
@@ -322,7 +321,7 @@ function autoWeek(){
    for(const desserts of dp){
      let usage=usageCounts(),plans=[],score=0,valid=0;
      for(let day=0;day<7;day++){
-       const result=bestWholeDay(day,usage,{breakfast:breakfasts,snack1:desserts,afternoon:desserts,snack2:desserts});
+       const result=bestWholeDay(day,usage,{breakfast:breakfasts,snack1:desserts,snack2:desserts});
        plans.push(result);
        if(result.best.tot){
          let t=result.best.tot;if(inTargets(t))valid++;
@@ -342,7 +341,7 @@ function autoWeek(){
  const panel=document.getElementById('suggestPanel'),box=document.getElementById('suggestions');
  panel.style.display='block';
  const names=ids=>ids.map(id=>RECIPES.find(r=>r.id===id)?.name).join(' / ');
- box.innerHTML='<p><b>🔁 Rotation :</b> 2 petits-déjeuners et 2 desserts/collations pour la semaine, avec collation de l’après-midi.</p><p><b>Petits-déjeuners :</b> '+names(best.breakfasts)+'</p><p><b>Desserts/collations :</b> '+names(best.desserts)+'</p><p><b>Journées dans toutes les cibles :</b> '+best.valid+'/7. Les jours hors cible restent signalés dans le planning : la limitation à deux recettes peut empêcher un équilibre parfait avec des portions fixes.</p>';
+ box.innerHTML='<p><b>🔁 Rotation :</b> 2 petits-déjeuners et 2 desserts/collations pour la semaine, sans collation de l’après-midi.</p><p><b>Petits-déjeuners :</b> '+names(best.breakfasts)+'</p><p><b>Desserts/collations :</b> '+names(best.desserts)+'</p><p><b>Journées dans toutes les cibles :</b> '+best.valid+'/7. Les jours hors cible restent signalés dans le planning : la limitation à deux recettes peut empêcher un équilibre parfait avec des portions fixes.</p>';
 }
 function smartSuggestions(){
  let out=[];
