@@ -31,7 +31,7 @@ button{border:0;background:var(--teal);color:#fff;padding:9px 12px;border-radius
 <p>Cibles actuelles : 2 050-2 150 kcal · 150-170 g protéines · 30-35 g fibres · 60-75 g lipides. Aucune calorie ajoutée automatiquement avec le sport.</p></header>
 <nav aria-label="Mes simulateurs" style="background:#102638;color:#fff;display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:12px 22px"><span style="font-weight:800;margin-right:10px">◈ Mes simulateurs</span><a href="./index.html" style="text-decoration:none;background:#2d7d77;color:#fff;padding:9px 13px;border-radius:9px;font-weight:750">🥗 Menus de la semaine</a><a href="./agence.html" style="text-decoration:none;background:#ffffff1f;color:#fff;padding:9px 13px;border-radius:9px;font-weight:750;border:1px solid #ffffff38">📊 Simulateur financier</a></nav>
 <main>
-<section class="catalogue"><h2>❤️ Mes aliments et mes recettes</h2><p class="note">Coche les favoris et décoche les aliments ou recettes que tu ne veux plus voir dans les propositions. Tes choix restent enregistrés sur cet appareil. Renseigne les valeurs nutritionnelles pour 100 g de tes nouveaux aliments, puis ajoute-les aux repas avec une quantité : les totaux et la liste de courses se recalculent.</p><div id="foodCatalogue"></div><div style="margin-top:12px"><input id="newFood" placeholder="Ajouter un aliment (ex. lentilles)" aria-label="Nouvel aliment"><select id="newFoodCat" aria-label="Catégorie de l'aliment"><option>Viandes et œufs</option><option>Poissons et fruits de mer</option><option>Produits laitiers et protéines</option><option>Féculents</option><option>Légumes</option><option>Fruits</option><option>Oléagineux et matières grasses</option><option>Sauces et assaisonnements</option><option>Autres</option></select><div style="display:flex;flex-wrap:wrap;gap:8px;margin:10px 0"><label>kcal /100g <input id="newKcal" type="number" min="0" step=".1" style="width:85px"></label><label>Protéines <input id="newProtein" type="number" min="0" step=".1" style="width:85px"></label><label>Glucides <input id="newCarbs" type="number" min="0" step=".1" style="width:85px"></label><label>Lipides <input id="newFat" type="number" min="0" step=".1" style="width:85px"></label><label>Fibres <input id="newFiber" type="number" min="0" step=".1" style="width:85px"></label><label>Prix €/100g <input id="newCost" type="number" min="0" step=".01" style="width:85px"></label></div><button type="button" onclick="addCustomFood()">Ajouter cet aliment</button><p class="note">Valeurs pour 100 g, idéalement celles de l'étiquette. Laisse le prix à zéro s'il est inconnu.</p></div><h2>📖 Toutes les recettes par catégorie</h2><input type="search" id="catalogSearch" placeholder="Rechercher une recette ou un ingrédient…" oninput="renderRecipeCatalogue()"><div id="recipeCatalogue"></div></section><div class="top">
+<section class="catalogue"><h2>❤️ Mes aliments et mes recettes</h2><p class="note">Coche les favoris et décoche les aliments ou recettes que tu ne veux plus voir dans les propositions. Tes choix restent enregistrés sur cet appareil. Ajoute ou retire tes aliments : le simulateur crée des variantes des recettes existantes avec tes nouveaux ingrédients, recalcule les macros et les prend en compte dans la semaine.</p><div id="foodCatalogue"></div><div style="margin-top:12px"><input id="newFood" placeholder="Ajouter un aliment (ex. lentilles)" aria-label="Nouvel aliment"><select id="newFoodCat" aria-label="Catégorie de l'aliment"><option>Viandes et œufs</option><option>Poissons et fruits de mer</option><option>Produits laitiers et protéines</option><option>Féculents</option><option>Légumes</option><option>Fruits</option><option>Oléagineux et matières grasses</option><option>Sauces et assaisonnements</option><option>Autres</option></select><div style="display:flex;flex-wrap:wrap;gap:8px;margin:10px 0"><label>kcal /100g <input id="newKcal" type="number" min="0" step=".1" style="width:85px"></label><label>Protéines <input id="newProtein" type="number" min="0" step=".1" style="width:85px"></label><label>Glucides <input id="newCarbs" type="number" min="0" step=".1" style="width:85px"></label><label>Lipides <input id="newFat" type="number" min="0" step=".1" style="width:85px"></label><label>Fibres <input id="newFiber" type="number" min="0" step=".1" style="width:85px"></label><label>Prix €/100g <input id="newCost" type="number" min="0" step=".01" style="width:85px"></label></div><button type="button" onclick="addCustomFood()">Ajouter cet aliment</button><p class="note">Valeurs pour 100 g, idéalement celles de l'étiquette. Laisse le prix à zéro s'il est inconnu.</p></div><h2>📖 Toutes les recettes par catégorie</h2><input type="search" id="catalogSearch" placeholder="Rechercher une recette ou un ingrédient…" oninput="renderRecipeCatalogue()"><div id="recipeCatalogue"></div></section><div class="top">
 <div class="kpi"><span>Moyenne kcal/j</span><b id="avgK">-</b></div>
 <div class="kpi"><span>Protéines moy.</span><b id="avgP">-</b></div>
 <div class="kpi"><span>Fibres moy.</span><b id="avgFi">-</b></div>
@@ -113,7 +113,7 @@ function allowedRecipe(r){return !RECIPE_OFF.has(r.id)&&r.ings.every(x=>!exclude
 function persistFoods(){localStorage.setItem(FOOD_PREF_KEY,JSON.stringify(FOOD_PREF))}
 function toggleFood(key,kind,on){
  let arr=FOOD_PREF[kind];FOOD_PREF[kind]=on?[...new Set([...arr,key])]:arr.filter(x=>x!==key);
- persistFoods();refreshChoices();renderFoodCatalogue();renderRecipeCatalogue();renderFoodExtras();update();
+ persistFoods();rebuildGeneratedRecipes();refreshChoices();renderFoodCatalogue();renderRecipeCatalogue();renderFoodExtras();update();
 }
 function addCustomFood(){
  const input=document.getElementById('newFood'),name=input.value.trim(),category=document.getElementById('newFoodCat').value;
@@ -125,9 +125,9 @@ function addCustomFood(){
  const cost=+document.getElementById('newCost').value||0;
  FOOD_PREF.custom.push({key:'custom_'+Date.now(),name,category,nutrition,cost});
  persistFoods();input.value='';fields.forEach(k=>document.getElementById('new'+k).value='');document.getElementById('newCost').value='';
- renderFoodCatalogue();renderFoodExtras();
+ rebuildGeneratedRecipes();refreshChoices();renderFoodCatalogue();renderFoodExtras();renderRecipeCatalogue();
 }
-function removeCustomFood(key){FOOD_PREF.custom=FOOD_PREF.custom.filter(x=>x.key!==key);FOOD_PREF.excluded=FOOD_PREF.excluded.filter(x=>x!==key);FOOD_PREF.favorites=FOOD_PREF.favorites.filter(x=>x!==key);persistFoods();renderFoodCatalogue();renderFoodExtras();update()}
+function removeCustomFood(key){FOOD_PREF.custom=FOOD_PREF.custom.filter(x=>x.key!==key);FOOD_PREF.excluded=FOOD_PREF.excluded.filter(x=>x!==key);FOOD_PREF.favorites=FOOD_PREF.favorites.filter(x=>x!==key);persistFoods();rebuildGeneratedRecipes();refreshChoices();renderFoodCatalogue();renderFoodExtras();renderRecipeCatalogue();update()}
 const MEAL_EXTRAS_KEY='mealExtrasV1';
 let MEAL_EXTRAS=JSON.parse(localStorage.getItem(MEAL_EXTRAS_KEY)||'{}');
 function extraFor(day,slot){return MEAL_EXTRAS[day+':'+slot]||[]}
@@ -156,6 +156,36 @@ function renderFoodExtras(){
    extraFor(day,slot).map((x,i)=>{const f=FOOD_PREF.custom.find(z=>z.key===x.key);return '<div class="entry">'+(f?.name||'Aliment supprimé')+' · '+x.qty+' g <button class="mini" onclick="removeMealExtra('+day+',\''+slot+'\','+i+')">Retirer</button></div>'}).join('')+
    '<select id="extraFood'+day+slot+'"><option value="">Ajouter un aliment…</option>'+foods.map(f=>'<option value="'+f.key+'">'+f.name+'</option>').join('')+'</select> <input id="extraQty'+day+slot+'" type="number" min="1" placeholder="grammes" style="width:85px"> <button class="mini" onclick="addMealExtra('+day+',\''+slot+'\')">+ Ajouter</button>';
  });
+}
+// Recettes dérivées automatiquement des recettes existantes, avec un aliment
+// personnalisé supplémentaire. Le calcul conserve les macros de la recette de
+// référence et additionne celles de l'aliment ajouté selon son grammage.
+const BASE_RECIPE_COUNT=RECIPES.length;
+function rebuildGeneratedRecipes(){
+ RECIPES.splice(BASE_RECIPE_COUNT);
+ const foods=FOOD_PREF.custom.filter(f=>f.nutrition&&!excludedFood(f.key));
+ const bases=RECIPES.slice(0,BASE_RECIPE_COUNT).filter(r=>allowedRecipe(r));
+ const categoryMatch=(food,recipe)=>{
+  const c=food.category;
+  if(recipe.cat==='PETITS-DÉJEUNERS')return ['Fruits','Produits laitiers et protéines','Oléagineux et matières grasses','Féculents'].includes(c);
+  if(recipe.cat==='DESSERTS & COLLATIONS')return ['Fruits','Produits laitiers et protéines','Oléagineux et matières grasses'].includes(c);
+  return ['Viandes et œufs','Poissons et fruits de mer','Légumes','Féculents','Produits laitiers et protéines','Sauces et assaisonnements'].includes(c);
+ };
+ const portions={'Viandes et œufs':100,'Poissons et fruits de mer':100,'Produits laitiers et protéines':80,'Féculents':60,'Légumes':150,'Fruits':100,'Oléagineux et matières grasses':20,'Sauces et assaisonnements':25,'Autres':50};
+ let id=Math.max(0,...RECIPES.map(r=>r.id))+1;
+ for(const food of foods){
+  // A few variations per food, rather than combinatorial growth.
+  const matches=bases.filter(r=>categoryMatch(food,r)&&!r.ings.some(x=>x.key===food.key));
+  const categories=[...new Set(matches.map(r=>r.cat))];
+  for(const cat of categories){
+   const ranked=matches.filter(r=>r.cat===cat).sort((a,b)=>Math.abs(a.macros.kcal-450)-Math.abs(b.macros.kcal-450)).slice(0,3);
+   for(const base of ranked){
+    const qty=portions[food.category]||50,n=food.nutrition,factor=qty/100;
+    const m={...base.macros,kcal:Math.round(base.macros.kcal+n.kcal*factor),protein:+(base.macros.protein+n.protein*factor).toFixed(1),carbs:+(base.macros.carbs+n.carbs*factor).toFixed(1),fat:+(base.macros.fat+n.fat*factor).toFixed(1),fiber:+(base.macros.fiber+n.fiber*factor).toFixed(1),cost:+(base.macros.cost+(food.cost||0)*factor).toFixed(2)};
+    RECIPES.push({...base,id:id++,name:base.name+' + '+food.name,sub:'Variation créée depuis ta liste d’aliments',macros:m,ings:[...base.ings,{key:food.key,qty}],generated:true});
+   }
+  }
+ }
 }
 function renderFoodCatalogue(){
  const root=document.getElementById('foodCatalogue');if(!root)return;
@@ -322,7 +352,7 @@ function fitScore(t){
 function addMeal(t,r){return {k:t.k+r.macros.kcal,p:t.p+r.macros.protein,fi:t.fi+r.macros.fiber,f:t.f+r.macros.fat,c:t.c+r.macros.carbs,cost:t.cost+r.macros.cost}}
 function usageCounts(){let u={};document.querySelectorAll('select[data-slot]').forEach(s=>{if(s.value)u[s.value]=(u[s.value]||0)+1});return u}
 function bestForSelect(sel,base,usage={}){
- let candidates=RECIPES.filter(r=>r.cat===sel.dataset.cat),slot=sel.dataset.slot;
+ let candidates=RECIPES.filter(r=>allowedRecipe(r)&&r.cat===sel.dataset.cat),slot=sel.dataset.slot;
  return candidates.map(r=>{let next=addMeal(base,r),score=fitScore(next),used=usage[r.id]||0;
    // Hard guardrails: avoid adding a meal that pushes an already substantial day far above targets.
    if(next.k>2175)score+=(next.k-2175)/35;
@@ -330,7 +360,7 @@ function bestForSelect(sel,base,usage={}){
    if(next.f>77)score+=(next.f-77)/5;
    if(slot==='lunch')score+=used===0?0:used===1?-.22:(used-1)*2.5;
    else score+=used*1.9;
-   if(FAVORITES.has(r.id))score-=.10;
+   if(FAVORITES.has(r.id))score-=.10;if(r.generated&&FOOD_PREF.favorites.some(k=>r.ings.some(x=>x.key===k)))score-=.25;
    return {r,score}}).sort((x,y)=>x.score-y.score)[0]?.r;
 }
 function inTargets(t){return t.k>=2050&&t.k<=2150&&t.p>=150&&t.p<=170&&t.fi>=30&&t.fi<=35&&t.f>=60&&t.f<=75}
@@ -570,5 +600,5 @@ function load(){
  }catch(e){}
 }
 function resetWeek(){MEAL_EXTRAS={};localStorage.removeItem(MEAL_EXTRAS_KEY);localStorage.removeItem('mealV1');localStorage.removeItem('mealV2');localStorage.removeItem('mealV3');document.querySelectorAll('select[data-slot]').forEach(x=>x.value='');update();}
-build();renderFoodCatalogue();renderRecipeCatalogue();
+rebuildGeneratedRecipes();build();renderFoodCatalogue();renderRecipeCatalogue();
 </script></body></html>
