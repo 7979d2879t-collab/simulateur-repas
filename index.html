@@ -171,8 +171,8 @@ function renderFoodExtras(){
   const added=extraFor(day,slot);
   const label=k=>META[k]?.name||FOOD_PREF.custom.find(f=>f.key===k)?.name||k;
   el.innerHTML=(recipe?'<details><summary>✏️ Modifier les ingrédients de cette recette</summary><div class="note">Les modifications concernent uniquement cette case, pas ta recette favorite d’origine.</div>'+
-   recipe.ings.map((x,i)=>'<div class="entry">'+label(x.key)+' · '+x.qty+' g <button class="mini" onclick="removeRecipeIngredient('+day+',\''+slot+'\','+i+')">Retirer</button></div>').join(''):'<div class="note">Sélectionne une recette pour modifier ses ingrédients.</div>')+
-   added.map((x,i)=>'<div class="entry">'+label(x.key)+' · '+x.qty+' g ajouté <button class="mini" onclick="removeMealExtra('+day+',\''+slot+'\','+i+')">Retirer</button></div>').join('')+
+   recipe.ings.filter(x=>!added.some(e=>e.removed&&e.key===x.key&&e.qty===-x.qty)).map((x,i)=>'<div class="entry">'+label(x.key)+' · '+x.qty+' g <button class="mini" onclick="removeRecipeIngredient('+day+',\''+slot+'\','+recipe.ings.indexOf(x)+')">Retirer</button></div>').join(''):'<div class="note">Sélectionne une recette pour modifier ses ingrédients.</div>')+
+   added.map((x,i)=>'<div class="entry">'+label(x.key)+' · '+Math.abs(x.qty)+' g '+(x.removed?'retiré':'ajouté')+' <button class="mini" onclick="removeMealExtra('+day+',\''+slot+'\','+i+')">Retirer</button></div>').join('')+
    '<select id="extraFood'+day+slot+'"><option value="">Ajouter un aliment…</option>'+foods.map(f=>'<option value="'+f.key+'">'+f.name+'</option>').join('')+'</select> <input id="extraQty'+day+slot+'" type="number" min="1" placeholder="grammes" style="width:85px"> <button class="mini" onclick="addMealExtra('+day+',\''+slot+'\')">+ Ajouter</button>'+(recipe?'</details>':'');
  });
 }
