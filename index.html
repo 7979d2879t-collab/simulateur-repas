@@ -765,34 +765,73 @@ function autoWeek(){
  '<p>Le calcul compare les journées ET la moyenne de la semaine. Vérifie les indicateurs de chaque jour : aucune journée hors cible n’est présentée comme validée.</p>';
 }
 // Suggestions remain optional and never overwrite the saved original of a favorite.
+// Substitutions are weekly pair swaps: a recipe is replaced on every day where
+// it appears. This preserves exactly two batch-cooking recipes per meal type.
+function weeklySubstitutionOptions(){
+ const locks=weeklySlotLocks(),out=[];
+ for(const [slot,label,cat] of SLOTS){
+  if(locks[slot])continue;
+  const sels=[...document.querySelectorAll('select[data-slot="'+slot+'"]')];
+  const ids=[...new Set(sels.map(s=>s.value).filter(Boolean))];
+  if(sels.some(s=>!s.value)||ids.length!==2)continue;
+  const pool=slot==='breakfast'?breakfastCandidates():RECIPES.filter(r=>allowedRecipe(r)&&r.cat===cat);
+  const before=[...Array(7)].map((_,d)=>dayTotalsFromSelects(d));
+  for(const oldId of ids){
+   const old=RECIPES.find(r=>String(r.id)===oldId);if(!old)continue;
+   const affected=sels.filter(s=>s.value===oldId).map(s=>+s.dataset.day);
+   const otherId=ids.find(id=>id!==oldId);
+   for(const recipe of pool){
+    if(String(recipe.id)===oldId||String(recipe.id)===otherId)continue;
+    const revised=before.map((t,d)=>{
+     if(!affected.includes(d))return t;
+     const minus={...t,k:t.k-old.macros.kcal,p:t.p-old.macros.protein,c:t.c-old.macros.carbs,f:t.f-old.macros.fat,fi:t.fi-old.macros.fiber,cost:t.cost-old.macros.cost};
+     return addMeal(minus,recipe);
+    });
+    const oldScore=affected.reduce((sum,d)=>sum+fitScore(before[d]),0);
+    const newScore=affected.reduce((sum,d)=>sum+fitScore(revised[d]),0);
+    const oldAvg=Object.fromEntries(['k','p','c','f','fi','cost'].map(k=>[k,before.reduce((sum,t)=>sum+t[k],0)/7]));
+    const newAvg=Object.fromEntries(['k','p','c','f','fi','cost'].map(k=>[k,revised.reduce((sum,t)=>sum+t[k],0)/7]));
+    const improvement=(oldScore-newScore)+(fitScore(oldAvg)-fitScore(newAvg))*2;
+    if(improvement<=.15)continue;
+    const newBad=revised.filter(t=>!inTargets(t)).length;
+    const oldBad=before.filter(t=>!inTargets(t)).length;
+    if(newBad>oldBad)continue;
+    out.push({slot,label,old,recipe,affected,revised,newAvg,improvement,newBad,allOk:newBad===0&&inTargets(newAvg)});
+   }
+  }
+ }
+ return out.sort((a,b)=>Number(b.allOk)-Number(a.allOk)||b.improvement-a.improvement);
+}
 function substitutionSuggestions(){
  const root=document.getElementById('substitutionPanel');if(!root)return;
- const gaps=t=>[['k','Calories',2050,2150,'kcal'],['p','Protéines',150,170,'g'],['fi','Fibres',30,35,'g'],['f','Lipides',60,75,'g']].filter(([k,n,lo,hi])=>t[k]<lo||t[k]>hi).map(([k,n,lo,hi,u])=>n+' '+Math.round(t[k])+u+' (objectif '+lo+'–'+hi+')');
- let blocks=[];
- for(let day=0;day<7;day++){
-  const total=dayTotalsFromSelects(day),missing=gaps(total);if(!missing.length)continue;
-  let options=[];
-  document.querySelectorAll('select[data-day="'+day+'"]').forEach(sel=>{
-   const old=RECIPES.find(r=>r.id===+sel.value);if(!old)return;
-   const base={k:total.k-old.macros.kcal,p:total.p-old.macros.protein,c:total.c-old.macros.carbs,f:total.f-old.macros.fat,fi:total.fi-old.macros.fiber,cost:total.cost-old.macros.cost};
-   RECIPES.filter(r=>allowedRecipe(r)&&r.cat===old.cat&&r.id!==old.id).forEach(r=>{
-    const revised=addMeal(base,r),improvement=fitScore(total)-fitScore(revised);
-    if(improvement>.1){
-     const shared=old.ings.filter(x=>r.ings.some(y=>y.key===x.key)).length;
-     options.push({slot:sel.dataset.slot,old,r,revised,score:improvement+shared*.025});
-    }
-   });
-  });
-  options.sort((a,b)=>b.score-a.score);
-  const seen=new Set(),best=options.filter(x=>{if(seen.has(x.slot))return false;seen.add(x.slot);return true}).slice(0,2);
-  blocks.push('<div class="entry"><b>'+DAYS[day]+' : '+missing.join(' · ')+'</b>'+
-   (best.length?best.map(x=>'<p><b>'+x.old.name+'</b> → <b>'+x.r.name+'</b><br>Après remplacement : '+Math.round(x.revised.k)+' kcal · '+Math.round(x.revised.p)+' g protéines · '+Math.round(x.revised.fi)+' g fibres · '+Math.round(x.revised.f)+' g lipides. '+(inTargets(x.revised)?'✓ Objectifs atteints.':'Certaines cibles restent à corriger.')+'<br><button class="mini" onclick="applySubstitution('+day+',\''+x.slot+'\','+x.r.id+')">Appliquer cette substitution</button></p>').join(''):'<p>Pas de substitution suffisante avec les aliments autorisés.</p>')+'</div>');
+ const validation=weekValidation();
+ if(validation.ok){root.textContent='✓ Les sept journées et les deux recettes par type de repas respectent les objectifs.';return}
+ const options=weeklySubstitutionOptions(),shown=[],used=new Set();
+ for(const option of options){
+  if(used.has(option.slot))continue;
+  shown.push(option);used.add(option.slot);
+  if(shown.length>=4)break;
  }
- root.innerHTML=blocks.length?blocks.join(''):'Toutes les journées renseignées sont dans les cibles.';
+ const locked=SLOTS.filter(([slot])=>weeklySlotLocks()[slot]).map(x=>x[1]);
+ root.innerHTML='<p class="note">Les substitutions proposées remplacent une recette sur tous les jours où elle apparaît, uniquement dans sa propre ligne. Les repas conservés ne sont jamais modifiés.</p>'+
+ (shown.length?shown.map(x=>'<div class="entry"><b>'+escapeFoodHtml(x.label)+'</b><p>'+escapeFoodHtml(x.old.name)+' → <b>'+escapeFoodHtml(x.recipe.name)+'</b></p><p>Jours concernés : '+x.affected.map(d=>DAYS[d]).join(', ')+'. Moyenne après substitution : '+Math.round(x.newAvg.k)+' kcal · '+Math.round(x.newAvg.p)+' g protéines · '+Math.round(x.newAvg.fi)+' g fibres · '+Math.round(x.newAvg.f)+' g lipides.</p><p>'+(x.allOk?'✓ Tous les jours et la moyenne seraient dans les cibles.':'Amélioration estimée, mais '+x.newBad+' journée(s) resteraient hors cible.')+'</p><button class="mini" type="button" onclick="applyWeeklySubstitution(\''+x.slot+'\','+x.old.id+','+x.recipe.id+')">Appliquer à cette ligne uniquement</button></div>').join(''):'<p>Aucune substitution compatible avec les deux recettes par repas et les restrictions actuelles.</p>')+
+ (locked.length?'<p class="note">Lignes conservées : '+locked.map(escapeFoodHtml).join(', ')+'.</p>':'');
+}
+function applyWeeklySubstitution(slot,oldId,newId){
+ if(weeklySlotLocks()[slot]){document.getElementById('slotChangeStatus').textContent='Cette ligne est conservée : retire « Garder » avant de la modifier.';return}
+ const option=weeklySubstitutionOptions().find(x=>x.slot===slot&&x.old.id===oldId&&x.recipe.id===newId);
+ if(!option){document.getElementById('slotChangeStatus').textContent='Cette substitution n’est plus compatible avec la semaine actuelle.';substitutionSuggestions();return}
+ document.querySelectorAll('select[data-slot="'+slot+'"]').forEach(sel=>{
+  if(sel.value!==String(oldId))return;
+  sel.innerHTML=opts(sel.dataset.cat,String(newId));sel.value=String(newId);
+ });
+ update();updateFavButtons();
+ document.getElementById('slotChangeStatus').textContent='Substitution appliquée à '+option.label+' uniquement, sur '+option.affected.length+' jour(s). Les autres lignes restent inchangées.';
 }
 function applySubstitution(day,slot,id){
- const sel=document.querySelector('select[data-day="'+day+'"][data-slot="'+slot+'"]');if(!sel)return;
- sel.innerHTML=opts(sel.dataset.cat,String(id));sel.value=String(id);manualMealChanged(sel);
+ // Older suggestion buttons, if still visible, use the same weekly safeguard.
+ const sel=document.querySelector('select[data-day="'+day+'"][data-slot="'+slot+'"]');
+ if(sel)applyWeeklySubstitution(slot,+sel.value,+id);
 }
 function smartSuggestions(){
  let out=[];
