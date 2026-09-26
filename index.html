@@ -150,9 +150,8 @@ function extraFor(day,slot){return MEAL_EXTRAS[day+':'+slot]||[]}
 function extraNutrition(day,slot){
  const total={k:0,p:0,c:0,f:0,fi:0,cost:0};
  for(const x of extraFor(day,slot)){
-   const food=FOOD_PREF.custom.find(f=>f.key===x.key);if(!food?.nutrition)continue;
-   const n=food.nutrition,m=x.qty/100;
-   total.k+=n.kcal*m;total.p+=n.protein*m;total.c+=n.carbs*m;total.f+=n.fat*m;total.fi+=n.fiber*m;total.cost+=(food.cost||0)*m;
+  const n=foodInfo(x.key);if(!n)continue;
+  const v=x.qty/100;total.k+=n[0]*v;total.p+=n[1]*v;total.c+=n[2]*v;total.f+=n[3]*v;total.fi+=n[4]*v;total.cost+=n[5]*v;
  }
  return total;
 }
@@ -166,12 +165,25 @@ function addMealExtra(day,slot){
 function removeMealExtra(day,slot,index){MEAL_EXTRAS[day+':'+slot].splice(index,1);saveMealExtras();renderFoodExtras()}
 function renderFoodExtras(){
  document.querySelectorAll('.extraArea').forEach(el=>{
-  const day=+el.dataset.day,slot=el.dataset.slot;
-  const foods=FOOD_PREF.custom.filter(f=>f.nutrition&&!excludedFood(f.key));
-  el.innerHTML='<div class="note">Aliments ajoutés au repas :</div>'+
-   extraFor(day,slot).map((x,i)=>{const f=FOOD_PREF.custom.find(z=>z.key===x.key);return '<div class="entry">'+(f?.name||'Aliment supprimé')+' · '+x.qty+' g <button class="mini" onclick="removeMealExtra('+day+',\''+slot+'\','+i+')">Retirer</button></div>'}).join('')+
-   '<select id="extraFood'+day+slot+'"><option value="">Ajouter un aliment…</option>'+foods.map(f=>'<option value="'+f.key+'">'+f.name+'</option>').join('')+'</select> <input id="extraQty'+day+slot+'" type="number" min="1" placeholder="grammes" style="width:85px"> <button class="mini" onclick="addMealExtra('+day+',\''+slot+'\')">+ Ajouter</button>';
+  const day=+el.dataset.day,slot=el.dataset.slot,sel=document.querySelector('select[data-day="'+day+'"][data-slot="'+slot+'"]');
+  const recipe=RECIPES.find(r=>r.id===+sel.value);
+  const foods=[...Object.entries(META).map(([key,m])=>({key,name:m.name})),...FOOD_PREF.custom].filter(f=>!excludedFood(f.key)&&foodInfo(f.key));
+  const added=extraFor(day,slot);
+  const label=k=>META[k]?.name||FOOD_PREF.custom.find(f=>f.key===k)?.name||k;
+  el.innerHTML=(recipe?'<details><summary>✏️ Modifier les ingrédients de cette recette</summary><div class="note">Les modifications concernent uniquement cette case, pas ta recette favorite d’origine.</div>'+
+   recipe.ings.map((x,i)=>'<div class="entry">'+label(x.key)+' · '+x.qty+' g <button class="mini" onclick="removeRecipeIngredient('+day+',\''+slot+'\','+i+')">Retirer</button></div>').join(''):'<div class="note">Sélectionne une recette pour modifier ses ingrédients.</div>')+
+   added.map((x,i)=>'<div class="entry">'+label(x.key)+' · '+x.qty+' g ajouté <button class="mini" onclick="removeMealExtra('+day+',\''+slot+'\','+i+')">Retirer</button></div>').join('')+
+   '<select id="extraFood'+day+slot+'"><option value="">Ajouter un aliment…</option>'+foods.map(f=>'<option value="'+f.key+'">'+f.name+'</option>').join('')+'</select> <input id="extraQty'+day+slot+'" type="number" min="1" placeholder="grammes" style="width:85px"> <button class="mini" onclick="addMealExtra('+day+',\''+slot+'\')">+ Ajouter</button>'+(recipe?'</details>':'');
  });
+}
+function removeRecipeIngredient(day,slot,index){
+ const sel=document.querySelector('select[data-day="'+day+'"][data-slot="'+slot+'"]');
+ const recipe=RECIPES.find(r=>r.id===+sel.value),ingredient=recipe?.ings[index];if(!ingredient)return;
+ const n=foodInfo(ingredient.key);
+ if(!n){alert('Valeurs nutritionnelles indisponibles pour cet ingrédient : retrait impossible sans fausser les macros.');return}
+ const key=day+':'+slot;MEAL_EXTRAS[key]||=[];
+ MEAL_EXTRAS[key].push({key:ingredient.key,qty:-ingredient.qty,removed:true});
+ saveMealExtras();renderFoodExtras();
 }
 // Recettes dérivées automatiquement des recettes existantes, avec un aliment
 // personnalisé supplémentaire. Le calcul conserve les macros de la recette de
@@ -294,7 +306,7 @@ function updateFavButtons(){
  document.querySelectorAll('.favbtn').forEach(b=>{let s=b.parentElement.querySelector('select'),on=s&&s.value!==''&&FAVORITES.has(+s.value);b.textContent=on?'★ Favori':'☆ Favori';b.classList.toggle('favon',on)});
 }
 function ingredientDisplay(x){
- let m=META[x.key]; if(!m)return x.qty+' g';
+ let m=META[x.key]||FOOD_PREF.custom.find(f=>f.key===x.key); if(!m)return x.qty+' g';
  const liquids=new Set(['lait','lait_coco','creme','huile']);
  if(liquids.has(x.key)){return x.qty>=1000?(x.qty/1000).toFixed(2).replace('.',',')+' L':Math.round(x.qty)+' ml';}
  const pieces={oeuf:[1,'œuf'],kiwi:[100,'kiwi'],banane:[120,'banane'],avocat:[200,'avocat'],poire:[150,'poire'],wrap:[60,'wrap']};
@@ -376,7 +388,7 @@ function build(){
    `<div class="daytotal" id="tot${i}">Aucun repas sélectionné.</div>`;
    w.appendChild(el);
  });
- document.querySelectorAll('select[data-slot]').forEach(s=>s.addEventListener('change',()=>{update();updateFavButtons()}));
+ document.querySelectorAll('select[data-slot]').forEach(s=>s.addEventListener('change',()=>{delete MEAL_EXTRAS[s.dataset.day+':'+s.dataset.slot];localStorage.setItem(MEAL_EXTRAS_KEY,JSON.stringify(MEAL_EXTRAS));update();updateFavButtons();renderFoodExtras()}));
  document.getElementById('breakfastMode').value=localStorage.getItem('breakfastMode')||'mix';load(); update(); updateFavButtons();renderFoodExtras();
 }
 function selected(){
@@ -673,7 +685,7 @@ function update(){
  drawTargetBars(active.length?[avg('k'),avg('p'),avg('fi'),avg('f')]:[0,0,0,0]);
  let tbody=document.getElementById('shopping'); tbody.innerHTML='';
  Object.entries(shop).sort((a,b)=>META[a[0]].name.localeCompare(META[b[0]].name,'fr')).forEach(([k,q])=>{
-   let m=META[k]||FOOD_PREF.custom.find(f=>f.key===k);if(!m)return;let cost= m.unit==='œuf'? q*m.costPer : q/100*(m.costPer100??m.cost??0);
+   let m=META[k]||FOOD_PREF.custom.find(f=>f.key===k);if(!m||q<=0)return;let cost= m.unit==='œuf'? q*m.costPer : q/100*(m.costPer100??m.cost??0);
    const pieceMap={oeuf:[1,'œuf'],kiwi:[100,'kiwi'],banane:[120,'banane'],avocat:[200,'avocat'],poire:[150,'poire'],wrap:[60,'wrap']};
    let qty;
    const liquidKeys=new Set(['lait','lait_coco','creme','huile']);
