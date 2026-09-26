@@ -752,8 +752,8 @@ function autoWeek(){
   if(result&&(!best||result.score<best.score))best=result;
   if(result?.valid&&(!bestValid||result.score<bestValid.score))bestValid=result;
  }
- if(!bestValid){all.forEach((sel,i)=>{const v=before[i];sel.innerHTML=opts(sel.dataset.cat,v);sel.value=v});panel.style.display='block';box.textContent='Aucune combinaison respectant à la fois les macros de chaque jour, la moyenne hebdomadaire et les deux recettes par repas avec les lignes conservées. La semaine précédente reste inchangée : déverrouille une ligne ou élargis les aliments autorisés.';update();return}
- best=bestValid;
+ if(bestValid)best=bestValid;
+ // If strict targets are impossible, show the closest complete week as a clearly flagged draft.
  const auto={};
  days.forEach((sels,day)=>sels.forEach(sel=>{
   if(locked.has(day+':'+sel.dataset.slot))return;
@@ -768,7 +768,7 @@ function autoWeek(){
  const validation=weekValidation();
  const a=best.avg;
  box.innerHTML='<p><b>Proposition optimisée sur 7 jours.</b> Moyennes : '+Math.round(a.k)+' kcal, '+Math.round(a.p)+' g protéines, '+Math.round(a.fi)+' g fibres, '+Math.round(a.f)+' g lipides.</p>'+
- (validation.ok?'<p>✓ Les 7 journées, la moyenne et les deux recettes par repas respectent les règles.</p>':'<p>⚠ Proposition non conforme : '+validation.bad.map(x=>DAYS[x.day]).join(', ')+' hors macros'+(validation.wrong.length?' ; deux recettes distinctes non respectées pour '+validation.wrong.map(x=>x[1]).join(', '):'')+'. Les repas verrouillés et les restrictions peuvent rendre les objectifs impossibles.</p>')+
+ (validation.ok?'<p>✓ Les 7 journées, la moyenne et les deux recettes par repas respectent les règles.</p>':'<p>⚠ Proposition provisoire, non validée : '+validation.bad.map(x=>DAYS[x.day]).join(', ')+' hors macros'+(!inTargets(validation.avg)?' ; moyenne hebdomadaire hors cible':'')+(validation.wrong.length?' ; deux recettes distinctes non respectées pour '+validation.wrong.map(x=>x[1]).join(', '):'')+'. Consulte les substitutions proposées pour corriger les écarts.</p>')+
  '<p>Le calcul compare les journées ET la moyenne de la semaine. Vérifie les indicateurs de chaque jour : aucune journée hors cible n’est présentée comme validée.</p>';
 }
 // Suggestions remain optional and never overwrite the saved original of a favorite.
