@@ -433,7 +433,7 @@ function build(){
    `<div class="daytotal" id="tot${i}">Aucun repas sélectionné.</div>`;
    w.appendChild(el);
  });
- document.querySelectorAll('select[data-slot]').forEach(s=>s.addEventListener('change',()=>{update();updateFavButtons()}));loadMealLocks();renderWeeklySlotControls();
+ document.querySelectorAll('select[data-slot]').forEach(s=>s.addEventListener('change',()=>manualMealChanged(s)));loadMealLocks();renderWeeklySlotControls();
  document.getElementById('breakfastMode').value=localStorage.getItem('breakfastMode')||'mix';load(); update(); updateFavButtons();syncWeekApproval();requestAnimationFrame(alignWeeklySlotControls);
 }
 function selected(){
@@ -650,6 +650,24 @@ function changeWeeklySlot(slot){
  status.textContent=validation.ok?'✓ Deux nouvelles recettes proposées, les sept journées et la moyenne hebdomadaire sont dans les cibles.':'Deux nouvelles recettes proposées, mais '+validation.bad.length+' journée(s) restent hors cible. Vérifie les indicateurs avant de conserver.';
  renderWeeklySlotControls();
 }
+function manualMealChanged(sel){
+ const slot=sel.dataset.slot,day=sel.dataset.day,id=sel.value;
+ const other=[...document.querySelectorAll('select[data-slot="'+slot+'"]')].filter(s=>s!==sel);
+ const existing=[...new Set(other.map(s=>s.value).filter(v=>v&&v!==id))];
+ if(id&&existing.length>1){
+  const keep=existing[0];
+  other.forEach(s=>{if(s.value!==id&&s.value!==keep){s.innerHTML=opts(s.dataset.cat,keep);s.value=keep}});
+ }
+ const ids=[...new Set([sel,...other].map(s=>s.value).filter(Boolean))];
+ if(id&&ids.length===1){
+  const pool=(slot==='breakfast'?breakfastCandidates():RECIPES.filter(r=>allowedRecipe(r)&&r.cat===sel.dataset.cat)).filter(r=>String(r.id)!==id);
+  if(pool.length){const target=other[0];target.innerHTML=opts(target.dataset.cat,String(pool[0].id));target.value=String(pool[0].id)}
+ }
+ const fixed=new Set([...document.querySelectorAll('select[data-slot="'+slot+'"]')].map(s=>s.dataset.day+':'+slot));
+ window.mealTemporaryLocks=fixed;
+ try{autoWeek()}finally{window.mealTemporaryLocks=null}
+ document.getElementById('slotChangeStatus').textContent='Repas modifié : les autres repas non verrouillés ont été recalculés. Vérifie les alertes de macros avant de conserver.';
+}
 function autoWeek(){
  const panel=document.getElementById('suggestPanel'),box=document.getElementById('suggestions');
  const all=[...document.querySelectorAll('select[data-slot]')];
@@ -664,13 +682,13 @@ function autoWeek(){
  // An existing week is regenerated, but manually changed meals are retained.
  const oldAuto=JSON.parse(localStorage.getItem('mealAutoValuesV1')||'{}');
  const slotLocks=weeklySlotLocks();
- const locked=new Set(all.filter(s=>slotLocks[s.dataset.slot]||document.querySelector('.mealLock[data-day="'+s.dataset.day+'"][data-slot="'+s.dataset.slot+'"]')?.checked).map(s=>s.dataset.day+':'+s.dataset.slot));
+ const locked=new Set(all.filter(s=>slotLocks[s.dataset.slot]||window.mealTemporaryLocks?.has(s.dataset.day+':'+s.dataset.slot)||document.querySelector('.mealLock[data-day="'+s.dataset.day+'"][data-slot="'+s.dataset.slot+'"]')?.checked).map(s=>s.dataset.day+':'+s.dataset.slot));
  all.forEach(s=>{if(!locked.has(s.dataset.day+':'+s.dataset.slot))s.value=''});
  const history=JSON.parse(localStorage.getItem(RECIPE_HISTORY_KEY)||'{}');
  const pools={};
  for(const cfg of configs){
   const fixed=[...new Set(all.filter(s=>s.dataset.slot===cfg.slot&&s.value).map(s=>+s.value))];
-  if(fixed.length>2){panel.style.display='block';box.textContent='Plus de deux recettes manuelles pour '+cfg.label+'. Retire un choix pour conserver la règle des deux recettes.';return}
+  if(fixed.length>2){all.forEach((sel,i)=>sel.value=before[i]);panel.style.display='block';box.textContent='Plus de deux recettes verrouillées pour '+cfg.label+'. Déverrouille un repas.';return}
   const ranked=cfg.pool.filter(r=>!fixed.includes(r.id)&&!(window.mealReroll?.slot===cfg.slot&&window.mealReroll.excluded.has(String(r.id)))).map(r=>({
    r,score:Math.abs(r.macros.kcal-cfg.target)/75+Math.abs(r.macros.protein-cfg.protein)/15+
    Math.abs(r.macros.fat-(cfg.slot.startsWith('snack')?8:18))/12+
@@ -678,7 +696,7 @@ function autoWeek(){
   })).sort((a,b)=>a.score-b.score).slice(0,9).map(x=>x.r);
   const fixedRecipes=fixed.map(id=>cfg.pool.find(r=>r.id===id)).filter(Boolean);
   pools[cfg.slot]=fixedRecipes.concat(ranked).slice(0,Math.max(2,fixedRecipes.length+6));
-  if(pools[cfg.slot].length<2){panel.style.display='block';box.textContent='Pas assez de recettes autorisées pour '+cfg.label+'. Réactive des aliments ou des recettes.';return}
+  if(pools[cfg.slot].length<2){all.forEach((sel,i)=>sel.value=before[i]);panel.style.display='block';box.textContent='Pas assez de recettes autorisées pour '+cfg.label+'. Réactive des aliments ou des recettes.';return}
  }
  const emptyTotal=()=>({k:0,p:0,c:0,f:0,fi:0,cost:0});
  const pairOptions={};
@@ -716,10 +734,10 @@ function autoWeek(){
    open.forEach((sel,i)=>{const id=best.rs[i].id;row[sel.dataset.slot]=id;usage[id]=(usage[id]||0)+1});
    assignment.push(row);totalScore+=best.score;Object.keys(week).forEach(k=>week[k]+=best.total[k]);
   }
-  // Both recipes must appear in every slot. Penalize unbalanced weekly averages.
+  // Exactly two recipes per slot, both used across the seven days.
   for(const cfg of configs){
    const counts=chosen[cfg.slot].map(r=>assignment.filter(d=>d[cfg.slot]===r.id).length);
-   if(counts.some(n=>n===0))totalScore+=65;
+   if(counts.some(n=>n===0))totalScore+=10000;
   }
   const avg=Object.fromEntries(Object.entries(week).map(([k,v])=>[k,v/7]));
   totalScore+=fitScore(avg)*55;
@@ -727,8 +745,8 @@ function autoWeek(){
  };
  let best=null;
  // Deterministic but diverse joint search, with a limited budget on the browser.
- const seed=+localStorage.getItem('mealGenerationSeed')||0;
- for(let attempt=0;attempt<220;attempt++){
+ const seed=+localStorage.getItem('mealWeekSearchSeed')||0;
+ for(let attempt=0;attempt<350;attempt++){
   const chosen={};
   configs.forEach((cfg,i)=>{
    const options=pairOptions[cfg.slot];
@@ -745,13 +763,14 @@ function autoWeek(){
   if(id!=null){sel.innerHTML=opts(sel.dataset.cat,String(id));sel.value=String(id);auto[day+':'+sel.dataset.slot]=String(id)}
  }));
  localStorage.setItem('mealAutoValuesV1',JSON.stringify(auto));
- localStorage.setItem('mealGenerationSeed',String(seed+1));
+ localStorage.setItem('mealWeekSearchSeed',String(seed+1));
  Object.values(best.chosen).flat().forEach(r=>history[r.name]=(history[r.name]||0)+1);
  localStorage.setItem(RECIPE_HISTORY_KEY,JSON.stringify(history));
  update();updateFavButtons();panel.style.display='block';
+ const validation=weekValidation();
  const a=best.avg;
  box.innerHTML='<p><b>Proposition optimisée sur 7 jours.</b> Moyennes : '+Math.round(a.k)+' kcal, '+Math.round(a.p)+' g protéines, '+Math.round(a.fi)+' g fibres, '+Math.round(a.f)+' g lipides.</p>'+
- (inTargets(a)?'<p>✓ Moyenne hebdomadaire dans les cibles.</p>':'<p>⚠ Certaines cibles hebdomadaires restent hors plage : les ingrédients autorisés et la limite de deux recettes par repas peuvent empêcher de toutes les atteindre.</p>')+
+ (validation.ok?'<p>✓ Les 7 journées, la moyenne et les deux recettes par repas respectent les règles.</p>':'<p>⚠ Proposition non conforme : '+validation.bad.map(x=>DAYS[x.day]).join(', ')+' hors macros'+(validation.wrong.length?' ; deux recettes distinctes non respectées pour '+validation.wrong.map(x=>x[1]).join(', '):'')+'. Les repas verrouillés et les restrictions peuvent rendre les objectifs impossibles.</p>')+
  '<p>Le calcul compare les journées ET la moyenne de la semaine. Vérifie les indicateurs de chaque jour : aucune journée hors cible n’est présentée comme validée.</p>';
 }
 // Suggestions remain optional and never overwrite the saved original of a favorite.
