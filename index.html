@@ -282,6 +282,15 @@ function bestWholeDay(day,usage,restricted={}){
  walk(0,fixed);
  return {open,best};
 }
+function breakfastType(r){
+ if(r.id>=85&&r.id<=92)return 'both';
+ if(r.id>=75&&r.id<=84)return 'savory';
+ return 'sweet';
+}
+function breakfastCandidates(){
+ const mode=document.getElementById('breakfastMode').value;
+ return RECIPES.filter(r=>r.cat==='PETITS-DÉJEUNERS'&&(mode==='mix'||breakfastType(r)===mode));
+}
 function autoWeek(){
  const all=[...document.querySelectorAll('select[data-slot]')];
  const used=(slots)=>[...new Set(all.filter(s=>slots.includes(s.dataset.slot)&&s.value).map(s=>+s.value))];
