@@ -183,13 +183,28 @@ async function searchOnlineFoods(){
 function escapeFoodHtml(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 function selectOnlineFood(index){
  const p=onlineFoodResults[index];if(!p)return;
- const n=onlineFoodNutriments(p);
- document.getElementById('newFood').value=p.product_name;
- [['Kcal',n.kcal],['Protein',n.protein],['Carbs',n.carbs],['Fat',n.fat],['Fiber',n.fiber]].forEach(([key,val])=>document.getElementById('new'+key).value=val===null?'':+val.toFixed(1));
- const category=foodCategory('external',p.product_name);
- document.getElementById('newFoodCat').value=category;
- document.getElementById('onlineFoodResults').innerHTML='<p class="note">✓ '+escapeFoodHtml(p.product_name)+' sélectionné. '+(n.fiber===null?'Les fibres ne sont pas renseignées : complète-les avant d’ajouter cet aliment. ':'')+'Vérifie la catégorie, les macros et clique sur « Ajouter cet aliment ».</p>';
- document.getElementById('newFood').focus();
+ const n=onlineFoodNutriments(p);if(!n)return;
+ const name=p.product_name.trim();
+ const existing=FOOD_PREF.custom.find(x=>x.name.toLowerCase()===name.toLowerCase());
+ const root=document.getElementById('onlineFoodResults');
+ if(existing){root.innerHTML='<p class="note">✓ '+escapeFoodHtml(name)+' est déjà dans tes aliments.</p>';return}
+ // Open Food Facts sometimes omits fibre. Cheese, eggs, meat, fish and oils have no dietary fibre.
+ // For other foods, zero is only a provisional fallback, explicitly flagged to the user.
+ const label=(name+' '+(p.brands||'')).toLowerCase();
+ const naturallyZero=/emmental|gruy[eè]re|comt[eé]|parmesan|cheddar|mozzarella|fromage|œuf|oeuf|viande|poulet|bœuf|boeuf|porc|poisson|saumon|thon|huile|beurre/.test(label);
+ const missingFiber=n.fiber===null;
+ const fiber=missingFiber?0:n.fiber;
+ const category=/emmental|gruy[eè]re|comt[eé]|parmesan|cheddar|mozzarella|fromage|yaourt|skyr|lait/.test(label)?'Produits laitiers et protéines':foodCategory('external',name);
+ const nutrition={kcal:n.kcal,protein:n.protein,carbs:n.carbs,fat:n.fat,fiber};
+ FOOD_PREF.custom.push({key:'custom_'+Date.now(),name,category,nutrition,cost:0,fiberEstimated:missingFiber&&!naturallyZero});
+ persistFoods();
+ document.getElementById('newFood').value='';
+ ['Kcal','Protein','Carbs','Fat','Fiber'].forEach(k=>document.getElementById('new'+k).value='');
+ document.getElementById('newCost').value='';
+ rebuildGeneratedRecipes();refreshChoices();renderFoodCatalogue();renderRecipeCatalogue();update();
+ root.innerHTML='<p class="note">✓ <b>'+escapeFoodHtml(name)+'</b> ajouté automatiquement dans « '+escapeFoodHtml(category)+' ».'+
+ (missingFiber?(naturallyZero?' Fibres : 0 g/100 g (aliment naturellement sans fibres).':' ⚠ Fibres non renseignées par Open Food Facts : 0 g/100 g provisoires, à corriger si nécessaire.'):'')+
+ ' Prix non renseigné : 0 € provisoire.</p>';
 }
 function addCustomFood(){
  const input=document.getElementById('newFood'),name=input.value.trim(),category=document.getElementById('newFoodCat').value;
