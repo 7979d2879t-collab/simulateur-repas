@@ -56,7 +56,7 @@ button{border:0;background:var(--teal);color:#fff;padding:9px 12px;border-radius
 <div class="kpi"><span>Budget des repas cochés</span><b id="weekCost">-</b></div>
 </div>
 <div class="panel" style="margin-bottom:14px"><h2>🎯 Recommandations pour équilibrer mes journées</h2><p class="note">Analyse du lundi au mercredi et du jeudi au dimanche, sans modifier automatiquement tes choix.</p><div id="halfWeekAdvice"></div></div>
-<div class="panel" style="margin-bottom:12px"><h2>🍽️ Je compose ma semaine</h2><p class="note">Choisis directement tes deux petits-déjeuners, tes deux préparations batch cooking et tes deux desserts. Le tableau, les macros, le graphique et la liste de courses se mettent à jour automatiquement. Les déjeuners sont répartis du lundi au mercredi puis du jeudi au dimanche ; les deux desserts alternent entre midi et soir.</p><div id="weeklyRecipePicker" class="weeklyRecipePicker"></div><select id="breakfastMode" style="display:none"><option value="mix" selected>Libre</option></select><p class="note" id="weeklyPickerStatus" aria-live="polite"></p></div><p class="note" id="slotChangeStatus" aria-live="polite"></p><div class="weekLayout"><div class="week" id="week"></div></div>
+<div class="panel" style="margin-bottom:12px"><h2>🍽️ Je compose ma semaine</h2><p class="note">Choisis directement tes deux petits-déjeuners, tes deux batch cookings du midi, deux du soir et tes deux desserts. Le tableau, les macros, le graphique et la liste de courses se mettent à jour automatiquement. Les déjeuners et les dîners sont répartis du lundi au mercredi puis du jeudi au dimanche ; les deux desserts alternent entre midi et soir.</p><div id="weeklyRecipePicker" class="weeklyRecipePicker"></div><select id="breakfastMode" style="display:none"><option value="mix" selected>Libre</option></select><p class="note" id="weeklyPickerStatus" aria-live="polite"></p></div><p class="note" id="slotChangeStatus" aria-live="polite"></p><div class="weekLayout"><div class="week" id="week"></div></div>
 <div class="grid2">
 <div class="panel"><h2>Liste de courses</h2><p class="note">Quantités théoriques nécessaires. Pour viande/poisson, achète le conditionnement commercial le plus proche; quelques grammes d'écart ne posent pas problème.</p>
 <div class="note" style="margin:12px 0"><b>Inclure dans les courses :</b><br><label><input type="checkbox" id="shopLunch" checked onchange="updateShopping()"> Déjeuners (batch cooking)</label><br><label><input type="checkbox" id="shopDesserts" checked onchange="updateShopping()"> Desserts du midi et du soir</label><br><label><input type="checkbox" id="shopBreakfast" checked onchange="updateShopping()"> Petits-déjeuners</label><br><label><input type="checkbox" id="shopDinner" onchange="updateShopping()"> Dîners</label></div><p id="shopScope" class="note"></p><table><thead><tr><th>Produit</th><th>Quantité</th><th>Coût estimé</th></tr></thead><tbody id="shopping"></tbody></table>
@@ -487,7 +487,8 @@ function closeRecipe(){document.getElementById('recipeModal').classList.remove('
 
 const PICKER_GROUPS=[
  {slot:'breakfast',cat:'PETITS-DÉJEUNERS',title:'🥣 Petits-déjeuners',names:['Petit-déjeuner 1','Petit-déjeuner 2'],help:'Alternance sur les sept matins.'},
- {slot:'lunch',cat:'DÉJEUNERS & BATCH COOKING',title:'🍲 Batch cooking',names:['Batch cooking 1','Batch cooking 2'],help:'Recette 1 : lundi à mercredi · Recette 2 : jeudi à dimanche.'},
+ {slot:'lunch',cat:'DÉJEUNERS & BATCH COOKING',title:'🍲 Batch cooking du midi',names:['Midi 1','Midi 2'],help:'Recette 1 : lundi à mercredi · Recette 2 : jeudi à dimanche.'},
+ {slot:'dinner',cat:'DÎNERS RAPIDES',title:'🍽️ Batch cooking du soir',names:['Soir 1','Soir 2'],help:'Recette 1 : lundi à mercredi · Recette 2 : jeudi à dimanche.'},
  {slot:'dessert',cat:'DESSERTS & COLLATIONS',title:'🍮 Desserts',names:['Dessert 1','Dessert 2'],help:'Les mêmes deux desserts alternent au déjeuner et au dîner.'}
 ];
 function pickerRecipes(group){
@@ -495,7 +496,7 @@ function pickerRecipes(group){
 }
 function pickerCurrent(slot){
  const row=[...document.querySelectorAll('select[data-slot="'+(slot==='dessert'?'snack1':slot)+'"]')];
- if(slot==='lunch')return [row[0]?.value||'',row[3]?.value||''];
+ if(slot==='lunch'||slot==='dinner')return [row[0]?.value||'',row[3]?.value||''];
  const ids=[...new Set(row.map(s=>s.value).filter(Boolean))];
  return [ids[0]||'',ids[1]||''];
 }
@@ -527,7 +528,7 @@ function chooseWeeklyRecipe(groupSlot,index,id){
  for(const slot of slots){
   document.querySelectorAll('select[data-slot="'+slot+'"]').forEach(sel=>{
    const d=+sel.dataset.day;
-   const chosen=groupSlot==='lunch'?ids[d<3?0:1]:groupSlot==='dessert'?ids[(d+(slot==='snack2'?1:0))%2]:ids[d%2];
+   const chosen=(groupSlot==='lunch'||groupSlot==='dinner')?ids[d<3?0:1]:groupSlot==='dessert'?ids[(d+(slot==='snack2'?1:0))%2]:ids[d%2];
    sel.innerHTML=opts(sel.dataset.cat,chosen);sel.value=chosen||'';
   });
  }
@@ -848,7 +849,7 @@ function manualMealChanged(sel){
  const row=[...document.querySelectorAll('select[data-slot="'+slot+'"]')];
  const affected=oldId&&newId!==oldId?row.filter(s=>s!==sel&&s.value===oldId):[];
  affected.forEach(s=>{s.innerHTML=opts(s.dataset.cat,newId);s.value=newId});
- if(slot==='lunch'){
+ if(slot==='lunch'||slot==='dinner'){
   const group=lunchBatchForDay(+sel.dataset.day);
   row.forEach(s=>{if(lunchBatchForDay(+s.dataset.day)===group){s.innerHTML=opts(s.dataset.cat,newId);s.value=newId}});
  }
@@ -1032,13 +1033,13 @@ function renderHalfWeekAdvice(){
   const missing=days.filter(d=>[...document.querySelectorAll('select[data-day="'+d+'"]')].some(sel=>!sel.value));
   const gaps=metrics.filter(([k])=>average[k]<DAY_RANGE[k][0]||average[k]>DAY_RANGE[k][1]).map(([k,u,label])=>label+' '+(average[k]<DAY_RANGE[k][0]?'en dessous':'au-dessus')+' de '+Math.round(Math.abs(average[k]-(average[k]<DAY_RANGE[k][0]?DAY_RANGE[k][0]:DAY_RANGE[k][1])))+' '+u);
   const choices=[];
-  for(const slot of ['breakfast','lunch','snack1']){
+  for(const slot of ['breakfast','lunch','dinner','snack1']){
    if(weeklySlotLocks()[slot])continue;
    const group=slot==='snack1'?'dessert':slot,ids=pickerCurrent(group);
    for(let index=0;index<2;index++){
-    if(slot==='lunch'&&index!==batch)continue;
+    if((slot==='lunch'||slot==='dinner')&&index!==batch)continue;
     const old=RECIPES.find(r=>String(r.id)===ids[index]);if(!old)continue;
-    const affected=days.filter(d=>slot==='lunch'||slot==='breakfast'&&d%2===index||slot==='snack1'&&d%2===index);
+    const affected=days.filter(d=>slot==='lunch'||slot==='dinner'||slot==='breakfast'&&d%2===index||slot==='snack1'&&d%2===index);
     const candidates=pickerRecipes(PICKER_GROUPS.find(g=>g.slot===group));
     for(const recipe of candidates){
      if(recipe.id===old.id||ids.some(id=>id===String(recipe.id)))continue;
@@ -1056,7 +1057,7 @@ function renderHalfWeekAdvice(){
   return '<div class="entry" style="display:block;margin:12px 0;padding:14px;border:1px solid #dce6e9;border-radius:12px"><h3>'+title+'</h3><p>'+metrics.map(([k,u,label])=>label+' : <b>'+Math.round(average[k])+' '+u+'</b>').join(' · ')+'</p>'+
   (missing.length?'<p class="note">Journées incomplètes : '+missing.map(d=>DAYS[d]).join(', ')+'. Les résultats restent provisoires, notamment tant que les dîners ne sont pas renseignés.</p>':'')+
   (gaps.length?'<p>'+gaps.join(' · ')+'</p>':'<p style="color:#277a54">✓ Moyennes de cette période dans les plages de référence.</p>')+
-  (best.length?best.map(x=>'<div style="padding:9px;margin:8px 0;background:#f3f7fa;border-radius:9px"><b>Suggestion '+(x.slot==='lunch'?'batch cooking '+(x.index+1):x.slot==='dessert'?'dessert '+(x.index+1):'petit-déjeuner '+(x.index+1))+'</b><p>'+escapeFoodHtml(x.old.name)+' → <b>'+escapeFoodHtml(x.recipe.name)+'</b></p><button class="mini" type="button" onclick="chooseWeeklyRecipe(\''+x.slot+'\','+x.index+',\''+x.recipe.id+'\')">Appliquer</button></div>').join(''):'<p class="note">Aucun remplacement simple ne réduit les écarts calculés ; vérifie les repas manquants et les portions.</p>')+'</div>';
+  (best.length?best.map(x=>'<div style="padding:9px;margin:8px 0;background:#f3f7fa;border-radius:9px"><b>Suggestion '+(x.slot==='lunch'?'batch cooking midi '+(x.index+1):x.slot==='dinner'?'batch cooking soir '+(x.index+1):x.slot==='dessert'?'dessert '+(x.index+1):'petit-déjeuner '+(x.index+1))+'</b><p>'+escapeFoodHtml(x.old.name)+' → <b>'+escapeFoodHtml(x.recipe.name)+'</b></p><button class="mini" type="button" onclick="chooseWeeklyRecipe(\''+x.slot+'\','+x.index+',\''+x.recipe.id+'\')">Appliquer</button></div>').join(''):'<p class="note">Aucun remplacement simple ne réduit les écarts calculés ; vérifie les repas manquants et les portions.</p>')+'</div>';
  }).join('');
 }
 function substitutionSuggestions(){
