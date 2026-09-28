@@ -486,7 +486,7 @@ function showRecipe(sel){
 function closeRecipe(){document.getElementById('recipeModal').classList.remove('open')}
 
 const PICKER_GROUPS=[
- {slot:'breakfast',cat:'PETITS-DÉJEUNERS',title:'🥣 Petits-déjeuners',names:['Petit-déjeuner 1','Petit-déjeuner 2'],help:'Alternance sur les sept matins.'},
+ {slot:'breakfast',cat:'PETITS-DÉJEUNERS',title:'🥣 Batch cooking petits-déjeuners',names:['Petit-déjeuner 1','Petit-déjeuner 2'],help:'Préparation dimanche soir : lundi à mercredi matin · Préparation mercredi soir : jeudi à samedi matin. Dimanche matin libre.'},
  {slot:'lunch',cat:'DÉJEUNERS & BATCH COOKING',title:'🍲 Batch cooking du midi',names:['Midi 1','Midi 2'],help:'Recette 1 : lundi à mercredi midi · Recette 2 : jeudi à samedi midi. Dimanche midi libre.'},
  {slot:'dinner',cat:'DÎNERS RAPIDES',title:'🍽️ Batch cooking du soir',names:['Soir 1','Soir 2'],help:'Recette 1 : dimanche à mardi soir · Recette 2 : mercredi à vendredi soir. Samedi soir libre.'},
  {slot:'dessert',cat:'DESSERTS & COLLATIONS',title:'🍮 Desserts',names:['Dessert 1','Dessert 2'],help:'Les mêmes deux desserts alternent au déjeuner et au dîner.'}
@@ -496,7 +496,7 @@ function pickerRecipes(group){
 }
 function pickerCurrent(slot){
  const row=[...document.querySelectorAll('select[data-slot="'+(slot==='dessert'?'snack1':slot)+'"]')];
- if(slot==='lunch')return [row[0]?.value||'',row[3]?.value||''];
+ if(slot==='lunch'||slot==='breakfast')return [row[0]?.value||'',row[3]?.value||''];
  if(slot==='dinner')return [row[6]?.value||'',row[2]?.value||''];
  const ids=[...new Set(row.map(s=>s.value).filter(Boolean))];
  return [ids[0]||'',ids[1]||''];
@@ -529,9 +529,9 @@ function chooseWeeklyRecipe(groupSlot,index,id){
  for(const slot of slots){
   document.querySelectorAll('select[data-slot="'+slot+'"]').forEach(sel=>{
    const d=+sel.dataset.day;
-   const batch=groupSlot==='lunch'?(d<3?0:d<6?1:-1):groupSlot==='dinner'?(d===6||d<2?0:d<5?1:-1):-1;
-   if((groupSlot==='lunch'||groupSlot==='dinner')&&batch<0)return;
-   const chosen=(groupSlot==='lunch'||groupSlot==='dinner')?ids[batch]:groupSlot==='dessert'?ids[(d+(slot==='snack2'?1:0))%2]:ids[d%2];
+   const batch=(groupSlot==='lunch'||groupSlot==='breakfast')?(d<3?0:d<6?1:-1):groupSlot==='dinner'?(d===6||d<2?0:d<5?1:-1):-1;
+   if((groupSlot==='lunch'||groupSlot==='dinner'||groupSlot==='breakfast')&&batch<0)return;
+   const chosen=(groupSlot==='lunch'||groupSlot==='dinner'||groupSlot==='breakfast')?ids[batch]:groupSlot==='dessert'?ids[(d+(slot==='snack2'?1:0))%2]:ids[d%2];
    sel.innerHTML=opts(sel.dataset.cat,chosen);sel.value=chosen||'';
   });
  }
@@ -853,8 +853,8 @@ function manualMealChanged(sel){
  const row=[...document.querySelectorAll('select[data-slot="'+slot+'"]')];
  const affected=oldId&&newId!==oldId?row.filter(s=>s!==sel&&s.value===oldId):[];
  affected.forEach(s=>{s.innerHTML=opts(s.dataset.cat,newId);s.value=newId});
- if(slot==='lunch'||slot==='dinner'){
-  const batchFor=slot==='lunch'?lunchBatchForDay:dinnerBatchForDay;
+ if(slot==='lunch'||slot==='dinner'||slot==='breakfast'){
+  const batchFor=slot==='dinner'?dinnerBatchForDay:lunchBatchForDay;
   const group=batchFor(+sel.dataset.day);
   row.forEach(s=>{if(group>=0&&batchFor(+s.dataset.day)===group){s.innerHTML=opts(s.dataset.cat,newId);s.value=newId}});
  }
@@ -1042,9 +1042,9 @@ function renderHalfWeekAdvice(){
    if(weeklySlotLocks()[slot])continue;
    const group=slot==='snack1'?'dessert':slot,ids=pickerCurrent(group);
    for(let index=0;index<2;index++){
-    if((slot==='lunch'||slot==='dinner')&&index!==batch)continue;
+    if((slot==='lunch'||slot==='dinner'||slot==='breakfast')&&index!==batch)continue;
     const old=RECIPES.find(r=>String(r.id)===ids[index]);if(!old)continue;
-    const affected=days.filter(d=>slot==='lunch'?lunchBatchForDay(d)===index:slot==='dinner'?dinnerBatchForDay(d)===index:slot==='breakfast'||slot==='snack1'?d%2===index:false);
+    const affected=days.filter(d=>slot==='lunch'?lunchBatchForDay(d)===index:slot==='dinner'?dinnerBatchForDay(d)===index:slot==='breakfast'?lunchBatchForDay(d)===index:slot==='snack1'?d%2===index:false);
     const candidates=pickerRecipes(PICKER_GROUPS.find(g=>g.slot===group));
     for(const recipe of candidates){
      if(recipe.id===old.id||ids.some(id=>id===String(recipe.id)))continue;
