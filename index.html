@@ -622,6 +622,20 @@ function keepWeeklySlot(slot,on){
 function changeWeeklySlot(slot){
  const locks=weeklySlotLocks(),status=document.getElementById('slotChangeStatus');
  if(locks[slot]){status.textContent='Décoche « Garder les 7 jours » pour ce repas avant de demander deux autres recettes.';return}
+ if(slot==='snack1'||slot==='snack2'){
+  const partner=slot==='snack1'?'snack2':'snack1';
+  if(locks[partner]){status.textContent='Les deux lignes de desserts partagent les mêmes préparations : retire « Garder » de l’autre ligne de desserts pour changer le duo.';return}
+  const previous=new Set([...document.querySelectorAll('select[data-slot="'+slot+'"]')].map(s=>s.value).filter(Boolean));
+  const pool=RECIPES.filter(r=>allowedRecipe(r)&&r.cat==='DESSERTS & COLLATIONS'&&!previous.has(String(r.id)));
+  if(pool.length<2){status.textContent='Pas assez de desserts disponibles pour proposer un nouveau duo.';return}
+  const history=JSON.parse(localStorage.getItem(RECIPE_HISTORY_KEY)||'{}');
+  pool.sort((a,b)=>(history[a.name]||0)-(history[b.name]||0));
+  const pair=pool.slice(0,2),row=[...document.querySelectorAll('select[data-slot="'+slot+'"]')];
+  row.forEach((sel,d)=>{const id=String(pair[d%2].id);sel.innerHTML=opts(sel.dataset.cat,id);sel.value=id});
+  syncDessertOpposites(slot);update();updateFavButtons();
+  status.textContent='Deux nouveaux desserts proposés : le dessert du soir est toujours l’inverse de celui du midi. Les autres repas sont inchangés ; vérifie les macros.';
+  return;
+ }
  const before={};document.querySelectorAll('select[data-slot]').forEach(s=>before[s.dataset.day+':'+s.dataset.slot]=s.value);
  const previous=new Set([...document.querySelectorAll('select[data-slot="'+slot+'"]')].map(s=>s.value).filter(Boolean));
  const pool=RECIPES.filter(r=>allowedRecipe(r)&&r.cat===SLOTS.find(x=>x[0]===slot)[2]&&!previous.has(String(r.id))&&(slot!=='breakfast'||breakfastCandidates().some(x=>x.id===r.id)));
