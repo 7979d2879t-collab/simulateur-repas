@@ -444,7 +444,7 @@ function build(){
  DAYS.forEach((d,i)=>{
    let el=document.createElement('div'); el.className='day';
    el.innerHTML=`<h3>${d} ${i===1?'<span class="volley">VOLLEY</span>':''}</h3>`+
-   SLOTS.map(s=>`<div class="mealpick"><label>${s[1]}</label><select data-day="${i}" data-slot="${s[0]}" data-cat="${s[2]}">${opts(s[2])}</select><div class="slotactions"><button class="mini favbtn" type="button" onclick="toggleFav(this.closest('.mealpick').querySelector('select'))">☆ Favori</button><button class="mini details" type="button" onclick="showRecipe(this.closest('.mealpick').querySelector('select'))">📖 Fiche</button></div></div>`).join('')+
+   SLOTS.map(s=>`<div class="mealpick"><label>${s[0]==='dinner'?'Dîner de Cécilia (à renseigner)':s[1]}</label><select data-day="${i}" data-slot="${s[0]}" data-cat="${s[2]}">${opts(s[2])}</select><div class="slotactions"><button class="mini favbtn" type="button" onclick="toggleFav(this.closest('.mealpick').querySelector('select'))">☆ Favori</button><button class="mini details" type="button" onclick="showRecipe(this.closest('.mealpick').querySelector('select'))">📖 Fiche</button></div></div>`).join('')+
    `<div class="daytotal" id="tot${i}">Aucun repas sélectionné.</div>`;
    w.appendChild(el);
  });
@@ -576,9 +576,11 @@ function weekValidation(){
  const bad=[...Array(7)].map((_,d)=>({day:d,t:dayTotalsFromSelects(d)})).filter(x=>!inTargets(x.t));
  const wrong=SLOTS.filter(slot=>new Set(sels.filter(s=>s.dataset.slot===slot[0]&&s.value).map(s=>s.value)).size!==2);
  const dessertIds=[...new Set(sels.filter(s=>s.dataset.slot==='snack1').map(s=>s.value))];
+ const lunchRow=sels.filter(s=>s.dataset.slot==='lunch');
+ const lunchBlocks=lunchRow.every(s=>{const d=+s.dataset.day;return d===0||d===3||s.value===lunchRow.find(x=>+x.dataset.day===d-1)?.value})&&lunchRow[0]?.value!==lunchRow[3]?.value;
  const dessertsOpposite=dessertIds.length===2&&[...Array(7)].every((_,d)=>{const a=sels.find(s=>s.dataset.day==d&&s.dataset.slot==='snack1')?.value,b=sels.find(s=>s.dataset.day==d&&s.dataset.slot==='snack2')?.value;return a&&b&&a!==b&&dessertIds.includes(b)});
  const avg={k:0,p:0,fi:0,f:0};for(let d=0;d<7;d++){const t=dayTotalsFromSelects(d);Object.keys(avg).forEach(k=>avg[k]+=t[k]/7)}
- return {ok:!missing.length&&!bad.length&&!wrong.length&&weeklyTargets(avg)&&dessertsOpposite,missing,bad,wrong,avg,dessertsOpposite};
+ return {ok:!missing.length&&!bad.length&&!wrong.length&&weeklyTargets(avg)&&dessertsOpposite&&lunchBlocks,missing,bad,wrong,avg,dessertsOpposite,lunchBlocks};
 }
 function approveWholeWeek(on){
  const box=document.getElementById('approveWeek'),status=document.getElementById('approvalStatus');
@@ -677,6 +679,14 @@ function changeWeeklySlot(slot){
  status.textContent=validation.ok?'✓ Deux nouvelles recettes sur cette ligne uniquement. Les autres repas sont inchangés et les macros restent dans les cibles.':'Deux nouvelles recettes sur cette ligne uniquement. Les autres repas sont inchangés, mais '+validation.bad.length+' journée(s) restent hors cible : les macros ne peuvent pas toujours être rééquilibrées sans modifier les autres lignes.';
  renderWeeklySlotControls();
 }
+function lunchBatchForDay(day){return day<3?0:1}
+function applyLunchBatchBlocks(){
+ const row=[...document.querySelectorAll('select[data-slot="lunch"]')];
+ const ids=[...new Set(row.map(s=>s.value).filter(Boolean))];
+ if(ids.length!==2)return false;
+ row.forEach(sel=>{const id=ids[lunchBatchForDay(+sel.dataset.day)];sel.innerHTML=opts(sel.dataset.cat,id);sel.value=id});
+ return true;
+}
 function syncDessertOpposites(sourceSlot){
  const otherSlot=sourceSlot==='snack1'?'snack2':'snack1';
  const source=[...document.querySelectorAll('select[data-slot="'+sourceSlot+'"]')];
@@ -704,6 +714,10 @@ function manualMealChanged(sel){
  const row=[...document.querySelectorAll('select[data-slot="'+slot+'"]')];
  const affected=oldId&&newId!==oldId?row.filter(s=>s!==sel&&s.value===oldId):[];
  affected.forEach(s=>{s.innerHTML=opts(s.dataset.cat,newId);s.value=newId});
+ if(slot==='lunch'){
+  const group=lunchBatchForDay(+sel.dataset.day);
+  row.forEach(s=>{if(lunchBatchForDay(+s.dataset.day)===group){s.innerHTML=opts(s.dataset.cat,newId);s.value=newId}});
+ }
  const ids=[...new Set(row.map(s=>s.value).filter(Boolean))];
  if(ids.length>2){
   // Keep the other batch-cooking recipe and replace the previous one consistently.
@@ -771,6 +785,9 @@ function autoWeek(){
    const walk=(i,t)=>{
     if(i===open.length){
      let score=fitScore(t)*12+(inTargets(t)?-40:0);
+     const lunchChoice=trial[open.findIndex(s=>s.dataset.slot==='lunch')]?.id||Number(sels.find(s=>s.dataset.slot==='lunch')?.value);
+     const previousLunch=assignment[day-1]?.lunch;
+     if(day>0&&lunchChoice&&previousLunch){if((day<3||day>3)&&lunchChoice!==previousLunch)score+=2500;if(day===3&&lunchChoice===previousLunch)score+=2500}
      trial.forEach((r,j)=>{const key=open[j].dataset.slot,previous=assignment[day-1]?.[key];if(previous===r.id)score+=.9;score+=(usage[r.id]||0)*.12});
      if(score<best.score)best={score,rs:[...trial],total:t};
      return;
@@ -799,7 +816,8 @@ function autoWeek(){
   totalScore+=Object.keys(WEEK_RANGE).reduce((sum,k)=>sum+rangePenalty(avg[k],...WEEK_RANGE[k],3.2),0)*55;
   const allDaysValid=assignment.every((row,d)=>{const t=emptyTotal();for(const slot of SLOTS){const r=RECIPES.find(x=>x.id===row[slot[0]]);if(!r)return false;Object.assign(t,addMeal(t,r))}return inTargets(t)});
   const pairsValid=configs.every(cfg=>new Set(assignment.map(row=>row[cfg.slot])).size===2);
-  return {score:totalScore,assignment,avg,chosen,valid:allDaysValid&&weeklyTargets(avg)&&pairsValid};
+  const lunchBlocks=assignment.every((row,day)=>day===0||day===3||row.lunch===assignment[day-1].lunch);
+  return {score:totalScore,assignment,avg,chosen,valid:allDaysValid&&weeklyTargets(avg)&&pairsValid&&lunchBlocks};
  };
  let best=null, bestValid=null;
  // Deterministic but diverse joint search, with a limited budget on the browser.
@@ -827,6 +845,7 @@ function autoWeek(){
  localStorage.setItem('mealWeekSearchSeed',String(seed+1));
  Object.values(best.chosen).flat().forEach(r=>history[r.name]=(history[r.name]||0)+1);
  localStorage.setItem(RECIPE_HISTORY_KEY,JSON.stringify(history));
+ if(!slotLocks.lunch&&!window.mealTemporaryLocks?.size)applyLunchBatchBlocks();
  update();updateFavButtons();panel.style.display='block';
  const validation=weekValidation();
  const a=best.avg;
