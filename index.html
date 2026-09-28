@@ -125,6 +125,21 @@ function foodCategory(key,name){
  return Object.entries(FOOD_GROUPS).find(([group,re])=>re.test(label))?.[0]||'Autres';
 }
 function excludedFood(key){return FOOD_PREF.excluded.includes(key)}
+// Planning preference, not a food-safety guarantee: later portions should be frozen promptly.
+function batchStorageScore(r){
+ const name=(r.name+' '+(r.sub||'')).toLowerCase();
+ const dessert=r.cat==='DESSERTS & COLLATIONS';
+ if(dessert){
+  if(/mousse|tiramisu|chantilly|crème pâtissière|oeuf cru|œuf cru/.test(name))return -5;
+  if(/compote|crumble|gâteau|cake|muffin|cookie|brownie|clafoutis/.test(name))return 4;
+  if(/flan|riz au lait|perles du japon|crème|yaourt|fromage blanc/.test(name))return -2;
+  return 0;
+ }
+ if(/salade|crudité|crudités|avocat|saumon fumé|wrap froid|sushi/.test(name))return -5;
+ if(/poisson|cabillaud|saumon|crevette|fruits de mer/.test(name))return -2;
+ if(/mijoté|blanquette|curry|effiloché|pulled pork|chili|lasagne|gratin|sauce|soupe|velouté/.test(name))return 4;
+ return 0;
+}
 function allowedRecipe(r){return !RECIPE_OFF.has(r.id)&&r.ings.every(x=>!excludedFood(x.key))}
 function persistFoods(){localStorage.setItem(FOOD_PREF_KEY,JSON.stringify(FOOD_PREF))}
 function toggleFood(key,kind,on){
@@ -729,7 +744,7 @@ function autoWeek(){
   const ranked=cfg.pool.filter(r=>!fixed.includes(r.id)&&!(window.mealReroll?.slot===cfg.slot&&window.mealReroll.excluded.has(String(r.id)))).map(r=>({
    r,score:Math.abs(r.macros.kcal-cfg.target)/75+Math.abs(r.macros.protein-cfg.protein)/15+
    Math.abs(r.macros.fat-(cfg.slot.startsWith('snack')?8:18))/12+
-   (history[r.name]||0)*.5-(FAVORITES.has(r.id)?1.4:0)
+   (history[r.name]||0)*.5-(FAVORITES.has(r.id)?1.4:0)-batchStorageScore(r)*1.25
   })).sort((a,b)=>a.score-b.score).slice(0,18).map(x=>x.r);
   const fixedRecipes=fixed.map(id=>cfg.pool.find(r=>r.id===id)).filter(Boolean);
   pools[cfg.slot]=fixedRecipes.concat(ranked).slice(0,Math.max(2,fixedRecipes.length+12));
