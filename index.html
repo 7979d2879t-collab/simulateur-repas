@@ -560,8 +560,10 @@ function weekValidation(){
  const missing=sels.filter(s=>!s.value);
  const bad=[...Array(7)].map((_,d)=>({day:d,t:dayTotalsFromSelects(d)})).filter(x=>!inTargets(x.t));
  const wrong=SLOTS.filter(slot=>new Set(sels.filter(s=>s.dataset.slot===slot[0]&&s.value).map(s=>s.value)).size!==2);
+ const dessertIds=[...new Set(sels.filter(s=>s.dataset.slot==='snack1').map(s=>s.value))];
+ const dessertsOpposite=dessertIds.length===2&&[...Array(7)].every((_,d)=>{const a=sels.find(s=>s.dataset.day==d&&s.dataset.slot==='snack1')?.value,b=sels.find(s=>s.dataset.day==d&&s.dataset.slot==='snack2')?.value;return a&&b&&a!==b&&dessertIds.includes(b)});
  const avg={k:0,p:0,fi:0,f:0};for(let d=0;d<7;d++){const t=dayTotalsFromSelects(d);Object.keys(avg).forEach(k=>avg[k]+=t[k]/7)}
- return {ok:!missing.length&&!bad.length&&!wrong.length&&weeklyTargets(avg),missing,bad,wrong,avg};
+ return {ok:!missing.length&&!bad.length&&!wrong.length&&weeklyTargets(avg)&&dessertsOpposite,missing,bad,wrong,avg,dessertsOpposite};
 }
 function approveWholeWeek(on){
  const box=document.getElementById('approveWeek'),status=document.getElementById('approvalStatus');
@@ -646,6 +648,20 @@ function changeWeeklySlot(slot){
  status.textContent=validation.ok?'✓ Deux nouvelles recettes sur cette ligne uniquement. Les autres repas sont inchangés et les macros restent dans les cibles.':'Deux nouvelles recettes sur cette ligne uniquement. Les autres repas sont inchangés, mais '+validation.bad.length+' journée(s) restent hors cible : les macros ne peuvent pas toujours être rééquilibrées sans modifier les autres lignes.';
  renderWeeklySlotControls();
 }
+function syncDessertOpposites(sourceSlot){
+ const otherSlot=sourceSlot==='snack1'?'snack2':'snack1';
+ const source=[...document.querySelectorAll('select[data-slot="'+sourceSlot+'"]')];
+ const ids=[...new Set(source.map(s=>s.value).filter(Boolean))];
+ if(ids.length!==2)return false;
+ const other=[...document.querySelectorAll('select[data-slot="'+otherSlot+'"]')];
+ for(const sel of other){
+  const src=source.find(s=>s.dataset.day===sel.dataset.day);
+  const opposite=ids.find(id=>id!==src?.value);
+  if(!opposite)return false;
+  sel.innerHTML=opts(sel.dataset.cat,opposite);sel.value=opposite;
+ }
+ return true;
+}
 function manualMealChanged(sel){
  const slot=sel.dataset.slot,newId=sel.value,oldId=sel.dataset.previousValue||'';
  const status=document.getElementById('slotChangeStatus');
@@ -666,7 +682,9 @@ function manualMealChanged(sel){
   row.forEach(s=>{if(s.value!==newId&&s.value!==keep){s.innerHTML=opts(s.dataset.cat,newId);s.value=newId}});
  }
  // Keep the entire edited row fixed while rebalancing the other, unlocked rows.
+ if(slot==='snack1'||slot==='snack2')syncDessertOpposites(slot);
  const fixed=new Set(row.map(s=>s.dataset.day+':'+slot));
+ if(slot==='snack1'||slot==='snack2')document.querySelectorAll('select[data-slot="'+(slot==='snack1'?'snack2':'snack1')+'"]').forEach(s=>fixed.add(s.dataset.day+':'+s.dataset.slot));
  window.mealTemporaryLocks=fixed;
  try{autoWeek()}finally{window.mealTemporaryLocks=null}
  row.forEach(s=>s.dataset.previousValue=s.value);
@@ -692,6 +710,7 @@ function autoWeek(){
  const pools={};
  for(const cfg of configs){
   const fixed=[...new Set(all.filter(s=>s.dataset.slot===cfg.slot&&s.value).map(s=>+s.value))];
+  if(cfg.slot==='snack2'&&!slotLocks.snack2&&!slotLocks.snack1&&fixed.length===0){pools[cfg.slot]=pools.snack1;continue}
   if(fixed.length>2){all.forEach((sel,i)=>sel.value=before[i]);panel.style.display='block';box.textContent='Plus de deux recettes verrouillées pour '+cfg.label+'. Déverrouille un repas.';return}
   const ranked=cfg.pool.filter(r=>!fixed.includes(r.id)&&!(window.mealReroll?.slot===cfg.slot&&window.mealReroll.excluded.has(String(r.id)))).map(r=>({
    r,score:Math.abs(r.macros.kcal-cfg.target)/75+Math.abs(r.macros.protein-cfg.protein)/15+
@@ -729,6 +748,7 @@ function autoWeek(){
     }
     const slot=open[i].dataset.slot;
     for(const recipe of chosen[slot]){
+     if(slot==='snack2'&&chosen.snack1===chosen.snack2){const lunchDessert=trial[open.findIndex(s=>s.dataset.slot==='snack1')]?.id||Number(sels.find(s=>s.dataset.slot==='snack1')?.value);if(lunchDessert===recipe.id)continue}
      trial[i]=recipe;walk(i+1,addMeal(t,recipe));
     }
    };
@@ -738,9 +758,9 @@ function autoWeek(){
    open.forEach((sel,i)=>{const id=best.rs[i].id;row[sel.dataset.slot]=id;usage[id]=(usage[id]||0)+1});
    assignment.push(row);totalScore+=best.score;Object.keys(week).forEach(k=>week[k]+=best.total[k]);
   }
-  // Discourage repeating the same dessert recipes at lunch and dinner.
+  // Dessert pairs are shared, with opposite recipes served at lunch and dinner.
   const dessertOverlap=chosen.snack1.filter(r=>chosen.snack2.some(x=>x.id===r.id)).length;
-  totalScore+=dessertOverlap*95;
+  if(chosen.snack1===chosen.snack2&&dessertOverlap!==2)totalScore+=10000;
   // Exactly two recipes per slot, both used across the seven days.
   for(const cfg of configs){
    const counts=chosen[cfg.slot].map(r=>assignment.filter(d=>d[cfg.slot]===r.id).length);
@@ -761,6 +781,7 @@ function autoWeek(){
    const options=pairOptions[cfg.slot];
    chosen[cfg.slot]=options[(attempt*([1,3,7,11,13][i])+Math.floor(attempt/([2,5,3,7,11][i]))+seed*(i+1))%options.length];
   });
+  if(!slotLocks.snack1&&!slotLocks.snack2&&!window.mealTemporaryLocks?.size)chosen.snack2=chosen.snack1;
   const result=evaluate(chosen);
   if(result&&(!best||result.score<best.score))best=result;
   if(result?.valid&&(!bestValid||result.score<bestValid.score))bestValid=result;
