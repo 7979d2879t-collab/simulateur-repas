@@ -47,7 +47,7 @@ button{border:0;background:var(--teal);color:#fff;padding:9px 12px;border-radius
 <div class="panel" style="margin-bottom:12px"><h2>🥣 Petits-déjeuners</h2><label for="breakfastMode">Type de petit-déjeuner pour les 2 recettes de la semaine :</label> <select id="breakfastMode" style="max-width:270px" onchange="changeBreakfastMode(this.value)"><option value="both">Salé et sucré (duo)</option><option value="savory">Salé uniquement</option><option value="sweet">Sucré uniquement</option><option value="mix">Libre : salé, sucré ou duo</option></select><p class="note">Deux recettes maximum pour les petits-déjeuners et deux desserts pour toute la semaine.  Les recettes sélectionnées manuellement restent prioritaires.</p></div><div class="panel" style="margin-bottom:12px"><p class="note" id="slotChangeStatus">Coche « Garder » sur une ligne de repas : ce choix conserve ce type de repas pour les 7 jours. « Changer » propose deux autres recettes et recalcule les repas non verrouillés.</p></div><div class="weekLayout"><div id="weeklySlotControls" class="weeklySlotSidebar"></div><div class="week" id="week"></div></div>
 <div class="grid2">
 <div class="panel"><h2>Liste de courses</h2><p class="note">Quantités théoriques nécessaires. Pour viande/poisson, achète le conditionnement commercial le plus proche; quelques grammes d'écart ne posent pas problème.</p>
-<table><thead><tr><th>Produit</th><th>Quantité</th><th>Coût estimé</th></tr></thead><tbody id="shopping"></tbody></table>
+<div class="note" style="margin:12px 0"><b>Inclure dans les courses :</b><br><label><input type="checkbox" id="shopLunch" checked onchange="updateShopping()"> Déjeuners (batch cooking)</label><br><label><input type="checkbox" id="shopDesserts" checked onchange="updateShopping()"> Desserts du midi et du soir</label><br><label><input type="checkbox" id="shopBreakfast" onchange="updateShopping()"> Petits-déjeuners</label><br><label><input type="checkbox" id="shopDinner" onchange="updateShopping()"> Dîners de Cécilia</label></div><p id="shopScope" class="note"></p><table><thead><tr><th>Produit</th><th>Quantité</th><th>Coût estimé</th></tr></thead><tbody id="shopping"></tbody></table>
 <br><button onclick="printShopping()">🖨️ Imprimer la liste de courses</button></div>
 <div class="panel"><h2>Bilan de la semaine</h2><div id="weekSummary"></div><br>
 <div id="targetBars" style="margin:12px 0"></div><p class="note" style="text-align:center">Chaque jauge compare la moyenne de la semaine à sa zone cible. Le repère central correspond à la cible ; un dépassement reste visible au lieu d’être présenté comme meilleur.</p><button onclick="resetWeek()">Réinitialiser</button>
@@ -992,8 +992,32 @@ function update(){
  let wc=active.reduce((a,t)=>a+t.cost,0); document.getElementById('weekCost').textContent=active.length?'≈ '+wc.toFixed(2)+' €':'-';
  const targetScore=(v,min,max)=>{if(v>=min&&v<=max)return 1;if(v<min)return Math.max(0,v/min);return Math.max(0,1-(v-max)/max);};
  drawTargetBars(active.length?[avg('k'),avg('p'),avg('fi'),avg('f')]:[0,0,0,0]);
- let tbody=document.getElementById('shopping'); tbody.innerHTML='';
- Object.entries(shop).sort((a,b)=>META[a[0]].name.localeCompare(META[b[0]].name,'fr')).forEach(([k,q])=>{
+ updateShopping();
+ document.getElementById('weekSummary').innerHTML=active.length?
+ `<p><b>${active.length} jour(s) composé(s).</b></p>
+ <p>Moyenne : <b>${Math.round(avg('k'))} kcal</b> · <b>${Math.round(avg('p'))} g protéines</b> · ${Math.round(avg('fi'))} g fibres · ${Math.round(avg('f'))} g lipides.</p>
+ <p>${Math.round(avg('k'))>2150?'La moyenne est au-dessus du point de départ actuel.':Math.round(avg('k'))<1900?'La moyenne est assez basse : vérifie que tu as bien sélectionné toutes les prises alimentaires.':'La moyenne énergétique reste proche de la zone de départ.'}</p>`:'Sélectionne les repas pour commencer.';
+ paintBatch();
+ document.querySelectorAll('select[data-slot]').forEach(s=>s.dataset.previousValue=s.value);
+ save();
+ substitutionSuggestions();
+ syncWeekApproval();
+}
+function updateShopping(){
+ const enabled=new Set();
+ if(document.getElementById('shopLunch').checked)enabled.add('lunch');
+ if(document.getElementById('shopDesserts').checked){enabled.add('snack1');enabled.add('snack2')}
+ if(document.getElementById('shopBreakfast').checked)enabled.add('breakfast');
+ if(document.getElementById('shopDinner').checked)enabled.add('dinner');
+ const shop={};let meals=0;
+ document.querySelectorAll('select[data-slot]').forEach(sel=>{
+  if(!enabled.has(sel.dataset.slot)||!sel.value)return;
+  const recipe=RECIPES.find(r=>r.id===Number(sel.value));if(!recipe)return;
+  meals++;recipe.ings.forEach(ing=>shop[ing.key]=(shop[ing.key]||0)+ing.qty);
+ });
+ const tbody=document.getElementById('shopping');tbody.innerHTML='';
+ document.getElementById('shopScope').textContent=meals+' portion(s) incluses dans cette liste. Les ingrédients communs sont regroupés.';
+ Object.entries(shop).sort((a,b)=>(META[a[0]]||FOOD_PREF.custom.find(f=>f.key===a[0])||{name:a[0]}).name.localeCompare((META[b[0]]||FOOD_PREF.custom.find(f=>f.key===b[0])||{name:b[0]}).name,'fr')).forEach(([k,q])=>{
    let m=META[k]||FOOD_PREF.custom.find(f=>f.key===k);if(!m||q<=0)return;let cost= m.unit==='œuf'? q*m.costPer : q/100*(m.costPer100??m.cost??0);
    const pieceMap={oeuf:[1,'œuf'],kiwi:[100,'kiwi'],banane:[120,'banane'],avocat:[200,'avocat'],poire:[150,'poire'],wrap:[60,'wrap']};
    let qty;
@@ -1004,15 +1028,6 @@ function update(){
    } else qty=(q>=1000?(q/1000).toFixed(2)+' kg':Math.round(q)+' g');
    tbody.innerHTML+=`<tr><td>${m.name}</td><td>${qty}</td><td>≈ ${cost.toFixed(2)} €</td></tr>`;
  });
- document.getElementById('weekSummary').innerHTML=active.length?
- `<p><b>${active.length} jour(s) composé(s).</b></p>
- <p>Moyenne : <b>${Math.round(avg('k'))} kcal</b> · <b>${Math.round(avg('p'))} g protéines</b> · ${Math.round(avg('fi'))} g fibres · ${Math.round(avg('f'))} g lipides.</p>
- <p>${Math.round(avg('k'))>2150?'La moyenne est au-dessus du point de départ actuel.':Math.round(avg('k'))<1900?'La moyenne est assez basse : vérifie que tu as bien sélectionné toutes les prises alimentaires.':'La moyenne énergétique reste proche de la zone de départ.'}</p>`:'Sélectionne les repas pour commencer.';
- paintBatch();
- document.querySelectorAll('select[data-slot]').forEach(s=>s.dataset.previousValue=s.value);
- save();
- substitutionSuggestions();
- syncWeekApproval();
 }
 function printShopping(){
  const rows=document.getElementById('shopping').innerHTML;
