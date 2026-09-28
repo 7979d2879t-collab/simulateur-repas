@@ -40,7 +40,7 @@ button{border:0;background:var(--teal);color:#fff;padding:9px 12px;border-radius
 .targetVerticalItem .targetLabel{font-weight:800;font-size:12px;color:#17324d;min-height:32px}
 .targetVerticalItem .targetRange{font-size:11px;color:#526a78;margin-top:5px}
 .targetVerticalItem .targetStatus{font-size:11px;font-weight:700;margin-top:5px}
-.weeklyRecipePicker{display:grid;grid-template-columns:repeat(6,minmax(175px,1fr));gap:9px;margin-top:14px;overflow-x:auto}.weeklyRecipeChoice{background:#f6f9fa;border:1px solid #dce6e9;border-radius:12px;padding:10px;min-width:175px}.weeklyRecipeChoice h3{font-size:13px;margin:0 0 7px}.weeklyRecipeGroup{background:#f6f9fa;border:1px solid #dce6e9;border-radius:13px;padding:13px}.weeklyRecipeGroup h3{margin:0 0 9px;color:#17324d;font-size:15px}.weeklyRecipeGroup label{font-size:12px;margin:9px 0 4px}.weeklyRecipeGroup select{background:#fff;border:1px solid #bdcbd2;padding:10px;font-size:12px}.weeklyRecipeGroup .note{margin-top:9px}@media(max-width:900px){.weeklyRecipePicker{grid-template-columns:repeat(6,minmax(175px,1fr))}}
+.weeklyRecipePicker{display:grid;grid-template-columns:repeat(3,minmax(210px,1fr));gap:13px;margin-top:14px}.weeklyRecipeGroup{background:#f6f9fa;border:1px solid #dce6e9;border-radius:13px;padding:13px}.weeklyRecipeGroup h3{margin:0 0 9px;color:#17324d;font-size:15px}.weeklyRecipeGroup label{font-size:12px;margin:9px 0 4px}.weeklyRecipeGroup select{background:#fff;border:1px solid #bdcbd2;padding:10px;font-size:12px}.weeklyRecipeGroup .note{margin-top:9px}@media(max-width:900px){.weeklyRecipePicker{grid-template-columns:1fr}}
 </style></head>
 <body>
 <header><h1>Simulateur repas semaine</h1>
@@ -503,9 +503,10 @@ function renderWeeklyRecipePicker(){
  const root=document.getElementById('weeklyRecipePicker');if(!root)return;
  root.innerHTML=PICKER_GROUPS.map(group=>{
   const current=pickerCurrent(group.slot),recipes=pickerRecipes(group);
-  return group.names.map((name,i)=>
-   '<div class="weeklyRecipeChoice"><h3>'+group.title+'</h3><label for="picker_'+group.slot+'_'+i+'">'+name+'</label><select id="picker_'+group.slot+'_'+i+'" onchange="chooseWeeklyRecipe(\''+group.slot+'\','+i+',this.value)"><option value="">Choisir une recette…</option>'+
-   recipes.map(r=>'<option value="'+r.id+'" '+(current[i]===String(r.id)?'selected':'')+'>'+escapeFoodHtml(r.name)+' · '+Math.round(r.macros.kcal)+' kcal</option>').join('')+'</select><p class="note">'+(group.slot==='lunch'?(i===0?'Lundi–mercredi':'Jeudi–dimanche'):group.slot==='dessert'?'Alternance midi / soir':'Alternance des matins')+'</p></div>').join('');
+  return '<div class="weeklyRecipeGroup"><h3>'+group.title+'</h3>'+group.names.map((name,i)=>
+   '<label for="picker_'+group.slot+'_'+i+'">'+name+'</label><select id="picker_'+group.slot+'_'+i+'" onchange="chooseWeeklyRecipe(\''+group.slot+'\','+i+',this.value)"><option value="">Choisir une recette…</option>'+
+   recipes.map(r=>'<option value="'+r.id+'" '+(current[i]===String(r.id)?'selected':'')+'>'+escapeFoodHtml(r.name)+' · '+Math.round(r.macros.kcal)+' kcal</option>').join('')+'</select>').join('')+
+   '<p class="note">'+group.help+'</p></div>';
  }).join('');
 }
 function chooseWeeklyRecipe(groupSlot,index,id){
