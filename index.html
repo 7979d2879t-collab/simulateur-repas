@@ -487,8 +487,8 @@ function closeRecipe(){document.getElementById('recipeModal').classList.remove('
 
 const PICKER_GROUPS=[
  {slot:'breakfast',cat:'PETITS-DÉJEUNERS',title:'🥣 Petits-déjeuners',names:['Petit-déjeuner 1','Petit-déjeuner 2'],help:'Alternance sur les sept matins.'},
- {slot:'lunch',cat:'DÉJEUNERS & BATCH COOKING',title:'🍲 Batch cooking du midi',names:['Midi 1','Midi 2'],help:'Recette 1 : lundi à mercredi · Recette 2 : jeudi à dimanche.'},
- {slot:'dinner',cat:'DÎNERS RAPIDES',title:'🍽️ Batch cooking du soir',names:['Soir 1','Soir 2'],help:'Recette 1 : lundi à mercredi · Recette 2 : jeudi à dimanche.'},
+ {slot:'lunch',cat:'DÉJEUNERS & BATCH COOKING',title:'🍲 Batch cooking du midi',names:['Midi 1','Midi 2'],help:'Recette 1 : lundi à mercredi midi · Recette 2 : jeudi à samedi midi. Dimanche midi libre.'},
+ {slot:'dinner',cat:'DÎNERS RAPIDES',title:'🍽️ Batch cooking du soir',names:['Soir 1','Soir 2'],help:'Recette 1 : dimanche à mardi soir · Recette 2 : mercredi à vendredi soir. Samedi soir libre.'},
  {slot:'dessert',cat:'DESSERTS & COLLATIONS',title:'🍮 Desserts',names:['Dessert 1','Dessert 2'],help:'Les mêmes deux desserts alternent au déjeuner et au dîner.'}
 ];
 function pickerRecipes(group){
@@ -496,7 +496,8 @@ function pickerRecipes(group){
 }
 function pickerCurrent(slot){
  const row=[...document.querySelectorAll('select[data-slot="'+(slot==='dessert'?'snack1':slot)+'"]')];
- if(slot==='lunch'||slot==='dinner')return [row[0]?.value||'',row[3]?.value||''];
+ if(slot==='lunch')return [row[0]?.value||'',row[3]?.value||''];
+ if(slot==='dinner')return [row[6]?.value||'',row[2]?.value||''];
  const ids=[...new Set(row.map(s=>s.value).filter(Boolean))];
  return [ids[0]||'',ids[1]||''];
 }
@@ -528,7 +529,9 @@ function chooseWeeklyRecipe(groupSlot,index,id){
  for(const slot of slots){
   document.querySelectorAll('select[data-slot="'+slot+'"]').forEach(sel=>{
    const d=+sel.dataset.day;
-   const chosen=(groupSlot==='lunch'||groupSlot==='dinner')?ids[d<3?0:1]:groupSlot==='dessert'?ids[(d+(slot==='snack2'?1:0))%2]:ids[d%2];
+   const batch=groupSlot==='lunch'?(d<3?0:d<6?1:-1):groupSlot==='dinner'?(d===6||d<2?0:d<5?1:-1):-1;
+   if((groupSlot==='lunch'||groupSlot==='dinner')&&batch<0)return;
+   const chosen=(groupSlot==='lunch'||groupSlot==='dinner')?ids[batch]:groupSlot==='dessert'?ids[(d+(slot==='snack2'?1:0))%2]:ids[d%2];
    sel.innerHTML=opts(sel.dataset.cat,chosen);sel.value=chosen||'';
   });
  }
@@ -814,12 +817,13 @@ function changeWeeklySlot(slot){
  status.textContent=validation.ok?'✓ Deux nouvelles recettes sur cette ligne uniquement. Les autres repas sont inchangés et les macros restent dans les cibles.':'Deux nouvelles recettes sur cette ligne uniquement. Les autres repas sont inchangés, mais '+validation.bad.length+' journée(s) restent hors cible : les macros ne peuvent pas toujours être rééquilibrées sans modifier les autres lignes.';
  renderWeeklySlotControls();
 }
-function lunchBatchForDay(day){return day<3?0:1}
+function lunchBatchForDay(day){return day<3?0:day<6?1:-1}
+function dinnerBatchForDay(day){return day===6||day<2?0:day<5?1:-1}
 function applyLunchBatchBlocks(){
  const row=[...document.querySelectorAll('select[data-slot="lunch"]')];
  const ids=[...new Set(row.map(s=>s.value).filter(Boolean))];
  if(ids.length!==2)return false;
- row.forEach(sel=>{const id=ids[lunchBatchForDay(+sel.dataset.day)];sel.innerHTML=opts(sel.dataset.cat,id);sel.value=id});
+ row.forEach(sel=>{const batch=lunchBatchForDay(+sel.dataset.day);if(batch<0)return;const id=ids[batch];sel.innerHTML=opts(sel.dataset.cat,id);sel.value=id});
  return true;
 }
 function syncDessertOpposites(sourceSlot){
@@ -850,8 +854,9 @@ function manualMealChanged(sel){
  const affected=oldId&&newId!==oldId?row.filter(s=>s!==sel&&s.value===oldId):[];
  affected.forEach(s=>{s.innerHTML=opts(s.dataset.cat,newId);s.value=newId});
  if(slot==='lunch'||slot==='dinner'){
-  const group=lunchBatchForDay(+sel.dataset.day);
-  row.forEach(s=>{if(lunchBatchForDay(+s.dataset.day)===group){s.innerHTML=opts(s.dataset.cat,newId);s.value=newId}});
+  const batchFor=slot==='lunch'?lunchBatchForDay:dinnerBatchForDay;
+  const group=batchFor(+sel.dataset.day);
+  row.forEach(s=>{if(group>=0&&batchFor(+s.dataset.day)===group){s.innerHTML=opts(s.dataset.cat,newId);s.value=newId}});
  }
  const ids=[...new Set(row.map(s=>s.value).filter(Boolean))];
  if(ids.length>2){
@@ -1024,7 +1029,7 @@ function weeklySubstitutionOptions(){
 }
 function renderHalfWeekAdvice(){
  const root=document.getElementById('halfWeekAdvice');if(!root)return;
- const groups=[['Lundi à mercredi',[0,1,2],0],['Jeudi à dimanche',[3,4,5,6],1]];
+ const groups=[['Premier batch : dimanche soir à mercredi midi',[6,0,1,2],0],['Second batch : mercredi soir à samedi midi',[2,3,4,5],1]];
  const metrics=[['k','kcal','Calories'],['p','g','Protéines'],['fi','g','Fibres'],['f','g','Lipides']];
  const penalty=t=>metrics.reduce((v,[k])=>v+Math.max(0,DAY_RANGE[k][0]-t[k])/(DAY_RANGE[k][1]-DAY_RANGE[k][0])+Math.max(0,t[k]-DAY_RANGE[k][1])/(DAY_RANGE[k][1]-DAY_RANGE[k][0]),0);
  root.innerHTML=groups.map(([title,days,batch])=>{
@@ -1039,7 +1044,7 @@ function renderHalfWeekAdvice(){
    for(let index=0;index<2;index++){
     if((slot==='lunch'||slot==='dinner')&&index!==batch)continue;
     const old=RECIPES.find(r=>String(r.id)===ids[index]);if(!old)continue;
-    const affected=days.filter(d=>slot==='lunch'||slot==='dinner'||slot==='breakfast'&&d%2===index||slot==='snack1'&&d%2===index);
+    const affected=days.filter(d=>slot==='lunch'?lunchBatchForDay(d)===index:slot==='dinner'?dinnerBatchForDay(d)===index:slot==='breakfast'||slot==='snack1'?d%2===index:false);
     const candidates=pickerRecipes(PICKER_GROUPS.find(g=>g.slot===group));
     for(const recipe of candidates){
      if(recipe.id===old.id||ids.some(id=>id===String(recipe.id)))continue;
