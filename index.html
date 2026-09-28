@@ -34,6 +34,7 @@ button{border:0;background:var(--teal);color:#fff;padding:9px 12px;border-radius
 <section class="catalogue"><h2>❤️ Mes aliments et mes recettes</h2><p class="note">Coche les favoris et décoche les aliments ou recettes que tu ne veux plus voir dans les propositions. Tes choix restent enregistrés sur cet appareil. Ajoute ou retire tes aliments : le simulateur compose aussi de nouvelles recettes, ajuste les portions des recettes existantes et varie les propositions au fil des semaines. Les macros des compositions inédites sont des estimations.</p><div id="foodCatalogue"></div><div style="margin-top:12px"><h3>🔎 Rechercher un aliment sur Internet</h3><p class="note">Recherche dans Open Food Facts (produits alimentaires référencés). Choisis un résultat pour remplir automatiquement les valeurs pour 100 g, puis vérifie la catégorie et ajoute-le à ta liste.</p><div style="display:flex;gap:8px;flex-wrap:wrap"><input id="onlineFoodSearch" type="search" placeholder="Ex. lentilles, skyr, saumon…" oninput="scheduleOnlineFoodSearch()" onkeydown="if(event.key===\'Enter\'){event.preventDefault();searchOnlineFoods()}" style="flex:2;min-width:180px"><button type="button" onclick="searchOnlineFoods()">🔎 Rechercher</button></div><div id="onlineFoodResults" aria-live="polite" style="margin:9px 0"></div><input id="newFood" placeholder="Ajouter un aliment (ex. lentilles)" aria-label="Nouvel aliment"><select id="newFoodCat" aria-label="Catégorie de l'aliment"><option>Viandes et œufs</option><option>Poissons et fruits de mer</option><option>Produits laitiers et protéines</option><option>Féculents</option><option>Légumes</option><option>Fruits</option><option>Oléagineux et matières grasses</option><option>Sauces et assaisonnements</option><option>Autres</option></select><div style="display:flex;flex-wrap:wrap;gap:8px;margin:10px 0"><label>kcal /100g <input id="newKcal" type="number" min="0" step=".1" style="width:85px"></label><label>Protéines <input id="newProtein" type="number" min="0" step=".1" style="width:85px"></label><label>Glucides <input id="newCarbs" type="number" min="0" step=".1" style="width:85px"></label><label>Lipides <input id="newFat" type="number" min="0" step=".1" style="width:85px"></label><label>Fibres <input id="newFiber" type="number" min="0" step=".1" style="width:85px"></label><label>Prix €/100g <input id="newCost" type="number" min="0" step=".01" style="width:85px"></label></div><button type="button" onclick="addCustomFood()">Ajouter cet aliment</button><p class="note">Valeurs pour 100 g, idéalement celles de l'étiquette. Laisse le prix à zéro s'il est inconnu.</p></div><h2>⭐ Mes recettes favorites conservées</h2><p class="note">Chaque recette favorite est sauvegardée telle quelle, avec ses quantités et macros d'origine. Les variantes restent des recettes séparées.</p><div id="savedFavorites"></div><h2>📖 Toutes les recettes par catégorie</h2><input type="search" id="catalogSearch" placeholder="Rechercher une recette ou un ingrédient…" oninput="renderRecipeCatalogue()"><div id="recipeCatalogue"></div></section><div class="top">
 <div class="kpi"><span>Moyenne kcal/j</span><b id="avgK">-</b></div>
 <div class="kpi"><span>Protéines moy.</span><b id="avgP">-</b></div>
+<div class="kpi"><span>Glucides moy.</span><b id="avgC">-</b></div>
 <div class="kpi"><span>Fibres moy.</span><b id="avgFi">-</b></div>
 <div class="kpi"><span>Lipides moy.</span><b id="avgF">-</b></div>
 <div class="kpi"><span>Budget semaine</span><b id="weekCost">-</b></div>
@@ -50,7 +51,7 @@ button{border:0;background:var(--teal);color:#fff;padding:9px 12px;border-radius
 <div class="note" style="margin:12px 0"><b>Inclure dans les courses :</b><br><label><input type="checkbox" id="shopLunch" checked onchange="updateShopping()"> Déjeuners (batch cooking)</label><br><label><input type="checkbox" id="shopDesserts" checked onchange="updateShopping()"> Desserts du midi et du soir</label><br><label><input type="checkbox" id="shopBreakfast" checked onchange="updateShopping()"> Petits-déjeuners</label><br><label><input type="checkbox" id="shopDinner" onchange="updateShopping()"> Dîners de Cécilia</label></div><p id="shopScope" class="note"></p><table><thead><tr><th>Produit</th><th>Quantité</th><th>Coût estimé</th></tr></thead><tbody id="shopping"></tbody></table>
 <br><button onclick="printShopping()">🖨️ Imprimer la liste de courses</button></div>
 <div class="panel"><h2>Bilan de la semaine</h2><div id="weekSummary"></div><br>
-<div id="targetBars" style="margin:12px 0"></div><p class="note" style="text-align:center">Chaque jauge compare la moyenne de la semaine à sa zone cible. Le repère central correspond à la cible ; un dépassement reste visible au lieu d’être présenté comme meilleur.</p><button onclick="resetWeek()">Réinitialiser</button>
+<div id="targetBars" style="margin:12px 0"></div><p class="note" style="text-align:center">La zone verte indique la cible, la barre bleue ton résultat et la partie rouge uniquement le dépassement. Les glucides ont un repère indicatif dérivé des autres objectifs.</p><button onclick="resetWeek()">Réinitialiser</button>
 <p class="note">Prix indicatifs base Lidl, hors promotions. Fruits en conserve : au jus/sans sucres ajoutés et poids égoutté. Framboises : surgelées par défaut.</p></div>
 </div>
 <section class="card"><h2>🔄 Substitutions pour atteindre les macros</h2><div id="substitutionPanel"></div></section></main>
@@ -1000,17 +1001,34 @@ function applySuggestion(day,slot,id){
 }
 function drawTargetBars(values){
  const el=document.getElementById('targetBars');if(!el)return;
+ if(!values){el.innerHTML='<p class="note">Sélectionne les repas pour afficher les résultats et les cibles.</p>';return}
+ // Carbohydrate target is indicative, derived from 2100 kcal, 160 g protein and 68 g fat.
+ const carbs=(2100-160*4-68*9)/4;
  const defs=[
-  ['Calories',values[0],2050,2150,'kcal'],
-  ['Protéines',values[1],150,170,'g'],
-  ['Fibres',values[2],30,35,'g'],
-  ['Lipides',values[3],60,75,'g']
+  ['Calories',values.k,2050,2150,'kcal'],
+  ['Protéines',values.p,150,170,'g'],
+  ['Glucides',values.c,carbs-20,carbs+20,'g'],
+  ['Lipides',values.f,60,75,'g'],
+  ['Fibres',values.fi,30,35,'g']
  ];
- el.innerHTML=defs.map(([name,v,min,max,unit])=>{
-   const center=(min+max)/2,scale=max*1.35,pct=Math.min(100,Math.max(0,v/scale*100)),lo=min/scale*100,hi=max/scale*100;
-   const state=v<min?'Trop bas':v>max?'Trop haut':'Dans la cible';
-   const cls=v>=min&&v<=max?'ok':'warn';
-   return `<div style="margin:12px 0"><div style="display:flex;justify-content:space-between;gap:8px"><b>${name}</b><span>${Math.round(v)} ${unit} · <b>${state}</b></span></div><div style="height:18px;background:#edf1f2;border-radius:9px;position:relative;overflow:hidden;margin-top:5px"><div style="position:absolute;left:${lo}%;width:${hi-lo}%;height:100%;background:#cde9d7"></div><div style="position:absolute;left:0;width:${pct}%;height:100%;background:${v>=min&&v<=max?'#2d7d77':'#d79b16'};opacity:.78"></div><div style="position:absolute;left:${center/scale*100}%;top:0;bottom:0;width:2px;background:#17324d"></div></div><div class="note">Cible : ${min}–${max} ${unit}</div></div>`;
+ el.innerHTML='<div class="note" style="margin-bottom:12px"><b>Comparaison des moyennes quotidiennes sur la semaine</b> — <span style="color:#277a54">■</span> cible · <span style="color:#246b94">■</span> résultat · <span style="color:#c73535">■</span> dépassement</div>'+
+ defs.map(([name,v,min,max,unit])=>{
+  const scale=Math.max(max*1.28,v*1.08,1);
+  const pos=n=>Math.max(0,Math.min(100,n/scale*100));
+  const low=pos(min),high=pos(max),actual=pos(v);
+  const exceeded=v>max,below=v<min;
+  const status=exceeded?'Au-dessus de la cible':below?'En dessous de la cible':'Dans la cible';
+  const difference=exceeded?' +'+Math.round(v-max)+' '+unit:below?' −'+Math.round(min-v)+' '+unit:'';
+  return `<div style="margin:17px 0 22px">
+   <div style="display:flex;justify-content:space-between;gap:8px;align-items:baseline;flex-wrap:wrap"><b>${name}</b><span><strong>${Math.round(v)} ${unit}</strong> <span style="color:${exceeded?'#c73535':below?'#a66a14':'#277a54'}">· ${status}${difference}</span></span></div>
+   <div style="height:29px;background:#e8eef0;border-radius:7px;position:relative;margin:9px 0 7px;overflow:hidden">
+    <div style="position:absolute;left:${low}%;width:${high-low}%;height:100%;background:#bde6cc;border-left:2px solid #277a54;border-right:2px solid #277a54;box-sizing:border-box"></div>
+    <div style="position:absolute;left:0;width:${Math.min(actual,high)}%;height:13px;top:8px;background:#246b94;border-radius:0 3px 3px 0"></div>
+    ${exceeded?`<div style="position:absolute;left:${high}%;width:${actual-high}%;height:13px;top:8px;background:#c73535;border-radius:0 3px 3px 0"></div>`:''}
+    <div style="position:absolute;left:${actual}%;top:2px;bottom:2px;width:2px;background:#17324d"></div>
+   </div>
+   <div class="note">Zone cible : <b>${Math.round(min)}–${Math.round(max)} ${unit}</b>${name==='Glucides'?' · repère indicatif calculé à partir des objectifs calories, protéines et lipides':''}</div>
+  </div>`;
  }).join('');
 }
 function paintBatch(){
@@ -1039,15 +1057,16 @@ function update(){
  const avg=x=>active.reduce((a,t)=>a+t[x],0)/n;
  document.getElementById('avgK').textContent=active.length?Math.round(avg('k')):'-';
  document.getElementById('avgP').textContent=active.length?Math.round(avg('p'))+' g':'-';
+ document.getElementById('avgC').textContent=active.length?Math.round(avg('c'))+' g':'-';
  document.getElementById('avgFi').textContent=active.length?Math.round(avg('fi'))+' g':'-';
  document.getElementById('avgF').textContent=active.length?Math.round(avg('f'))+' g':'-';
  let wc=active.reduce((a,t)=>a+t.cost,0); document.getElementById('weekCost').textContent=active.length?'≈ '+wc.toFixed(2)+' €':'-';
  const targetScore=(v,min,max)=>{if(v>=min&&v<=max)return 1;if(v<min)return Math.max(0,v/min);return Math.max(0,1-(v-max)/max);};
- drawTargetBars(active.length?[avg('k'),avg('p'),avg('fi'),avg('f')]:[0,0,0,0]);
+ drawTargetBars(active.length?{k:avg('k'),p:avg('p'),c:avg('c'),fi:avg('fi'),f:avg('f')}:null);
  updateShopping();
  document.getElementById('weekSummary').innerHTML=active.length?
  `<p><b>${active.length} jour(s) composé(s).</b></p>
- <p>Moyenne : <b>${Math.round(avg('k'))} kcal</b> · <b>${Math.round(avg('p'))} g protéines</b> · ${Math.round(avg('fi'))} g fibres · ${Math.round(avg('f'))} g lipides.</p>
+ <p>Moyenne : <b>${Math.round(avg('k'))} kcal</b> · <b>${Math.round(avg('p'))} g protéines</b> · <b>${Math.round(avg('c'))} g glucides</b> · ${Math.round(avg('fi'))} g fibres · ${Math.round(avg('f'))} g lipides.</p>
  <p>${Math.round(avg('k'))>2150?'La moyenne est au-dessus du point de départ actuel.':Math.round(avg('k'))<1900?'La moyenne est assez basse : vérifie que tu as bien sélectionné toutes les prises alimentaires.':'La moyenne énergétique reste proche de la zone de départ.'}</p>`:'Sélectionne les repas pour commencer.';
  paintBatch();
  document.querySelectorAll('select[data-slot]').forEach(s=>s.dataset.previousValue=s.value);
