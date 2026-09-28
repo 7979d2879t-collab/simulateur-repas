@@ -858,14 +858,10 @@ function manualMealChanged(sel){
   const keep=ids.find(id=>id!==newId&&id!==oldId);
   row.forEach(s=>{if(s.value!==newId&&s.value!==keep){s.innerHTML=opts(s.dataset.cat,newId);s.value=newId}});
  }
- // Keep the entire edited row fixed while rebalancing the other, unlocked rows.
+ // Preserve all other meal choices: changing a recipe only refreshes the results.
  if(slot==='snack1'||slot==='snack2')syncDessertOpposites(slot);
- const fixed=new Set(row.map(s=>s.dataset.day+':'+slot));
- if(slot==='snack1'||slot==='snack2')document.querySelectorAll('select[data-slot="'+(slot==='snack1'?'snack2':'snack1')+'"]').forEach(s=>fixed.add(s.dataset.day+':'+s.dataset.slot));
- window.mealTemporaryLocks=fixed;
- try{autoWeek()}finally{window.mealTemporaryLocks=null}
- row.forEach(s=>s.dataset.previousValue=s.value);
- status.textContent='Recette modifiée sur '+(affected.length+1)+' jour(s) de cette ligne. Les autres repas non verrouillés ont été recalculés si une combinaison compatible est disponible.';
+ update();updateFavButtons();
+ status.textContent='Recette enregistrée. Les autres plats restent inchangés ; consulte les recommandations si les journées sont hors cible.';
 }
 function autoWeek(){
  const panel=document.getElementById('suggestPanel'),box=document.getElementById('suggestions');
