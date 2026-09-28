@@ -274,8 +274,6 @@ function rebuildGeneratedRecipes(){
  const all=[...Object.entries(META).map(([key,m])=>({key,name:m.name,category:foodCategory(key,m.name)})),...FOOD_PREF.custom].filter(f=>!excludedFood(f.key)&&foodInfo(f.key));
  const byCat=c=>all.filter(f=>f.category===c);
  const templates=[
-  {cat:'PETITS-DÉJEUNERS',label:'Bol protéiné',groups:[['Produits laitiers et protéines',220],['Féculents',45],['Fruits',100],['Oléagineux et matières grasses',12]]},
-  {cat:'PETITS-DÉJEUNERS',label:'Petit-déjeuner gourmand',groups:[['Produits laitiers et protéines',200],['Fruits',120],['Oléagineux et matières grasses',20]]},
   {cat:'DÉJEUNERS & BATCH COOKING',label:'Assiette complète',groups:[['Viandes et œufs',160],['Féculents',65],['Légumes',200],['Légumes',100]]},
   {cat:'DÉJEUNERS & BATCH COOKING',label:'Bol équilibré',groups:[['Poissons et fruits de mer',160],['Féculents',65],['Légumes',200]]},
   {cat:'DÎNERS RAPIDES',label:'Poêlée complète',groups:[['Viandes et œufs',160],['Légumes',220],['Féculents',55]]},
@@ -305,6 +303,7 @@ function rebuildGeneratedRecipes(){
  }
  // Adjustable existing dishes: scale quantities proportionally, maintaining the dish.
  for(const r of base){
+  if(r.cat==='PETITS-DÉJEUNERS')continue;
   if(r.ings.some(x=>!foodInfo(x.key)))continue;
   for(const factor of [.85,1.15]){
    const ings=r.ings.map(x=>({...x,qty:Math.max(5,Math.round(x.qty*factor/5)*5)}));
@@ -344,7 +343,7 @@ function showRecipeById(id){
 
 function opts(cat,current='',q='',favOnly=false){
  q=(q||'').trim().toLowerCase();
- let arr=RECIPES.filter(r=>allowedRecipe(r) && r.cat===cat && (!q||r.name.toLowerCase().includes(q)||(r.sub||'').toLowerCase().includes(q)) && (!favOnly||FAVORITES.has(r.id)));
+ let arr=RECIPES.filter(r=>allowedRecipe(r) && (cat!=='PETITS-DÉJEUNERS'||suitableBreakfast(r)) && r.cat===cat && (!q||r.name.toLowerCase().includes(q)||(r.sub||'').toLowerCase().includes(q)) && (!favOnly||FAVORITES.has(r.id)));
  if(current!==''&&!arr.some(r=>String(r.id)===String(current))){let r=RECIPES.find(x=>String(x.id)===String(current));if(r)arr.unshift(r)}
  let groups={};arr.forEach(r=>{let g=mealGroup(r);(groups[g]||(groups[g]=[])).push(r)});
  let html='<option value="">-- aucun --</option>';
@@ -537,6 +536,11 @@ function bestWholeDay(day,usage,restricted={}){
  walk(0,fixed);
  return {open,best};
 }
+// Short, curated breakfast menu: no automatically mixed starches or pasta.
+const BREAKFAST_MENU_IDS=new Set([66,67,68,71,72,74,75,76,77,79,80,85,86,89]);
+function suitableBreakfast(r){
+ return r.cat!=='PETITS-DÉJEUNERS'||BREAKFAST_MENU_IDS.has(r.id)||(FAVORITES.has(r.id)&&SAVED_FAV.some(x=>x.id===r.id));
+}
 function breakfastType(r){
  // Classify the original recipe and all its portion variants by their actual type.
  const sub=(r.sub||'').toUpperCase(),name=r.name.toLowerCase();
@@ -547,7 +551,7 @@ function breakfastType(r){
 }
 function breakfastCandidates(){
  const mode=document.getElementById('breakfastMode').value;
- return RECIPES.filter(r=>allowedRecipe(r)&&r.cat==='PETITS-DÉJEUNERS'&&(mode==='mix'||breakfastType(r)===mode));
+ return RECIPES.filter(r=>allowedRecipe(r)&&r.cat==='PETITS-DÉJEUNERS'&&suitableBreakfast(r)&&(mode==='mix'||breakfastType(r)===mode));
 }
 const MEAL_LOCK_KEY='mealLockedSlotsV1';
 function saveMealLocks(){
