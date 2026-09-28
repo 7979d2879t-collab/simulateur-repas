@@ -333,12 +333,29 @@ function rebuildGeneratedRecipes(){
  // Reinsert frozen favorites, even when their ingredients have since been excluded.
  for(const saved of SAVED_FAV){if(saved.cat==='PETITS-DÉJEUNERS'&&!BREAKFAST_MENU_IDS.has(saved.id))continue;if(!RECIPES.some(r=>r.id===saved.id))RECIPES.push(JSON.parse(JSON.stringify(saved)))}
 }
+function deleteCatalogueFood(key){
+ const food=META[key]||FOOD_PREF.custom.find(f=>f.key===key);
+ if(!food||!confirm('Supprimer « '+food.name+' » de tes aliments proposés ? Les recettes qui en contiennent ne seront plus proposées.'))return;
+ if(key.startsWith('custom_')){removeCustomFood(key);return}
+ FOOD_PREF.excluded=[...new Set([...FOOD_PREF.excluded,key])];
+ FOOD_PREF.favorites=FOOD_PREF.favorites.filter(k=>k!==key);
+ persistFoods();rebuildGeneratedRecipes();
+ document.querySelectorAll('select[data-slot]').forEach(sel=>{const recipe=RECIPES.find(r=>String(r.id)===sel.value);if(recipe&&!allowedRecipe(recipe))sel.value=''});
+ refreshChoices();renderFoodCatalogue();renderRecipeCatalogue();autoWeek();
+}
+function deleteCatalogueRecipe(id){
+ const recipe=RECIPES.find(r=>r.id===id);
+ if(!recipe||!confirm('Supprimer « '+recipe.name+' » des recettes proposées ?'))return;
+ RECIPE_OFF.add(id);localStorage.setItem(RECIPE_OFF_KEY,JSON.stringify([...RECIPE_OFF]));
+ document.querySelectorAll('select[data-slot]').forEach(sel=>{if(sel.value===String(id))sel.value=''});
+ refreshChoices();renderRecipeCatalogue();renderWeeklySlotControls();autoWeek();
+}
 function renderFoodCatalogue(){
  const root=document.getElementById('foodCatalogue');if(!root)return;
- const foods=[...Object.entries(META).map(([key,m])=>({key,name:m.name,category:foodCategory(key,m.name)})),...FOOD_PREF.custom];
+ const foods=[...Object.entries(META).map(([key,m])=>({key,name:m.name,category:foodCategory(key,m.name)})),...FOOD_PREF.custom].filter(f=>!excludedFood(f.key));
  root.innerHTML=Object.keys({...FOOD_GROUPS,Autres:1}).map(group=>{
  const arr=foods.filter(f=>f.category===group).sort((a,b)=>a.name.localeCompare(b.name,'fr'));
- return '<details><summary>'+group+' ('+arr.length+')</summary><div class="catalogue-grid">'+arr.map(f=>'<div class="entry '+(excludedFood(f.key)?'muted':'')+'"><label><input type="checkbox" '+(!excludedFood(f.key)?'checked':'')+' onchange="toggleFood(\''+f.key+'\',\'excluded\',!this.checked)"> Autorisé</label><label><input type="checkbox" '+(FOOD_PREF.favorites.includes(f.key)?'checked':'')+' onchange="toggleFood(\''+f.key+'\',\'favorites\',this.checked)"> ⭐</label><span>'+f.name+'</span>'+(f.key.startsWith('custom_')?'<button class="mini" onclick="removeCustomFood(\''+f.key+'\')">Supprimer</button>':'')+'</div>').join('')+'</div></details>';
+ return '<details><summary>'+group+' ('+arr.length+')</summary><div class="catalogue-grid">'+arr.map(f=>'<div class="entry '+(excludedFood(f.key)?'muted':'')+'"><label><input type="checkbox" '+(!excludedFood(f.key)?'checked':'')+' onchange="toggleFood(\''+f.key+'\',\'excluded\',!this.checked)"> Autorisé</label><label><input type="checkbox" '+(FOOD_PREF.favorites.includes(f.key)?'checked':'')+' onchange="toggleFood(\''+f.key+'\',\'favorites\',this.checked)"> ⭐</label><span>'+f.name+'</span>'+'<button type="button" class="mini" onclick="deleteCatalogueFood(\''+f.key+'\')">🗑 Supprimer</button>'+'</div>').join('')+'</div></details>';
  }).join('');
 }
 function toggleRecipeCatalogue(id,kind,on){
@@ -350,9 +367,9 @@ function renderRecipeCatalogue(){
  const root=document.getElementById('recipeCatalogue');if(!root)return;
  const q=(document.getElementById('catalogSearch')?.value||'').trim().toLowerCase();
  root.innerHTML=[...new Set(RECIPES.map(r=>r.cat))].map(cat=>{
- const arr=RECIPES.filter(r=>r.cat===cat&&(!q||(r.name+' '+r.ings.map(x=>META[x.key]?.name||x.key).join(' ')).toLowerCase().includes(q)));
+ const arr=RECIPES.filter(r=>r.cat===cat&&!RECIPE_OFF.has(r.id)&&(cat!=='PETITS-DÉJEUNERS'||suitableBreakfast(r))&&(!q||(r.name+' '+r.ings.map(x=>META[x.key]?.name||x.key).join(' ')).toLowerCase().includes(q)));
  if(!arr.length)return '';
- return '<details '+(q?'open':'')+'><summary>'+cat+' ('+arr.length+')</summary><div class="catalogue-grid">'+arr.map(r=>'<div class="entry '+(!allowedRecipe(r)?'muted':'')+'"><label><input type="checkbox" '+(!RECIPE_OFF.has(r.id)?'checked':'')+' onchange="toggleRecipeCatalogue('+r.id+',\'off\',this.checked)"> Proposer</label><label><input type="checkbox" '+(FAVORITES.has(r.id)?'checked':'')+' onchange="toggleRecipeCatalogue('+r.id+',\'fav\',this.checked)"> ⭐</label><span>'+r.name+' · '+r.macros.kcal+' kcal · '+Math.round(r.macros.protein)+' g prot.</span><button class="mini" onclick="showRecipeById('+r.id+')">📖 Fiche</button></div>').join('')+'</div></details>';
+ return '<details '+(q?'open':'')+'><summary>'+cat+' ('+arr.length+')</summary><div class="catalogue-grid">'+arr.map(r=>'<div class="entry '+(!allowedRecipe(r)?'muted':'')+'"><label><input type="checkbox" '+(!RECIPE_OFF.has(r.id)?'checked':'')+' onchange="toggleRecipeCatalogue('+r.id+',\'off\',this.checked)"> Proposer</label><label><input type="checkbox" '+(FAVORITES.has(r.id)?'checked':'')+' onchange="toggleRecipeCatalogue('+r.id+',\'fav\',this.checked)"> ⭐</label><span>'+r.name+' · '+r.macros.kcal+' kcal · '+Math.round(r.macros.protein)+' g prot.</span><button class="mini" onclick="showRecipeById('+r.id+')">📖 Fiche</button><button type="button" class="mini" onclick="deleteCatalogueRecipe('+r.id+')">🗑 Supprimer</button></div>').join('')+'</div></details>';
  }).join('');
 }
 function showRecipeById(id){
