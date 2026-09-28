@@ -40,6 +40,7 @@ button{border:0;background:var(--teal);color:#fff;padding:9px 12px;border-radius
 .targetVerticalItem .targetLabel{font-weight:800;font-size:12px;color:#17324d;min-height:32px}
 .targetVerticalItem .targetRange{font-size:11px;color:#526a78;margin-top:5px}
 .targetVerticalItem .targetStatus{font-size:11px;font-weight:700;margin-top:5px}
+.weeklyRecipePicker{display:grid;grid-template-columns:repeat(3,minmax(210px,1fr));gap:13px;margin-top:14px}.weeklyRecipeGroup{background:#f6f9fa;border:1px solid #dce6e9;border-radius:13px;padding:13px}.weeklyRecipeGroup h3{margin:0 0 9px;color:#17324d;font-size:15px}.weeklyRecipeGroup label{font-size:12px;margin:9px 0 4px}.weeklyRecipeGroup select{background:#fff;border:1px solid #bdcbd2;padding:10px;font-size:12px}.weeklyRecipeGroup .note{margin-top:9px}@media(max-width:900px){.weeklyRecipePicker{grid-template-columns:1fr}}
 </style></head>
 <body>
 <header><h1>Simulateur repas semaine</h1>
@@ -60,7 +61,7 @@ button{border:0;background:var(--teal);color:#fff;padding:9px 12px;border-radius
 <span class="note">La proposition teste plusieurs rotations de deux petits-déjeuners et deux desserts,  Priorité à 2 050–2 150 kcal, 150–170 g protéines, 30–35 g fibres et 60–75 g lipides. Ensuite seulement viennent batch cooking, variété et favoris.</span>
 </div>
 <div class="panel" id="suggestPanel" style="display:none;margin-bottom:14px"><h2>🎯 Suggestions adaptées</h2><div id="suggestions"></div></div>
-<div class="panel" style="margin-bottom:12px"><h2>🥣 Petits-déjeuners</h2><label for="breakfastMode">Type de petit-déjeuner pour les 2 recettes de la semaine :</label> <select id="breakfastMode" style="max-width:270px" onchange="changeBreakfastMode(this.value)"><option value="both">Salé et sucré (duo)</option><option value="savory">Salé uniquement</option><option value="sweet">Sucré uniquement</option><option value="mix">Libre : salé, sucré ou duo</option></select><p class="note">Deux recettes maximum pour les petits-déjeuners et deux desserts pour toute la semaine.  Les recettes sélectionnées manuellement restent prioritaires.</p></div><div class="panel" style="margin-bottom:12px"><p class="note" id="slotChangeStatus">Coche « Garder » sur une ligne de repas : ce choix conserve ce type de repas pour les 7 jours. « Changer » propose deux autres recettes et recalcule les repas non verrouillés.</p></div><div class="weekLayout"><div id="weeklySlotControls" class="weeklySlotSidebar"></div><div class="week" id="week"></div></div>
+<div class="panel" style="margin-bottom:12px"><h2>🍽️ Je compose ma semaine</h2><p class="note">Choisis directement tes deux petits-déjeuners, tes deux préparations batch cooking et tes deux desserts. Le tableau, les macros, le graphique et la liste de courses se mettent à jour automatiquement. Les déjeuners sont répartis du lundi au mercredi puis du jeudi au dimanche ; les deux desserts alternent entre midi et soir.</p><div id="weeklyRecipePicker" class="weeklyRecipePicker"></div><select id="breakfastMode" style="display:none"><option value="mix" selected>Libre</option></select><p class="note" id="weeklyPickerStatus" aria-live="polite"></p></div><div class="panel" style="margin-bottom:12px"><p class="note" id="slotChangeStatus">Coche « Garder » sur une ligne de repas : ce choix conserve ce type de repas pour les 7 jours. « Changer » propose deux autres recettes et recalcule les repas non verrouillés.</p></div><div class="weekLayout"><div id="weeklySlotControls" class="weeklySlotSidebar"></div><div class="week" id="week"></div></div>
 <div class="grid2">
 <div class="panel"><h2>Liste de courses</h2><p class="note">Quantités théoriques nécessaires. Pour viande/poisson, achète le conditionnement commercial le plus proche; quelques grammes d'écart ne posent pas problème.</p>
 <div class="note" style="margin:12px 0"><b>Inclure dans les courses :</b><br><label><input type="checkbox" id="shopLunch" checked onchange="updateShopping()"> Déjeuners (batch cooking)</label><br><label><input type="checkbox" id="shopDesserts" checked onchange="updateShopping()"> Desserts du midi et du soir</label><br><label><input type="checkbox" id="shopBreakfast" checked onchange="updateShopping()"> Petits-déjeuners</label><br><label><input type="checkbox" id="shopDinner" onchange="updateShopping()"> Dîners de Cécilia</label></div><p id="shopScope" class="note"></p><table><thead><tr><th>Produit</th><th>Quantité</th><th>Coût estimé</th></tr></thead><tbody id="shopping"></tbody></table>
@@ -489,6 +490,55 @@ function showRecipe(sel){
 }
 function closeRecipe(){document.getElementById('recipeModal').classList.remove('open')}
 
+const PICKER_GROUPS=[
+ {slot:'breakfast',cat:'PETITS-DÉJEUNERS',title:'🥣 Petits-déjeuners',names:['Petit-déjeuner 1','Petit-déjeuner 2'],help:'Alternance sur les sept matins.'},
+ {slot:'lunch',cat:'DÉJEUNERS & BATCH COOKING',title:'🍲 Batch cooking',names:['Batch cooking 1','Batch cooking 2'],help:'Recette 1 : lundi à mercredi · Recette 2 : jeudi à dimanche.'},
+ {slot:'dessert',cat:'DESSERTS & COLLATIONS',title:'🍮 Desserts',names:['Dessert 1','Dessert 2'],help:'Les mêmes deux desserts alternent au déjeuner et au dîner.'}
+];
+function pickerRecipes(group){
+ return RECIPES.filter(r=>allowedRecipe(r)&&r.cat===group.cat&&(group.slot!=='breakfast'||suitableBreakfast(r))).sort((a,b)=>a.name.localeCompare(b.name,'fr'));
+}
+function pickerCurrent(slot){
+ const row=[...document.querySelectorAll('select[data-slot="'+(slot==='dessert'?'snack1':slot)+'"]')];
+ if(slot==='lunch')return [row[0]?.value||'',row[3]?.value||''];
+ const ids=[...new Set(row.map(s=>s.value).filter(Boolean))];
+ return [ids[0]||'',ids[1]||''];
+}
+function renderWeeklyRecipePicker(){
+ const root=document.getElementById('weeklyRecipePicker');if(!root)return;
+ root.innerHTML=PICKER_GROUPS.map(group=>{
+  const current=pickerCurrent(group.slot),recipes=pickerRecipes(group);
+  return '<div class="weeklyRecipeGroup"><h3>'+group.title+'</h3>'+group.names.map((name,i)=>
+   '<label for="picker_'+group.slot+'_'+i+'">'+name+'</label><select id="picker_'+group.slot+'_'+i+'" onchange="chooseWeeklyRecipe(\''+group.slot+'\','+i+',this.value)"><option value="">Choisir une recette…</option>'+
+   recipes.map(r=>'<option value="'+r.id+'" '+(current[i]===String(r.id)?'selected':'')+'>'+escapeFoodHtml(r.name)+' · '+Math.round(r.macros.kcal)+' kcal</option>').join('')+'</select>').join('')+
+   '<p class="note">'+group.help+'</p></div>';
+ }).join('');
+}
+function chooseWeeklyRecipe(groupSlot,index,id){
+ const group=PICKER_GROUPS.find(g=>g.slot===groupSlot),status=document.getElementById('weeklyPickerStatus');
+ if(!group)return;
+ const ids=pickerCurrent(groupSlot);ids[index]=id;
+ if(id&&ids[1-index]===id){
+  status.textContent='Choisis deux recettes différentes pour cette catégorie.';
+  renderWeeklyRecipePicker();return;
+ }
+ const slots=groupSlot==='dessert'?['snack1','snack2']:[groupSlot];
+ const locks=weeklySlotLocks();
+ if(slots.some(slot=>locks[slot])){
+  status.textContent='Déverrouille « Garder » pour modifier cette catégorie.';
+  renderWeeklyRecipePicker();return;
+ }
+ // A blank selection clears only its corresponding batch; other choices remain untouched.
+ for(const slot of slots){
+  document.querySelectorAll('select[data-slot="'+slot+'"]').forEach(sel=>{
+   const d=+sel.dataset.day;
+   const chosen=groupSlot==='lunch'?ids[d<3?0:1]:groupSlot==='dessert'?ids[(d+(slot==='snack2'?1:0))%2]:ids[d%2];
+   sel.innerHTML=opts(sel.dataset.cat,chosen);sel.value=chosen||'';
+  });
+ }
+ update();updateFavButtons();renderWeeklyRecipePicker();
+ status.textContent='Choix appliqué : le planning, les moyennes, le graphique et les courses ont été actualisés.';
+}
 function build(){
  const w=document.getElementById('week'); w.innerHTML='';
  DAYS.forEach((d,i)=>{
@@ -499,7 +549,7 @@ function build(){
    w.appendChild(el);
  });
  document.querySelectorAll('select[data-slot]').forEach(s=>{s.addEventListener('focus',()=>s.dataset.previousValue=s.value);s.addEventListener('change',()=>manualMealChanged(s));});loadMealLocks();renderWeeklySlotControls();
- document.getElementById('breakfastMode').value=localStorage.getItem('breakfastMode')||'mix';load(); update(); updateFavButtons();syncWeekApproval();requestAnimationFrame(alignWeeklySlotControls);
+ document.getElementById('breakfastMode').value='mix';localStorage.setItem('breakfastMode','mix');load(); update();renderWeeklyRecipePicker(); updateFavButtons();syncWeekApproval();requestAnimationFrame(alignWeeklySlotControls);
 }
 function selected(){
  let out=Array.from({length:7},()=>[]);
@@ -1094,6 +1144,7 @@ function update(){
  <p>Moyenne : <b>${Math.round(avg('k'))} kcal</b> · <b>${Math.round(avg('p'))} g protéines</b> · <b>${Math.round(avg('c'))} g glucides</b> · ${Math.round(avg('fi'))} g fibres · ${Math.round(avg('f'))} g lipides.</p>
  <p>${Math.round(avg('k'))>2150?'La moyenne est au-dessus du point de départ actuel.':Math.round(avg('k'))<1900?'La moyenne est assez basse : vérifie que tu as bien sélectionné toutes les prises alimentaires.':'La moyenne énergétique reste proche de la zone de départ.'}</p>`:'Sélectionne les repas pour commencer.';
  paintBatch();
+ renderWeeklyRecipePicker();
  document.querySelectorAll('select[data-slot]').forEach(s=>s.dataset.previousValue=s.value);
  save();
  substitutionSuggestions();
