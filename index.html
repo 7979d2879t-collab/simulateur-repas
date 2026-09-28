@@ -312,8 +312,9 @@ function rebuildGeneratedRecipes(){
    RECIPES.push({...r,id:nextId++,name:r.name+(factor<1?' — portion légère':' — portion renforcée'),sub:'Portions ajustées pour équilibrer la journée',ings,macros,generated:true});
   }
  }
+ addBreakfastVariants();
  // Reinsert frozen favorites, even when their ingredients have since been excluded.
- for(const saved of SAVED_FAV){if(!RECIPES.some(r=>r.id===saved.id))RECIPES.push(JSON.parse(JSON.stringify(saved)))}
+ for(const saved of SAVED_FAV){if(saved.cat==='PETITS-DÉJEUNERS'&&!BREAKFAST_MENU_IDS.has(saved.id))continue;if(!RECIPES.some(r=>r.id===saved.id))RECIPES.push(JSON.parse(JSON.stringify(saved)))}
 }
 function renderFoodCatalogue(){
  const root=document.getElementById('foodCatalogue');if(!root)return;
@@ -344,8 +345,8 @@ function showRecipeById(id){
 function opts(cat,current='',q='',favOnly=false){
  q=(q||'').trim().toLowerCase();
  let arr=RECIPES.filter(r=>allowedRecipe(r) && (cat!=='PETITS-DÉJEUNERS'||suitableBreakfast(r)) && r.cat===cat && (!q||r.name.toLowerCase().includes(q)||(r.sub||'').toLowerCase().includes(q)) && (!favOnly||FAVORITES.has(r.id)));
- if(current!==''&&!arr.some(r=>String(r.id)===String(current))){let r=RECIPES.find(x=>String(x.id)===String(current));if(r)arr.unshift(r)}
- let groups={};arr.forEach(r=>{let g=mealGroup(r);(groups[g]||(groups[g]=[])).push(r)});
+ if(current!==''&&!arr.some(r=>String(r.id)===String(current))){let r=RECIPES.find(x=>String(x.id)===String(current));if(r&&(cat!=='PETITS-DÉJEUNERS'||suitableBreakfast(r)))arr.unshift(r)}
+ let groups={};arr.forEach(r=>{let g=cat==='PETITS-DÉJEUNERS'?(breakfastType(r)==='both'?'DUO SUCRÉ + SALÉ':breakfastType(r)==='savory'?'SALÉ':'SUCRÉ'):mealGroup(r);(groups[g]||(groups[g]=[])).push(r)});
  let html='<option value="">-- aucun --</option>';
  Object.entries(groups).forEach(([g,rs])=>{html+='<optgroup label="'+g+'">'+rs.map(r=>`<option value="${r.id}">${FAVORITES.has(r.id)?'⭐ ':''}${r.name} · ${r.macros.kcal} kcal · ${Math.round(r.macros.protein)}g P</option>`).join('')+'</optgroup>'});
  return html;
@@ -537,9 +538,22 @@ function bestWholeDay(day,usage,restricted={}){
  return {open,best};
 }
 // Short, curated breakfast menu: no automatically mixed starches or pasta.
-const BREAKFAST_MENU_IDS=new Set([66,67,68,71,72,74,75,76,77,79,80,85,86,89]);
-function suitableBreakfast(r){
- return r.cat!=='PETITS-DÉJEUNERS'||BREAKFAST_MENU_IDS.has(r.id)||(FAVORITES.has(r.id)&&SAVED_FAV.some(x=>x.id===r.id));
+// Exactly three breakfast categories, with ten curated choices in each.
+const BREAKFAST_MENU_IDS=new Set([66,67,68,69,70,71,72,73,74,10001,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,90,91,92,10002,10003]);
+function suitableBreakfast(r){return r.cat!=='PETITS-DÉJEUNERS'||BREAKFAST_MENU_IDS.has(r.id)}
+function addBreakfastVariants(){
+ const variants=[
+  {source:66,id:10001,name:'Bowl framboise-cacahuète — version avoine renforcée',factor:1.15},
+  {source:85,id:10002,name:'Duo œufs/fromage frais et framboises — portion renforcée',factor:1.15},
+  {source:86,id:10003,name:'Duo wrap jambon-œuf et skyr mangue — portion légère',factor:.85}
+ ];
+ for(const v of variants){
+  if(RECIPES.some(r=>r.id===v.id))continue;
+  const original=RECIPES.find(r=>r.id===v.source);if(!original)continue;
+  const macros={...original.macros};
+  Object.keys(macros).forEach(k=>{if(typeof macros[k]==='number')macros[k]=+(macros[k]*v.factor).toFixed(k==='kcal'?0:1)});
+  RECIPES.push({...original,id:v.id,name:v.name,ings:original.ings.map(x=>({...x,qty:Math.max(5,Math.round(x.qty*v.factor/5)*5)})),macros,generated:true});
+ }
 }
 function breakfastType(r){
  // Classify the original recipe and all its portion variants by their actual type.
@@ -1046,7 +1060,7 @@ function save(){
 function load(){
  try{
    let state=JSON.parse(localStorage.getItem('mealV3')||'null');
-   if(state){document.querySelectorAll('select[data-slot]').forEach(s=>s.value=state[s.dataset.day+':'+s.dataset.slot]||'');return}
+   if(state){document.querySelectorAll('select[data-slot]').forEach(s=>{const id=state[s.dataset.day+':'+s.dataset.slot]||'';s.value=s.dataset.slot==='breakfast'&&id&&!BREAKFAST_MENU_IDS.has(Number(id))?'':id});return}
    let old=JSON.parse(localStorage.getItem('mealV2')||localStorage.getItem('mealV1')||'null');
    if(old){const slots=['breakfast','lunch','snack1','dinner','snack2'];for(let d=0;d<7;d++)slots.forEach((slot,i)=>{let s=document.querySelector('select[data-day="'+d+'"][data-slot="'+slot+'"]');if(s)s.value=old[d*5+i]||''})}
  }catch(e){}
