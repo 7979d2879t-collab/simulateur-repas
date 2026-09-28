@@ -56,10 +56,10 @@ button{border:0;background:var(--teal);color:#fff;padding:9px 12px;border-radius
 <div class="kpi"><span>Budget des repas cochés</span><b id="weekCost">-</b></div>
 </div>
 <div class="panel" style="margin-bottom:14px"><h2>🎯 Recommandations pour équilibrer mes journées</h2><p class="note">Analyse du lundi au mercredi et du jeudi au dimanche, sans modifier automatiquement tes choix.</p><div id="halfWeekAdvice"></div></div>
-<div class="panel" style="margin-bottom:12px"><h2>🍽️ Je compose ma semaine</h2><p class="note">Choisis directement tes deux petits-déjeuners, tes deux batch cookings du midi, deux du soir et tes deux desserts. Le tableau, les macros, le graphique et la liste de courses se mettent à jour automatiquement. Les déjeuners et les dîners sont répartis du lundi au mercredi puis du jeudi au dimanche ; les deux desserts alternent entre midi et soir.</p><div id="weeklyRecipePicker" class="weeklyRecipePicker"></div><select id="breakfastMode" style="display:none"><option value="mix" selected>Libre</option></select><p class="note" id="weeklyPickerStatus" aria-live="polite"></p></div><p class="note" id="slotChangeStatus" aria-live="polite"></p><div class="weekLayout"><div class="week" id="week"></div></div>
+<div class="panel" style="margin-bottom:12px"><h2>🍽️ Je compose ma semaine</h2><p class="note">Choisis directement tes deux petits-déjeuners, tes deux batch cookings du midi, deux du soir et tes deux desserts. Le tableau, les macros, le graphique et la liste de courses se mettent à jour automatiquement. Les déjeuners et les dîners sont répartis du lundi au mercredi puis du jeudi au dimanche ; les deux desserts alternent entre midi et soir.</p><div id="weeklyRecipePicker" class="weeklyRecipePicker"></div><div class="weeklyRecipeGroup" style="margin-top:14px"><h3>🗓️ Compléter le week-end</h3><p class="note">Choisis parmi les recettes de tes deux batchs. Les portions sont ajoutées aux courses et aux fiches de préparation, sans modifier les autres jours.</p><div id="weekendExtras" class="weeklyRecipePicker"></div></div><div class="panel" style="margin-top:14px"><h2>🍳 Mes deux fiches de préparation</h2><p class="note">Les quantités incluent les portions supplémentaires affectées au week-end. Pense à congeler les portions conservées plusieurs jours.</p><div id="prepSheets"></div><button type="button" onclick="window.print()">🖨️ Imprimer les fiches</button></div><select id="breakfastMode" style="display:none"><option value="mix" selected>Libre</option></select><p class="note" id="weeklyPickerStatus" aria-live="polite"></p></div><p class="note" id="slotChangeStatus" aria-live="polite"></p><div class="weekLayout"><div class="week" id="week"></div></div>
 <div class="grid2">
 <div class="panel"><h2>Liste de courses</h2><p class="note">Quantités théoriques nécessaires. Pour viande/poisson, achète le conditionnement commercial le plus proche; quelques grammes d'écart ne posent pas problème.</p>
-<div class="note" style="margin:12px 0"><b>Inclure dans les courses :</b><br><label><input type="checkbox" id="shopLunch" checked onchange="updateShopping()"> Déjeuners (batch cooking)</label><br><label><input type="checkbox" id="shopDesserts" checked onchange="updateShopping()"> Desserts du midi et du soir</label><br><label><input type="checkbox" id="shopBreakfast" checked onchange="updateShopping()"> Petits-déjeuners</label><br><label><input type="checkbox" id="shopDinner" onchange="updateShopping()"> Dîners</label></div><p id="shopScope" class="note"></p><table><thead><tr><th>Produit</th><th>Quantité</th><th>Coût estimé</th></tr></thead><tbody id="shopping"></tbody></table>
+<div class="note" style="margin:12px 0"><b>Inclure dans les courses :</b><br><label><input type="checkbox" id="shopLunch" checked onchange="updateShopping()"> Déjeuners (batch cooking)</label><br><label><input type="checkbox" id="shopDesserts" checked onchange="updateShopping()"> Desserts du midi et du soir</label><br><label><input type="checkbox" id="shopBreakfast" checked onchange="updateShopping()"> Petits-déjeuners</label><br><label><input type="checkbox" id="shopDinner" checked onchange="updateShopping()"> Dîners</label></div><p id="shopScope" class="note"></p><table><thead><tr><th>Produit</th><th>Quantité</th><th>Coût estimé</th></tr></thead><tbody id="shopping"></tbody></table>
 <br><button onclick="printShopping()">🖨️ Imprimer la liste de courses</button></div>
 <div class="panel"><h2>Bilan de la semaine</h2><div id="weekSummary"></div><br>
 <div id="targetBars" style="margin:12px 0"></div><p class="note" style="text-align:center">Chaque colonne verticale montre la cible en vert, ton résultat en bleu et la partie qui dépasse en rouge.</p><button onclick="resetWeek()">Réinitialiser</button>
@@ -511,6 +511,59 @@ function renderWeeklyRecipePicker(){
    '<p class="note">'+group.help+'</p></div>';
  }).join('');
 }
+const FREE_MEALS=[
+ [5,'dinner','Samedi soir'],[5,'snack2','Dessert du samedi soir'],
+ [6,'breakfast','Dimanche matin'],[6,'lunch','Dimanche midi'],
+ [6,'snack1','Dessert du dimanche midi']
+];
+function batchForSlot(day,slot){return slot==='dinner'||slot==='snack2'?dinnerBatchForDay(day):lunchBatchForDay(day)}
+function renderWeekendExtras(){
+ const root=document.getElementById('weekendExtras');if(!root)return;
+ root.innerHTML=FREE_MEALS.map(([day,slot,label])=>{
+  const group=slot==='snack1'||slot==='snack2'?'dessert':slot;
+  const ids=pickerCurrent(group),sel=document.querySelector('select[data-day="'+day+'"][data-slot="'+slot+'"]');
+  const choices=[...new Set(ids.filter(Boolean))].map(id=>RECIPES.find(r=>String(r.id)===id)).filter(Boolean);
+  return '<div><label for="free_'+day+'_'+slot+'">'+label+'</label><select id="free_'+day+'_'+slot+'" onchange="setFreeMeal('+day+',\''+slot+'\',this.value)"><option value="">Non prévu</option>'+choices.map(r=>'<option value="'+r.id+'" '+(sel?.value===String(r.id)?'selected':'')+'>'+escapeFoodHtml(r.name)+'</option>').join('')+'</select></div>';
+ }).join('');
+}
+function setFreeMeal(day,slot,id){
+ const sel=document.querySelector('select[data-day="'+day+'"][data-slot="'+slot+'"]');if(!sel)return;
+ sel.innerHTML=opts(sel.dataset.cat,id);sel.value=id||'';
+ update();updateFavButtons();
+}
+function prepBatchForMeal(day,slot){
+ const normal=batchForSlot(day,slot);if(normal>=0)return normal;
+ const id=document.querySelector('select[data-day="'+day+'"][data-slot="'+slot+'"]')?.value;
+ if(!id)return -1;
+ const group=slot==='snack1'||slot==='snack2'?'dessert':slot;
+ return pickerCurrent(group).findIndex(x=>x===id);
+}
+function renderPrepSheets(){
+ const root=document.getElementById('prepSheets');if(!root)return;
+ const names=['Dimanche soir','Mercredi soir'];
+ root.innerHTML=names.map((name,batch)=>{
+  const groups=new Map();
+  document.querySelectorAll('select[data-slot]').forEach(sel=>{
+   if(!sel.value||prepBatchForMeal(+sel.dataset.day,sel.dataset.slot)!==batch)return;
+   const recipe=RECIPES.find(r=>String(r.id)===sel.value);if(!recipe)return;
+   const key=sel.dataset.slot==='snack1'||sel.dataset.slot==='snack2'?'dessert':sel.dataset.slot;
+   const entry=groups.get(key)||{recipe,count:0,ingredients:{}};
+   entry.count++;
+   recipe.ings.forEach(ing=>entry.ingredients[ing.key]=(entry.ingredients[ing.key]||0)+ing.qty);
+   extraFor(+sel.dataset.day,sel.dataset.slot).forEach(ing=>entry.ingredients[ing.key]=(entry.ingredients[ing.key]||0)+ing.qty);
+   groups.set(key,entry);
+  });
+  const order=['breakfast','lunch','dinner','dessert'];
+  return '<div class="weeklyRecipeGroup" style="margin:12px 0"><h3>'+name+'</h3>'+order.filter(k=>groups.has(k)).map(k=>{
+   const e=groups.get(k);
+   return '<details open><summary><b>'+escapeFoodHtml(e.recipe.name)+' — '+e.count+' portion(s)</b></summary><ul>'+Object.entries(e.ingredients).filter(([,q])=>q>0).map(([key,qty])=>{
+    const m=META[key]||FOOD_PREF.custom.find(x=>x.key===key);
+    return '<li>'+escapeFoodHtml(m?.name||key)+' : '+Math.round(q*10)/10+' '+(m?.unit==='œuf'?'œuf(s)':'g')+'</li>';
+   }).join('')+'</ul><button type="button" class="mini" onclick="showRecipeById('+e.recipe.id+')">Voir la recette</button></details>';
+  }).join('')+'<p class="note">Conserver au frais selon la recette ; congeler les portions destinées à être consommées plus tard si nécessaire.</p></div>';
+ }).join('');
+}
+
 function chooseWeeklyRecipe(groupSlot,index,id){
  const group=PICKER_GROUPS.find(g=>g.slot===groupSlot),status=document.getElementById('weeklyPickerStatus');
  if(!group)return;
@@ -569,7 +622,7 @@ function withinRange(t,range){return Object.keys(range).every(k=>t[k]>=range[k][
 function weeklyTargets(t){return withinRange(t,WEEK_RANGE)};
 function dayTotalsFromSelects(day){
  let t={k:0,p:0,fi:0,f:0,c:0,cost:0};
- document.querySelectorAll(`select[data-day="${day}"]`).forEach(s=>{if(s.value){let r=RECIPES.find(x=>x.id===+s.value);t.k+=r.macros.kcal;t.p+=r.macros.protein;t.fi+=r.macros.fiber;t.f+=r.macros.fat;t.c+=r.macros.carbs;t.cost+=r.macros.cost}});
+ document.querySelectorAll(`select[data-day="${day}"]`).forEach(s=>{if(s.value){let r=RECIPES.find(x=>x.id===+s.value);if(!r)return; t.k+=r.macros.kcal;t.p+=r.macros.protein;t.fi+=r.macros.fiber;t.f+=r.macros.fat;t.c+=r.macros.carbs;t.cost+=r.macros.cost;const e=extraNutrition(day,s.dataset.slot);for(const k of Object.keys(t))t[k]+=e[k]||0}});
  return t;
 }
 function rangePenalty(v,min,max,hard=1){
@@ -720,7 +773,7 @@ function proposeOtherWeek(){
  autoWeek();
 }
 const SLOT_LOCK_KEY='mealWeeklySlotLocksV1';
-function weeklySlotLocks(){return JSON.parse(localStorage.getItem(SLOT_LOCK_KEY)||'{}')}
+function weeklySlotLocks(){return {}}
 const changedWeeklySlots={};
 function restoreChangedWeeklySlot(slot){
  const saved=changedWeeklySlots[slot];if(!saved)return false;
@@ -841,33 +894,19 @@ function syncDessertOpposites(sourceSlot){
  return true;
 }
 function manualMealChanged(sel){
- const slot=sel.dataset.slot,newId=sel.value,oldId=sel.dataset.previousValue||'';
+ const slot=sel.dataset.slot,newId=sel.value;
  const status=document.getElementById('slotChangeStatus');
- if(weeklySlotLocks()[slot]){
-  sel.innerHTML=opts(sel.dataset.cat,oldId);sel.value=oldId;
-  status.textContent='Cette ligne est conservée. Clique sur « Garder » pour la déverrouiller avant de changer la recette.';
-  return;
+ const batchFor=slot==='dinner'||slot==='snack2'?dinnerBatchForDay:lunchBatchForDay;
+ const group=batchFor(+sel.dataset.day);
+ if(group>=0){
+  document.querySelectorAll('select[data-slot="'+slot+'"]').forEach(other=>{
+   if(batchFor(+other.dataset.day)!==group)return;
+   other.innerHTML=opts(other.dataset.cat,newId);other.value=newId;
+  });
+  if(slot==='snack1'||slot==='snack2')syncDessertOpposites(slot);
  }
- // A batch-cooking choice is one recipe reused across the week, not seven independent choices.
- // Replace every occurrence of the old recipe in this meal row, including later days.
- const row=[...document.querySelectorAll('select[data-slot="'+slot+'"]')];
- const affected=oldId&&newId!==oldId?row.filter(s=>s!==sel&&s.value===oldId):[];
- affected.forEach(s=>{s.innerHTML=opts(s.dataset.cat,newId);s.value=newId});
- if(slot==='lunch'||slot==='dinner'||slot==='breakfast'||slot==='snack1'||slot==='snack2'){
-  const batchFor=slot==='dinner'||slot==='snack2'?dinnerBatchForDay:lunchBatchForDay;
-  const group=batchFor(+sel.dataset.day);
-  row.forEach(s=>{if(group>=0&&batchFor(+s.dataset.day)===group){s.innerHTML=opts(s.dataset.cat,newId);s.value=newId}});
- }
- const ids=[...new Set(row.map(s=>s.value).filter(Boolean))];
- if(ids.length>2){
-  // Keep the other batch-cooking recipe and replace the previous one consistently.
-  const keep=ids.find(id=>id!==newId&&id!==oldId);
-  row.forEach(s=>{if(s.value!==newId&&s.value!==keep){s.innerHTML=opts(s.dataset.cat,newId);s.value=newId}});
- }
- // Preserve all other meal choices: changing a recipe only refreshes the results.
- if(slot==='snack1'||slot==='snack2')syncDessertOpposites(slot);
  update();updateFavButtons();
- status.textContent='Recette enregistrée. Les autres plats restent inchangés ; consulte les recommandations si les journées sont hors cible.';
+ status.textContent=group<0?'Repas libre enregistré sans modifier les autres jours.':'Recette du batch mise à jour sans rééquilibrage automatique.';
 }
 function autoWeek(){
  const panel=document.getElementById('suggestPanel'),box=document.getElementById('suggestions');
@@ -1029,7 +1068,7 @@ function weeklySubstitutionOptions(){
 }
 function renderHalfWeekAdvice(){
  const root=document.getElementById('halfWeekAdvice');if(!root)return;
- const groups=[['Premier batch : dimanche soir à mercredi midi',[6,0,1,2],0],['Second batch : mercredi soir à samedi midi',[2,3,4,5],1]];
+ const groups=[['Recettes préparées dimanche soir',[0,1,2],0],['Recettes préparées mercredi soir',[3,4,5],1]];
  const metrics=[['k','kcal','Calories'],['p','g','Protéines'],['fi','g','Fibres'],['f','g','Lipides']];
  const penalty=t=>metrics.reduce((v,[k])=>v+Math.max(0,DAY_RANGE[k][0]-t[k])/(DAY_RANGE[k][1]-DAY_RANGE[k][0])+Math.max(0,t[k]-DAY_RANGE[k][1])/(DAY_RANGE[k][1]-DAY_RANGE[k][0]),0);
  root.innerHTML=groups.map(([title,days,batch])=>{
@@ -1044,7 +1083,7 @@ function renderHalfWeekAdvice(){
    for(let index=0;index<2;index++){
     if(index!==batch)continue;
     const old=RECIPES.find(r=>String(r.id)===ids[index]);if(!old)continue;
-    const affected=days.filter(d=>slot==='lunch'?lunchBatchForDay(d)===index:slot==='dinner'?dinnerBatchForDay(d)===index:slot==='breakfast'?lunchBatchForDay(d)===index:slot==='snack1'?lunchBatchForDay(d)===index:false);
+    const affected=days.filter(d=>batchForSlot(d,slot)===index);
     const candidates=pickerRecipes(PICKER_GROUPS.find(g=>g.slot===group));
     for(const recipe of candidates){
      if(recipe.id===old.id||ids.some(id=>id===String(recipe.id)))continue;
@@ -1159,6 +1198,7 @@ function update(){
      r.ings.forEach(x=>shop[x.key]=(shop[x.key]||0)+x.qty);
    });
    
+   document.querySelectorAll('select[data-day="'+i+'"]').forEach(sel=>{if(!sel.value)return;const e=extraNutrition(i,sel.dataset.slot);for(const k of Object.keys(t))t[k]+=e[k]||0});
    totals.push(t); let box=document.getElementById('tot'+i); box.className='daytotal '+quality(t.k,t.p,t.fi,t.f);
    let rk=Math.max(0,2100-t.k), rp=Math.max(0,160-t.p), rfi=Math.max(0,32-t.fi), rf=Math.max(0,68-t.f);
    box.innerHTML=rs.length?`<b>${Math.round(t.k)} kcal</b><br>${Math.round(t.p)} g prot. · ${Math.round(t.c)} g gluc.<br>${Math.round(t.f)} g lip. · ${Math.round(t.fi)} g fibres<br>≈ ${t.cost.toFixed(2)} €<hr style="border:0;border-top:1px solid #d9e1e4;margin:7px 0"><b>Reste indicatif</b><br>~${Math.round(rk)} kcal · ${Math.round(rp)} g prot.<br>~${Math.round(rfi)} g fibres · ~${Math.round(rf)} g lip.`:'Aucun repas sélectionné.';
@@ -1180,6 +1220,8 @@ function update(){
  <p>${Math.round(avg('k'))>2150?'La moyenne est au-dessus du point de départ actuel.':Math.round(avg('k'))<1900?'La moyenne est assez basse : vérifie que tu as bien sélectionné toutes les prises alimentaires.':'La moyenne énergétique reste proche de la zone de départ.'}</p>`:'Sélectionne les repas pour commencer.';
  paintBatch();
  renderWeeklyRecipePicker();
+ renderWeekendExtras();
+ renderPrepSheets();
  document.querySelectorAll('select[data-slot]').forEach(s=>s.dataset.previousValue=s.value);
  save();
  renderHalfWeekAdvice();
