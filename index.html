@@ -40,7 +40,7 @@ button{border:0;background:var(--teal);color:#fff;padding:9px 12px;border-radius
 .targetVerticalItem .targetLabel{font-weight:800;font-size:12px;color:#17324d;min-height:32px}
 .targetVerticalItem .targetRange{font-size:11px;color:#526a78;margin-top:5px}
 .targetVerticalItem .targetStatus{font-size:11px;font-weight:700;margin-top:5px}
-.weeklyRecipePicker{display:grid;grid-template-columns:repeat(3,minmax(210px,1fr));gap:13px;margin-top:14px}.weeklyRecipeGroup{background:#f6f9fa;border:1px solid #dce6e9;border-radius:13px;padding:13px}.weeklyRecipeGroup h3{margin:0 0 9px;color:#17324d;font-size:15px}.weeklyRecipeGroup label{font-size:12px;margin:9px 0 4px}.weeklyRecipeGroup select{background:#fff;border:1px solid #bdcbd2;padding:10px;font-size:12px}.weeklyRecipeGroup .note{margin-top:9px}@media(max-width:900px){.weeklyRecipePicker{grid-template-columns:1fr}}
+.weeklyRecipePicker{display:grid;grid-template-columns:repeat(6,minmax(175px,1fr));gap:9px;margin-top:14px;overflow-x:auto}.weeklyRecipeChoice{background:#f6f9fa;border:1px solid #dce6e9;border-radius:12px;padding:10px;min-width:175px}.weeklyRecipeChoice h3{font-size:13px;margin:0 0 7px}.weeklyRecipeGroup{background:#f6f9fa;border:1px solid #dce6e9;border-radius:13px;padding:13px}.weeklyRecipeGroup h3{margin:0 0 9px;color:#17324d;font-size:15px}.weeklyRecipeGroup label{font-size:12px;margin:9px 0 4px}.weeklyRecipeGroup select{background:#fff;border:1px solid #bdcbd2;padding:10px;font-size:12px}.weeklyRecipeGroup .note{margin-top:9px}@media(max-width:900px){.weeklyRecipePicker{grid-template-columns:repeat(6,minmax(175px,1fr))}}
 </style></head>
 <body>
 <header><h1>Simulateur repas semaine</h1>
@@ -55,12 +55,7 @@ button{border:0;background:var(--teal);color:#fff;padding:9px 12px;border-radius
 <div class="kpi"><span>Lipides moy.</span><b id="avgF">-</b></div>
 <div class="kpi"><span>Budget des repas cochés</span><b id="weekCost">-</b></div>
 </div>
-<div class="tools">
-<button onclick="autoWeek()">✨ Proposer ma semaine</button>
-<button onclick="smartSuggestions()">🎯 Compléter / optimiser</button>
-<span class="note">La proposition teste plusieurs rotations de deux petits-déjeuners et deux desserts,  Priorité à 2 050–2 150 kcal, 150–170 g protéines, 30–35 g fibres et 60–75 g lipides. Ensuite seulement viennent batch cooking, variété et favoris.</span>
-</div>
-<div class="panel" id="suggestPanel" style="display:none;margin-bottom:14px"><h2>🎯 Suggestions adaptées</h2><div id="suggestions"></div></div>
+<div class="panel" style="margin-bottom:14px"><h2>🎯 Recommandations pour équilibrer mes journées</h2><p class="note">Analyse du lundi au mercredi et du jeudi au dimanche, sans modifier automatiquement tes choix.</p><div id="halfWeekAdvice"></div></div>
 <div class="panel" style="margin-bottom:12px"><h2>🍽️ Je compose ma semaine</h2><p class="note">Choisis directement tes deux petits-déjeuners, tes deux préparations batch cooking et tes deux desserts. Le tableau, les macros, le graphique et la liste de courses se mettent à jour automatiquement. Les déjeuners sont répartis du lundi au mercredi puis du jeudi au dimanche ; les deux desserts alternent entre midi et soir.</p><div id="weeklyRecipePicker" class="weeklyRecipePicker"></div><select id="breakfastMode" style="display:none"><option value="mix" selected>Libre</option></select><p class="note" id="weeklyPickerStatus" aria-live="polite"></p></div><div class="panel" style="margin-bottom:12px"><p class="note" id="slotChangeStatus">Coche « Garder » sur une ligne de repas : ce choix conserve ce type de repas pour les 7 jours. « Changer » propose deux autres recettes et recalcule les repas non verrouillés.</p></div><div class="weekLayout"><div id="weeklySlotControls" class="weeklySlotSidebar"></div><div class="week" id="week"></div></div>
 <div class="grid2">
 <div class="panel"><h2>Liste de courses</h2><p class="note">Quantités théoriques nécessaires. Pour viande/poisson, achète le conditionnement commercial le plus proche; quelques grammes d'écart ne posent pas problème.</p>
@@ -508,10 +503,9 @@ function renderWeeklyRecipePicker(){
  const root=document.getElementById('weeklyRecipePicker');if(!root)return;
  root.innerHTML=PICKER_GROUPS.map(group=>{
   const current=pickerCurrent(group.slot),recipes=pickerRecipes(group);
-  return '<div class="weeklyRecipeGroup"><h3>'+group.title+'</h3>'+group.names.map((name,i)=>
-   '<label for="picker_'+group.slot+'_'+i+'">'+name+'</label><select id="picker_'+group.slot+'_'+i+'" onchange="chooseWeeklyRecipe(\''+group.slot+'\','+i+',this.value)"><option value="">Choisir une recette…</option>'+
-   recipes.map(r=>'<option value="'+r.id+'" '+(current[i]===String(r.id)?'selected':'')+'>'+escapeFoodHtml(r.name)+' · '+Math.round(r.macros.kcal)+' kcal</option>').join('')+'</select>').join('')+
-   '<p class="note">'+group.help+'</p></div>';
+  return group.names.map((name,i)=>
+   '<div class="weeklyRecipeChoice"><h3>'+group.title+'</h3><label for="picker_'+group.slot+'_'+i+'">'+name+'</label><select id="picker_'+group.slot+'_'+i+'" onchange="chooseWeeklyRecipe(\''+group.slot+'\','+i+',this.value)"><option value="">Choisir une recette…</option>'+
+   recipes.map(r=>'<option value="'+r.id+'" '+(current[i]===String(r.id)?'selected':'')+'>'+escapeFoodHtml(r.name)+' · '+Math.round(r.macros.kcal)+' kcal</option>').join('')+'</select><p class="note">'+(group.slot==='lunch'?(i===0?'Lundi–mercredi':'Jeudi–dimanche'):group.slot==='dessert'?'Alternance midi / soir':'Alternance des matins')+'</p></div>').join('');
  }).join('');
 }
 function chooseWeeklyRecipe(groupSlot,index,id){
@@ -1030,6 +1024,44 @@ function weeklySubstitutionOptions(){
  }
  return out.sort((a,b)=>Number(b.allOk)-Number(a.allOk)||b.improvement-a.improvement);
 }
+function renderHalfWeekAdvice(){
+ const root=document.getElementById('halfWeekAdvice');if(!root)return;
+ const groups=[['Lundi à mercredi',[0,1,2],0],['Jeudi à dimanche',[3,4,5,6],1]];
+ const metrics=[['k','kcal','Calories'],['p','g','Protéines'],['fi','g','Fibres'],['f','g','Lipides']];
+ const penalty=t=>metrics.reduce((v,[k])=>v+Math.max(0,DAY_RANGE[k][0]-t[k])/(DAY_RANGE[k][1]-DAY_RANGE[k][0])+Math.max(0,t[k]-DAY_RANGE[k][1])/(DAY_RANGE[k][1]-DAY_RANGE[k][0]),0);
+ root.innerHTML=groups.map(([title,days,batch])=>{
+  const totals=days.map(dayTotalsFromSelects),average={};
+  metrics.forEach(([k])=>average[k]=totals.reduce((sum,t)=>sum+t[k],0)/days.length);
+  const missing=days.filter(d=>[...document.querySelectorAll('select[data-day="'+d+'"]')].some(sel=>!sel.value));
+  const gaps=metrics.filter(([k])=>average[k]<DAY_RANGE[k][0]||average[k]>DAY_RANGE[k][1]).map(([k,u,label])=>label+' '+(average[k]<DAY_RANGE[k][0]?'en dessous':'au-dessus')+' de '+Math.round(Math.abs(average[k]-(average[k]<DAY_RANGE[k][0]?DAY_RANGE[k][0]:DAY_RANGE[k][1])))+' '+u);
+  const choices=[];
+  for(const slot of ['breakfast','lunch','snack1']){
+   if(weeklySlotLocks()[slot])continue;
+   const group=slot==='snack1'?'dessert':slot,ids=pickerCurrent(group);
+   for(let index=0;index<2;index++){
+    if(slot==='lunch'&&index!==batch)continue;
+    const old=RECIPES.find(r=>String(r.id)===ids[index]);if(!old)continue;
+    const affected=days.filter(d=>slot==='lunch'||slot==='breakfast'&&d%2===index||slot==='snack1'&&d%2===index);
+    const candidates=pickerRecipes(PICKER_GROUPS.find(g=>g.slot===group));
+    for(const recipe of candidates){
+     if(recipe.id===old.id||ids.some(id=>id===String(recipe.id)))continue;
+     const gain=affected.reduce((sum,d)=>{
+      const t=dayTotalsFromSelects(d),next={...t,k:t.k-old.macros.kcal+recipe.macros.kcal,p:t.p-old.macros.protein+recipe.macros.protein,fi:t.fi-old.macros.fiber+recipe.macros.fiber,f:t.f-old.macros.fat+recipe.macros.fat};
+      return sum+penalty(t)-penalty(next);
+     },0);
+     if(gain>.1)choices.push({slot:group,index,old,recipe,gain});
+    }
+   }
+  }
+  choices.sort((a,b)=>b.gain-a.gain);
+  const best=[],used=new Set();
+  for(const x of choices){if(used.has(x.slot))continue;best.push(x);used.add(x.slot);if(best.length===2)break}
+  return '<div class="entry" style="display:block;margin:12px 0;padding:14px;border:1px solid #dce6e9;border-radius:12px"><h3>'+title+'</h3><p>'+metrics.map(([k,u,label])=>label+' : <b>'+Math.round(average[k])+' '+u+'</b>').join(' · ')+'</p>'+
+  (missing.length?'<p class="note">Journées incomplètes : '+missing.map(d=>DAYS[d]).join(', ')+'. Les résultats restent provisoires, notamment tant que les dîners ne sont pas renseignés.</p>':'')+
+  (gaps.length?'<p>'+gaps.join(' · ')+'</p>':'<p style="color:#277a54">✓ Moyennes de cette période dans les plages de référence.</p>')+
+  (best.length?best.map(x=>'<div style="padding:9px;margin:8px 0;background:#f3f7fa;border-radius:9px"><b>Suggestion '+(x.slot==='lunch'?'batch cooking '+(x.index+1):x.slot==='dessert'?'dessert '+(x.index+1):'petit-déjeuner '+(x.index+1))+'</b><p>'+escapeFoodHtml(x.old.name)+' → <b>'+escapeFoodHtml(x.recipe.name)+'</b></p><button class="mini" type="button" onclick="chooseWeeklyRecipe(\''+x.slot+'\','+x.index+',\''+x.recipe.id+'\')">Appliquer</button></div>').join(''):'<p class="note">Aucun remplacement simple ne réduit les écarts calculés ; vérifie les repas manquants et les portions.</p>')+'</div>';
+ }).join('');
+}
 function substitutionSuggestions(){
  const root=document.getElementById('substitutionPanel');if(!root)return;
  const validation=weekValidation();
@@ -1147,7 +1179,7 @@ function update(){
  renderWeeklyRecipePicker();
  document.querySelectorAll('select[data-slot]').forEach(s=>s.dataset.previousValue=s.value);
  save();
- substitutionSuggestions();
+ renderHalfWeekAdvice();
  syncWeekApproval();
 }
 function updateShopping(){
