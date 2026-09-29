@@ -482,7 +482,7 @@ function batchForRecipe(id){
 function showRecipe(sel){
  if(!sel.value)return;let r=RECIPES.find(x=>x.id===+sel.value),d=document.getElementById('recipeDetail'),info=prepInfo(r),occ=batchForRecipe(r.id);
  let batch=occ.length>1?`<div class="daytotal ok"><b>🍳 Batch cooking : ${occ.length} portions</b><br>Prépare ${occ.length} portions le <b>${DAYS[occ[0].day]}</b>. Tu manges cette recette : ${occ.map(o=>'<b>'+DAYS[o.day]+'</b>').join(' puis ')}.</div>`:'';
- d.innerHTML=`<h2>${r.name}</h2><p><b>${r.macros.kcal} kcal</b> · ${Math.round(r.macros.protein)} g protéines · ${Math.round(r.macros.carbs)} g glucides · ${Math.round(r.macros.fat)} g lipides · ${Math.round(r.macros.fiber)} g fibres</p>${batch}<h3>Ingrédients — 1 portion</h3><ul>${r.ings.map(x=>`<li>${META[x.key]?.name||x.key} : <b>${ingredientDisplay(x)}</b></li>`).join('')}</ul>${occ.length>1?'<h3>Quantités batch — '+occ.length+' portions</h3><ul>'+r.ings.map(x=>'<li>'+(META[x.key]?.name||x.key)+' : <b>'+ingredientDisplay({key:x.key,qty:x.qty*occ.length})+'</b></li>').join('')+'</ul>':''}<h3>Préparation</h3><p><b>Appareil conseillé :</b> ${info.appliance} · <b>Temps :</b> ${info.time}</p><ol>${info.steps.map(x=>'<li>'+x+'</li>').join('')}</ol><p class="note">${info.tips}</p>`;
+ d.innerHTML=`<h2>${r.name}</h2>${r.cat==='DESSERTS & COLLATIONS'?'<p class="note">Les quantités ci-dessous correspondent à ≈ 15 g de protéines par part. Pour le batch cooking, prépare toutes les parts en une seule fois avec les quantités totales indiquées plus bas.</p>':''}<p><b>${r.macros.kcal} kcal</b> · ${Math.round(r.macros.protein)} g protéines · ${Math.round(r.macros.carbs)} g glucides · ${Math.round(r.macros.fat)} g lipides · ${Math.round(r.macros.fiber)} g fibres</p>${batch}<h3>Ingrédients — 1 portion</h3><ul>${r.ings.map(x=>`<li>${META[x.key]?.name||x.key} : <b>${ingredientDisplay(x)}</b></li>`).join('')}</ul>${occ.length>1?'<h3>Quantités batch — '+occ.length+' portions</h3><ul>'+r.ings.map(x=>'<li>'+(META[x.key]?.name||x.key)+' : <b>'+ingredientDisplay({key:x.key,qty:x.qty*occ.length})+'</b></li>').join('')+'</ul>':''}<h3>Préparation</h3><p><b>Appareil conseillé :</b> ${info.appliance} · <b>Temps :</b> ${info.time}</p><ol>${info.steps.map(x=>'<li>'+x+'</li>').join('')}</ol><p class="note">${info.tips}</p>`;
  document.getElementById('recipeModal').classList.add('open');
 }
 function closeRecipe(){document.getElementById('recipeModal').classList.remove('open')}
@@ -548,21 +548,24 @@ function renderPrepSheets(){
   document.querySelectorAll('select[data-slot]').forEach(sel=>{
    if(!sel.value||prepBatchForMeal(+sel.dataset.day,sel.dataset.slot)!==batch)return;
    const recipe=RECIPES.find(r=>String(r.id)===sel.value);if(!recipe)return;
-   const key=sel.dataset.slot==='snack1'||sel.dataset.slot==='snack2'?'dessert':sel.dataset.slot;
-   const entry=groups.get(key)||{recipe,count:0,ingredients:{}};
+   const kind=sel.dataset.slot==='snack1'||sel.dataset.slot==='snack2'?'dessert':sel.dataset.slot;
+   const key=kind+':'+recipe.id;
+   const entry=groups.get(key)||{recipe,kind,count:0,ingredients:{}};
    entry.count++;
    recipe.ings.forEach(ing=>entry.ingredients[ing.key]=(entry.ingredients[ing.key]||0)+ing.qty);
    extraFor(+sel.dataset.day,sel.dataset.slot).forEach(ing=>entry.ingredients[ing.key]=(entry.ingredients[ing.key]||0)+ing.qty);
    groups.set(key,entry);
   });
   const order=['breakfast','lunch','dinner','dessert'];
-  return '<div class="weeklyRecipeGroup" style="margin:12px 0"><h3>'+name+'</h3>'+order.filter(k=>groups.has(k)).map(k=>{
-   const e=groups.get(k);
-   return '<details open><summary><b>'+escapeFoodHtml(e.recipe.name)+' — '+e.count+' portion(s)</b></summary><ul>'+Object.entries(e.ingredients).filter(([,q])=>q>0).map(([key,qty])=>{
+  const entries=[...groups.values()].sort((a,b)=>order.indexOf(a.kind)-order.indexOf(b.kind));
+  return '<div class="weeklyRecipeGroup" style="margin:12px 0"><h3>'+name+'</h3>'+entries.map(e=>
+   '<details open><summary><b>'+escapeFoodHtml(e.recipe.name)+' — '+e.count+' portion(s)'+(e.kind==='dessert'?' · ≈ '+Math.round(e.recipe.macros.protein)+' g protéines/portion':'')+'</b></summary>'+
+   (e.kind==='dessert'?'<p class="note">Préparation groupée : pèse les quantités totales ci-dessous, prépare la recette en une seule fois, puis répartis en '+e.count+' parts. ≈ '+Math.round(e.recipe.macros.protein*e.count)+' g de protéines pour toute la préparation, avant les éventuels ajouts.</p>':'')+
+   '<ul>'+Object.entries(e.ingredients).filter(([,q])=>q>0).map(([key,qty])=>{
     const m=META[key]||FOOD_PREF.custom.find(x=>x.key===key);
-    return '<li>'+escapeFoodHtml(m?.name||key)+' : '+Math.round(q*10)/10+' '+(m?.unit==='œuf'?'œuf(s)':'g')+'</li>';
-   }).join('')+'</ul><button type="button" class="mini" onclick="showRecipeById('+e.recipe.id+')">Voir la recette</button></details>';
-  }).join('')+'<p class="note">Conserver au frais selon la recette ; congeler les portions destinées à être consommées plus tard si nécessaire.</p></div>';
+    return '<li>'+escapeFoodHtml(m?.name||key)+' : '+ingredientDisplay({key,qty:Math.round(q*10)/10})+'</li>';
+   }).join('')+'</ul><button type="button" class="mini" onclick="showRecipeById('+e.recipe.id+')">Voir la recette</button></details>'
+  ).join('')+'<p class="note">Conserver au frais selon la recette ; congeler les portions destinées à être consommées plus tard si nécessaire.</p></div>';
  }).join('');
 }
 
