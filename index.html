@@ -342,6 +342,7 @@ function rebuildGeneratedRecipes(){
   }
  }
  addBreakfastVariants();
+ addDessertPortionVariants();
  // Reinsert frozen favorites, even when their ingredients have since been excluded.
  for(const saved of SAVED_FAV){if(saved.cat==='PETITS-DÉJEUNERS'&&!BREAKFAST_MENU_IDS.has(saved.id))continue;if(!RECIPES.some(r=>r.id===saved.id))RECIPES.push(JSON.parse(JSON.stringify(saved)))}
 }
@@ -696,7 +697,7 @@ const PROTEIN_RANGES={
  'PETITS-DÉJEUNERS':[35,42],
  'DÉJEUNERS & BATCH COOKING':[35,45],
  'DÎNERS RAPIDES':[35,45],
- 'DESSERTS & COLLATIONS':[20,25]
+ 'DESSERTS & COLLATIONS':[13,17]
 };
 function proteinMatches(r){
  const range=PROTEIN_RANGES[r.cat];
@@ -715,6 +716,17 @@ function addBreakfastVariants(){
   const macros={...original.macros};
   Object.keys(macros).forEach(k=>{if(typeof macros[k]==='number')macros[k]=+(macros[k]*v.factor).toFixed(k==='kcal'?0:1)});
   RECIPES.push({...original,id:v.id,name:v.name,ings:original.ings.map(x=>({...x,qty:Math.max(5,Math.round(x.qty*v.factor/5)*5)})),macros,generated:true});
+ }
+}
+function addDessertPortionVariants(){
+ const originals=RECIPES.filter(r=>r.cat==='DESSERTS & COLLATIONS'&&r.id>=48&&r.id<=65);
+ for(const original of originals){
+  const factor=15/original.macros.protein;
+  const id=20000+original.id;
+  if(RECIPES.some(r=>r.id===id))continue;
+  const ings=original.ings.map(x=>({...x,qty:Math.round(x.qty*factor*10)/10}));
+  const macros=Object.fromEntries(Object.entries(original.macros).map(([k,v])=>[k,+(v*factor).toFixed(k==='kcal'?0:1)]));
+  RECIPES.push({...original,id,name:original.name+' — portion ≈ 15 g protéines',ings,macros,generated:true});
  }
 }
 function breakfastType(r){
