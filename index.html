@@ -692,7 +692,8 @@ function bestWholeDay(day,usage,restricted={}){
 // Short, curated breakfast menu: no automatically mixed starches or pasta.
 // Exactly three breakfast categories, with ten curated choices in each.
 const BREAKFAST_MENU_IDS=new Set([66,67,68,69,70,71,72,73,74,10001,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,90,91,92,10002,10003]);
-function suitableBreakfast(r){return r.cat!=='PETITS-DÉJEUNERS'||BREAKFAST_MENU_IDS.has(r.id)}
+const BREAKFAST_PROTEIN_MIN=27, BREAKFAST_PROTEIN_MAX=33;
+function suitableBreakfast(r){return r.cat!=='PETITS-DÉJEUNERS'||(BREAKFAST_MENU_IDS.has(r.id)&&r.macros.protein>=BREAKFAST_PROTEIN_MIN&&r.macros.protein<=BREAKFAST_PROTEIN_MAX)}
 function addBreakfastVariants(){
  const variants=[
   {source:66,id:10001,name:'Bowl framboise-cacahuète — version avoine renforcée',factor:1.15},
