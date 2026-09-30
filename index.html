@@ -1346,7 +1346,7 @@ function shoppingCategory(k){
 function shoppingQty(k,q){
  const pieceMap={oeuf:[1,'œuf'],kiwi:[100,'kiwi'],banane:[120,'banane'],avocat:[200,'avocat'],poire:[150,'poire'],wrap:[60,'wrap']};
  const liquidKeys=new Set(['lait','lait_coco','creme','huile']);
- if(pieceMap[k]){const n=Math.ceil(q/pieceMap[k][0]);return {need:n+' '+pieceMap[k][1]+(n>1?'s':''),buy:n+' '+pieceMap[k][1]+(n>1?'s':'')};}
+ if(pieceMap[k]){const n=Math.ceil(q/pieceMap[k][0]),pack=k==='oeuf'?6:1,buy=Math.ceil(n/pack)*pack;return {need:n+' '+pieceMap[k][1]+(n>1?'s':''),buy:buy+' '+pieceMap[k][1]+(buy>1?'s':'')};}
  if(liquidKeys.has(k)){const ml=Math.ceil(q/50)*50;return {need:q>=1000?(q/1000).toFixed(2).replace('.',',')+' L':Math.round(q)+' ml',buy:ml>=1000?(ml/1000).toFixed(2).replace('.',',')+' L':ml+' ml'};}
  const pack=q>=1000?Math.ceil(q/500)*500:Math.ceil(q/50)*50;
  return {need:q>=1000?(q/1000).toFixed(2).replace('.',',')+' kg':Math.round(q)+' g',buy:pack>=1000?(pack/1000).toFixed(1).replace('.',',')+' kg':pack+' g'};
@@ -1354,6 +1354,16 @@ function shoppingQty(k,q){
 function toggleShoppingHave(k){
  const have=new Set(JSON.parse(localStorage.getItem('mealShoppingHaveV1')||'[]'));
  have.has(k)?have.delete(k):have.add(k);localStorage.setItem('mealShoppingHaveV1',JSON.stringify([...have]));updateShopping();
+}
+function packageCost(m,q,qty){
+ if(m.unit==='œuf'){
+  const need=Math.ceil(q),pack=6,buy=Math.ceil(need/pack)*pack;
+  return buy*(m.costPer||0);
+ }
+ const liquidKeys=new Set(['lait','lait_coco','creme','huile']);
+ const step=liquidKeys.has(m.key||'')?250:(q>=1000?500:50);
+ const buy=Math.ceil(q/step)*step;
+ return buy/100*(m.costPer100||m.cost||0);
 }
 function updateShopping(){
  const enabled=new Set();
@@ -1370,10 +1380,10 @@ function updateShopping(){
  });
  const tbody=document.getElementById('shopping');tbody.innerHTML='';
  const have=new Set(JSON.parse(localStorage.getItem('mealShoppingHaveV1')||'[]'));let shoppingTotal=0,lastCat='';
- document.getElementById('shopScope').textContent=meals+' portion(s) incluses. La quantité « à acheter » est arrondie à un conditionnement pratique. Clique sur « J’en ai » pour retirer un produit du budget.';
+ document.getElementById('shopScope').textContent=meals+' portion(s) incluses. Le budget est calculé uniquement sur les conditionnements à acheter, pas sur la quantité consommée dans les recettes. Clique sur « J’en ai » pour retirer un produit du budget.';
  const rows=Object.entries(shop).filter(([k,q])=>q>0&&(META[k]||FOOD_PREF.custom.find(f=>f.key===k))).sort((a,b)=>shoppingCategory(a[0]).localeCompare(shoppingCategory(b[0]),'fr')||(META[a[0]]?.name||a[0]).localeCompare(META[b[0]]?.name||b[0],'fr'));
  rows.forEach(([k,q])=>{
-  const m=META[k]||FOOD_PREF.custom.find(f=>f.key===k),cat=shoppingCategory(k),cost=m.unit==='œuf'?q*(m.costPer??0):q/100*(m.costPer100??m.cost??0),qty=shoppingQty(k,q),owned=have.has(k);
+  const base=META[k]||FOOD_PREF.custom.find(f=>f.key===k),m={...base,key:k},cat=shoppingCategory(k),qty=shoppingQty(k,q),cost=packageCost(m,q,qty),owned=have.has(k);
   if(cat!==lastCat){tbody.innerHTML+='<tr class="shopSection"><td colspan="4">'+cat+'</td></tr>';lastCat=cat;}
   if(!owned)shoppingTotal+=cost;
   tbody.innerHTML+='<tr class="'+(owned?'shopHave':'')+'"><td>'+m.name+'</td><td>'+qty.buy+'<span class="shopQtyHint">besoin : '+qty.need+'</span></td><td>≈ '+(owned?'0,00':cost.toFixed(2).replace('.',','))+' €</td><td><button class="haveBtn '+(owned?'isHave':'')+'" type="button" onclick="toggleShoppingHave(\''+k+'\')">'+(owned?'✓ J’en ai':'J’en ai')+'</button></td></tr>';
