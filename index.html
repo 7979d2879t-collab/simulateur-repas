@@ -41,7 +41,7 @@ button{border:0;background:var(--teal);color:#fff;padding:9px 12px;border-radius
 .targetVerticalItem .targetRange{font-size:11px;color:#526a78;margin-top:5px}
 .targetVerticalItem .targetStatus{font-size:11px;font-weight:700;margin-top:5px}
 .weeklyRecipePicker{display:grid;grid-template-columns:repeat(3,minmax(210px,1fr));gap:13px;margin-top:14px}.weeklyRecipeGroup{background:#f6f9fa;border:1px solid #dce6e9;border-radius:13px;padding:13px}.weeklyRecipeGroup h3{margin:0 0 9px;color:#17324d;font-size:15px}.weeklyRecipeGroup label{font-size:12px;margin:9px 0 4px}.weeklyRecipeGroup select{background:#fff;border:1px solid #bdcbd2;padding:10px;font-size:12px}.weeklyRecipeGroup .note{margin-top:9px}@media(max-width:900px){.weeklyRecipePicker{grid-template-columns:1fr}}
-.v2bar{position:sticky;top:0;z-index:20;background:#fff;border:1px solid var(--line);border-radius:14px;padding:10px;margin:0 0 14px;display:flex;gap:8px;flex-wrap:wrap;box-shadow:0 4px 16px #17324d14}.v2bar button{flex:1;min-width:150px;padding:12px}.primaryAction{background:var(--teal);color:#fff;border:0}.secondaryAction{background:#eef4f5;color:var(--navy);border:1px solid #d3e0e3}.advancedBox{margin-bottom:14px;background:#fff;border:1px solid var(--line);border-radius:12px}.advancedBox>summary{cursor:pointer;padding:14px;font-weight:800;color:var(--navy)}.advancedBox>section,.advancedBox>.advancedInner{padding:0 14px 14px}.weekStatus{padding:11px 14px;border-radius:10px;background:#eef5f4;margin:0 0 12px;font-weight:700}@media(max-width:700px){.v2bar{position:static}.v2bar button{min-width:calc(50% - 8px)}}.recipeChoiceCard{border:1px solid #d9e4e6;background:#fff;border-radius:12px;padding:10px;margin:9px 0}.recipeChoiceCard .choiceHead{display:flex;justify-content:space-between;gap:8px;align-items:center}.recipeChoiceCard .choiceName{font-weight:800;color:var(--navy);line-height:1.25}.recipeChoiceCard .choiceMeta{font-size:12px;margin:5px 0;color:#52636d}.recipeChoiceCard select{margin-top:7px}.prepTimeline{margin:10px 0 14px;padding:11px;border-radius:10px;background:#edf5f4}.prepTimeline h4{margin:0 0 7px;color:var(--navy)}.prepTimeline ol{margin:0;padding-left:22px}.prepTimeline li{margin:5px 0}.deviceTag{font-weight:800}.weeklyRecipePicker{grid-template-columns:repeat(2,minmax(280px,1fr))}@media(max-width:760px){.weeklyRecipePicker{grid-template-columns:1fr}}</style></head>
+.v2bar{position:sticky;top:0;z-index:20;background:#fff;border:1px solid var(--line);border-radius:14px;padding:10px;margin:0 0 14px;display:flex;gap:8px;flex-wrap:wrap;box-shadow:0 4px 16px #17324d14}.v2bar button{flex:1;min-width:150px;padding:12px}.primaryAction{background:var(--teal);color:#fff;border:0}.secondaryAction{background:#eef4f5;color:var(--navy);border:1px solid #d3e0e3}.advancedBox{margin-bottom:14px;background:#fff;border:1px solid var(--line);border-radius:12px}.advancedBox>summary{cursor:pointer;padding:14px;font-weight:800;color:var(--navy)}.advancedBox>section,.advancedBox>.advancedInner{padding:0 14px 14px}.weekStatus{padding:11px 14px;border-radius:10px;background:#eef5f4;margin:0 0 12px;font-weight:700}@media(max-width:700px){.v2bar{position:static}.v2bar button{min-width:calc(50% - 8px)}}.recipeChoiceCard{border:1px solid #d9e4e6;background:#fff;border-radius:12px;padding:10px;margin:9px 0}.recipeChoiceCard .choiceHead{display:flex;justify-content:space-between;gap:8px;align-items:center}.recipeChoiceCard .choiceName{font-weight:800;color:var(--navy);line-height:1.25}.recipeChoiceCard .choiceMeta{font-size:12px;margin:5px 0;color:#52636d}.recipeChoiceCard select{margin-top:7px}.prepTimeline{margin:10px 0 14px;padding:11px;border-radius:10px;background:#edf5f4}.prepTimeline h4{margin:0 0 7px;color:var(--navy)}.prepTimeline ol{margin:0;padding-left:22px}.prepTimeline li{margin:5px 0}.deviceTag{font-weight:800}.weeklyRecipePicker{grid-template-columns:repeat(2,minmax(280px,1fr))}@media(max-width:760px){.weeklyRecipePicker{grid-template-columns:1fr}}.shopSection td{background:#edf5f4;font-weight:800;color:var(--navy);padding-top:12px}.haveBtn{font-size:11px;padding:5px 8px;border-radius:7px;border:1px solid #c8d6da;background:#fff;cursor:pointer}.haveBtn.isHave{background:#e5efe6;color:#315e3d;text-decoration:none}.shopHave td:not(:last-child){opacity:.48;text-decoration:line-through}.shopQtyHint{display:block;font-size:11px;color:#667780;margin-top:2px}</style></head>
 <body>
 <header><h1>Simulateur repas semaine</h1>
 <p>Cibles actuelles : 2 050-2 150 kcal · 150-170 g protéines · 30-35 g fibres · 60-75 g lipides. Aucune calorie ajoutée automatiquement avec le sport.</p></header>
@@ -59,7 +59,7 @@ button{border:0;background:var(--teal);color:#fff;padding:9px 12px;border-radius
 <div class="panel" style="margin-bottom:12px"><h2>1. 🍽️ Ma semaine</h2><p class="note">Choisis directement tes deux petits-déjeuners, tes deux batch cookings du midi, deux du soir et tes deux desserts. Le tableau, les macros, le graphique et la liste de courses se mettent à jour automatiquement. Les déjeuners et les dîners sont répartis du lundi au mercredi puis du jeudi au dimanche ; les deux desserts alternent entre midi et soir.</p><p class="note"><b>Recettes proposées selon tes objectifs :</b> petit-déjeuner 35–42 g · déjeuner 35–45 g · dîner 35–45 g · dessert 13–17 g de protéines par portion. Les autres recettes ne sont pas proposées.</p><div id="weeklyRecipePicker" class="weeklyRecipePicker"></div><div class="weeklyRecipeGroup" style="margin-top:14px"><h3>🗓️ Compléter le week-end</h3><p class="note">Choisis parmi les recettes de tes deux batchs. Les portions sont ajoutées aux courses et aux fiches de préparation, sans modifier les autres jours.</p><div id="weekendExtras" class="weeklyRecipePicker"></div></div><div class="panel" style="margin-top:14px"><h2>2. 🍳 Mon batch cooking</h2><p class="note">Les quantités incluent les portions supplémentaires affectées au week-end. Pense à congeler les portions conservées plusieurs jours.</p><div id="prepSheets"></div><button type="button" onclick="window.print()">🖨️ Imprimer les fiches</button></div><select id="breakfastMode" style="display:none"><option value="mix" selected>Libre</option></select><p class="note" id="weeklyPickerStatus" aria-live="polite"></p></div><p class="note" id="slotChangeStatus" aria-live="polite"></p><div class="weekLayout"><div class="week" id="week"></div></div>
 <div class="grid2">
 <div class="panel"><h2>3. 🛒 Ma liste de courses</h2><p class="note">Quantités théoriques nécessaires. Pour viande/poisson, achète le conditionnement commercial le plus proche; quelques grammes d'écart ne posent pas problème.</p>
-<div class="note" style="margin:12px 0"><b>Inclure dans les courses :</b><br><label><input type="checkbox" id="shopLunch" checked onchange="updateShopping()"> Déjeuners (batch cooking)</label><br><label><input type="checkbox" id="shopDesserts" checked onchange="updateShopping()"> Desserts du midi et du soir</label><br><label><input type="checkbox" id="shopBreakfast" checked onchange="updateShopping()"> Petits-déjeuners</label><br><label><input type="checkbox" id="shopDinner" checked onchange="updateShopping()"> Dîners</label></div><p id="shopScope" class="note"></p><table><thead><tr><th>Produit</th><th>Quantité</th><th>Coût estimé</th></tr></thead><tbody id="shopping"></tbody></table>
+<div class="note" style="margin:12px 0"><b>Inclure dans les courses :</b><br><label><input type="checkbox" id="shopLunch" checked onchange="updateShopping()"> Déjeuners (batch cooking)</label><br><label><input type="checkbox" id="shopDesserts" checked onchange="updateShopping()"> Desserts du midi et du soir</label><br><label><input type="checkbox" id="shopBreakfast" checked onchange="updateShopping()"> Petits-déjeuners</label><br><label><input type="checkbox" id="shopDinner" checked onchange="updateShopping()"> Dîners</label></div><p id="shopScope" class="note"></p><table><thead><tr><th>Produit</th><th>À acheter</th><th>Coût estimé</th><th>Stock</th></tr></thead><tbody id="shopping"></tbody></table>
 <br><button onclick="printShopping()">🖨️ Imprimer la liste de courses</button></div>
 <div class="panel"><h2>Bilan de la semaine</h2><div id="weekSummary"></div><br>
 <div id="targetBars" style="margin:12px 0"></div><p class="note" style="text-align:center">Chaque colonne verticale montre la cible en vert, ton résultat en bleu et la partie qui dépasse en rouge.</p><button onclick="resetWeek()">Réinitialiser</button>
@@ -1305,6 +1305,27 @@ function update(){
  renderHalfWeekAdvice();
  syncWeekApproval();
 }
+function shoppingCategory(k){
+ const m=META[k]||FOOD_PREF.custom.find(f=>f.key===k)||{},n=(m.name||k).toLowerCase();
+ if(/porc|bœuf|boeuf|veau|agneau|canard|jambon/.test(n))return '🥩 Viandes';
+ if(/saumon|cabillaud|poisson|crevette|thon|surimi/.test(n))return '🐟 Poissons';
+ if(/fromage|skyr|yaourt|faisselle|lait|crème|creme|feta|mozzarella|parmesan|roquefort|œuf|oeuf/.test(n))return '🥛 Frais & œufs';
+ if(/courgette|poireau|champignon|carotte|brocoli|épinard|epinard|avocat|mâche|mache|oignon|framboise|mangue|banane|kiwi|poire/.test(n))return '🥕 Fruits & légumes';
+ if(/riz|pâte|pate|nouille|udon|semoule|polenta|gnocchi|pomme de terre|patate douce|pain|wrap|avoine|farine|maïzena|maizena|chapelure|tapioca/.test(n))return '🍚 Féculents & épicerie';
+ return '🧺 Épicerie & autres';
+}
+function shoppingQty(k,q){
+ const pieceMap={oeuf:[1,'œuf'],kiwi:[100,'kiwi'],banane:[120,'banane'],avocat:[200,'avocat'],poire:[150,'poire'],wrap:[60,'wrap']};
+ const liquidKeys=new Set(['lait','lait_coco','creme','huile']);
+ if(pieceMap[k]){const n=Math.ceil(q/pieceMap[k][0]);return {need:n+' '+pieceMap[k][1]+(n>1?'s':''),buy:n+' '+pieceMap[k][1]+(n>1?'s':'')};}
+ if(liquidKeys.has(k)){const ml=Math.ceil(q/50)*50;return {need:q>=1000?(q/1000).toFixed(2).replace('.',',')+' L':Math.round(q)+' ml',buy:ml>=1000?(ml/1000).toFixed(2).replace('.',',')+' L':ml+' ml'};}
+ const pack=q>=1000?Math.ceil(q/500)*500:Math.ceil(q/50)*50;
+ return {need:q>=1000?(q/1000).toFixed(2).replace('.',',')+' kg':Math.round(q)+' g',buy:pack>=1000?(pack/1000).toFixed(1).replace('.',',')+' kg':pack+' g'};
+}
+function toggleShoppingHave(k){
+ const have=new Set(JSON.parse(localStorage.getItem('mealShoppingHaveV1')||'[]'));
+ have.has(k)?have.delete(k):have.add(k);localStorage.setItem('mealShoppingHaveV1',JSON.stringify([...have]));updateShopping();
+}
 function updateShopping(){
  const enabled=new Set();
  if(document.getElementById('shopLunch').checked)enabled.add('lunch');
@@ -1314,35 +1335,26 @@ function updateShopping(){
  const shop={};let meals=0;
  document.querySelectorAll('select[data-slot]').forEach(sel=>{
   if(!enabled.has(sel.dataset.slot)||!sel.value)return;
-  const recipe=RECIPES.find(r=>r.id===Number(sel.value));if(!recipe)return;
-  meals++;
+  const recipe=RECIPES.find(r=>r.id===Number(sel.value));if(!recipe)return;meals++;
   recipe.ings.forEach(ing=>shop[ing.key]=(shop[ing.key]||0)+ing.qty);
-  // Include user-added ingredients and subtract ingredients removed from this exact meal.
-  for(const extra of extraFor(Number(sel.dataset.day),sel.dataset.slot)){
-   shop[extra.key]=(shop[extra.key]||0)+extra.qty;
-  }
+  for(const extra of extraFor(Number(sel.dataset.day),sel.dataset.slot))shop[extra.key]=(shop[extra.key]||0)+extra.qty;
  });
  const tbody=document.getElementById('shopping');tbody.innerHTML='';
- let shoppingTotal=0;
- document.getElementById('shopScope').textContent=meals+' portion(s) incluses dans cette liste, modifications des ingrédients comprises. Les ingrédients communs sont regroupés. Quantités théoriques, hors stock déjà présent à la maison.';
- Object.entries(shop).sort((a,b)=>(META[a[0]]||FOOD_PREF.custom.find(f=>f.key===a[0])||{name:a[0]}).name.localeCompare((META[b[0]]||FOOD_PREF.custom.find(f=>f.key===b[0])||{name:b[0]}).name,'fr')).forEach(([k,q])=>{
-   let m=META[k]||FOOD_PREF.custom.find(f=>f.key===k);if(!m||q<=0)return;let cost= m.unit==='œuf'? q*(m.costPer??0) : q/100*(m.costPer100??m.cost??0);
-   shoppingTotal+=cost;
-   const pieceMap={oeuf:[1,'œuf'],kiwi:[100,'kiwi'],banane:[120,'banane'],avocat:[200,'avocat'],poire:[150,'poire'],wrap:[60,'wrap']};
-   let qty;
-   const liquidKeys=new Set(['lait','lait_coco','creme','huile']);
-   if(pieceMap[k]){let n=Math.ceil(q/pieceMap[k][0]);qty=n+' '+pieceMap[k][1]+(n>1?'s':'');}
-   else if(liquidKeys.has(k)){
-     qty=q>=1000?(q/1000).toFixed(2).replace('.',',')+' L':q>=100?(q/10).toFixed(q%10?1:0).replace('.',',')+' cl':Math.round(q)+' ml';
-   } else qty=(q>=1000?(q/1000).toFixed(2)+' kg':Math.round(q)+' g');
-   tbody.innerHTML+=`<tr><td>${m.name}</td><td>${qty}</td><td>≈ ${cost.toFixed(2)} €</td></tr>`;
+ const have=new Set(JSON.parse(localStorage.getItem('mealShoppingHaveV1')||'[]'));let shoppingTotal=0,lastCat='';
+ document.getElementById('shopScope').textContent=meals+' portion(s) incluses. La quantité « à acheter » est arrondie à un conditionnement pratique. Clique sur « J’en ai » pour retirer un produit du budget.';
+ const rows=Object.entries(shop).filter(([k,q])=>q>0&&(META[k]||FOOD_PREF.custom.find(f=>f.key===k))).sort((a,b)=>shoppingCategory(a[0]).localeCompare(shoppingCategory(b[0]),'fr')||(META[a[0]]?.name||a[0]).localeCompare(META[b[0]]?.name||b[0],'fr'));
+ rows.forEach(([k,q])=>{
+  const m=META[k]||FOOD_PREF.custom.find(f=>f.key===k),cat=shoppingCategory(k),cost=m.unit==='œuf'?q*(m.costPer??0):q/100*(m.costPer100??m.cost??0),qty=shoppingQty(k,q),owned=have.has(k);
+  if(cat!==lastCat){tbody.innerHTML+='<tr class="shopSection"><td colspan="4">'+cat+'</td></tr>';lastCat=cat;}
+  if(!owned)shoppingTotal+=cost;
+  tbody.innerHTML+='<tr class="'+(owned?'shopHave':'')+'"><td>'+m.name+'</td><td>'+qty.buy+'<span class="shopQtyHint">besoin : '+qty.need+'</span></td><td>≈ '+(owned?'0,00':cost.toFixed(2).replace('.',','))+' €</td><td><button class="haveBtn '+(owned?'isHave':'')+'" type="button" onclick="toggleShoppingHave(\''+k+'\')">'+(owned?'✓ J’en ai':'J’en ai')+'</button></td></tr>';
  });
  document.getElementById('weekCost').textContent='≈ '+shoppingTotal.toFixed(2)+' €';
 }
 function printShopping(){
  const rows=document.getElementById('shopping').innerHTML;
  const w=window.open('','_blank','width=760,height=900');
- w.document.write(`<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>Liste de courses</title><style>body{font-family:Arial,sans-serif;padding:24px;color:#26333c}h1{color:#17324d}table{width:100%;border-collapse:collapse}th,td{padding:9px;border-bottom:1px solid #d9e1e4;text-align:left}th{background:#edf5f3}@media print{body{padding:0}}</style></head><body><h1>Liste de courses</h1><p>Simulateur repas semaine</p><table><thead><tr><th>Produit</th><th>Quantité</th><th>Coût estimé</th></tr></thead><tbody>${rows}</tbody></table><script>window.onload=()=>{window.print();window.onafterprint=()=>window.close()}<\/script></body></html>`);
+ w.document.write(`<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>Liste de courses</title><style>body{font-family:Arial,sans-serif;padding:24px;color:#26333c}h1{color:#17324d}table{width:100%;border-collapse:collapse}th,td{padding:9px;border-bottom:1px solid #d9e1e4;text-align:left}th{background:#edf5f3}@media print{body{padding:0}}</style></head><body><h1>Liste de courses</h1><p>Simulateur repas semaine</p><table><thead><tr><th>Produit</th><th>À acheter</th><th>Coût estimé</th><th>Stock</th></tr></thead><tbody>${rows}</tbody></table><script>window.onload=()=>{window.print();window.onafterprint=()=>window.close()}<\/script></body></html>`);
  w.document.close();
 }
 function save(){
