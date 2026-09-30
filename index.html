@@ -170,7 +170,7 @@ function curatedRecipe(r){
  if(r.generated)return r.id>=20048&&r.id<=20065&&CURATED_RECIPE_IDS.has(r.id-20000);
  return CURATED_RECIPE_IDS.has(r.id);
 }
-function allowedRecipe(r){const dessertOk=r.cat!=='DESSERTS & COLLATIONS'||(r.id>=48&&r.id<=65)||(r.id>=20048&&r.id<=20065);return dessertOk&&curatedRecipe(r)&&proteinMatches(r)&&!RECIPE_OFF.has(r.id)&&r.ings.every(x=>!excludedFood(x.key))}
+function allowedRecipe(r){const dessertOk=r.cat!=='DESSERTS & COLLATIONS'||(r.id>=48&&r.id<=65)||(r.id>=20048&&r.id<=20065);const breakfastOk=r.cat!=='PETITS-DÉJEUNERS'||(r.id>=66&&r.id<=92&&CURATED_RECIPE_IDS.has(r.id));return dessertOk&&breakfastOk&&curatedRecipe(r)&&proteinMatches(r)&&!RECIPE_OFF.has(r.id)&&r.ings.every(x=>!excludedFood(x.key))}
 function persistFoods(){localStorage.setItem(FOOD_PREF_KEY,JSON.stringify(FOOD_PREF))}
 function toggleFood(key,kind,on){
  let arr=FOOD_PREF[kind];FOOD_PREF[kind]=on?[...new Set([...arr,key])]:arr.filter(x=>x!==key);
@@ -322,7 +322,7 @@ function rebuildGeneratedRecipes(){
  addDessertPortionVariants();
  // Reinsert frozen favorites only when they belong to their original category and remain curated/usable.
  for(const saved of SAVED_FAV){
-  if(saved.cat==='PETITS-DÉJEUNERS'&&!BREAKFAST_MENU_IDS.has(saved.id))continue;
+  if(saved.cat==='PETITS-DÉJEUNERS')continue;
   if(!['PETITS-DÉJEUNERS','DÉJEUNERS & BATCH COOKING','DÎNERS RAPIDES','DESSERTS & COLLATIONS'].includes(saved.cat))continue;
   if(!RECIPES.some(r=>r.id===saved.id))RECIPES.push(JSON.parse(JSON.stringify(saved)));
  }
