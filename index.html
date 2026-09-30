@@ -424,7 +424,7 @@ function ingredientDisplay(x){
 function prepInfo(r){
  const n=r.name.toLowerCase(),k=new Set(r.ings.map(x=>x.key));
  const has=(...x)=>x.some(v=>k.has(v));
- let appliance='🍳 Poêle / casserole — exceptionnel',time='20–25 min',steps=[],tips='';
+ let appliance='🟢 Cookeo / 🔵 Air Fryer',time='20–25 min',steps=[],tips='';
  if(r.cat==='DESSERTS & COLLATIONS'){
    if(n.includes('flan')||n.includes('clafoutis')||n.includes('gâteau')){
      appliance='🔵 Air Fryer';time='25–35 min';
@@ -448,14 +448,14 @@ function prepInfo(r){
    appliance='🔵 Air Fryer';time='20–25 min';
    steps=['Préparer le poisson et l’éponger.','Passer dans l’œuf battu puis la chapelure; assaisonner.','Air Fryer préchauffé : 190 °C, 10–14 min selon l’épaisseur, retourner à mi-cuisson.','Cuire patate douce/pommes de terre et légumes en parallèle; Air Fryer possible à 190 °C 18–25 min en petits morceaux.','Servir dès que le poisson est juste cuit.'];
  }else if(n.includes('blanquette')||n.includes('pulled')||n.includes('mijoter')||has('boeuf_mijoter','veau','agneau')){
-   appliance='🟢 Cookeo';time='Cookeo 30–40 min · cocotte 60–90 min';
-   steps=['Couper viande et légumes.','Cookeo mode Dorer : saisir la viande 3–5 min avec l’oignon si présent.','Ajouter carottes/poireaux et environ 120–150 ml d’eau ou bouillon par portion batch de base, sans noyer la préparation.','Cuisson sous pression : porc/veau 18–22 min; bœuf/agneau 25–30 min. En cocotte, mijoter à feu doux jusqu’à viande tendre.','Après cuisson, incorporer crème/fromage frais et moutarde si prévue. Ne pas mettre la crème sous pression.','Cuire riz, semoule, purée ou polenta séparément et portionner.'];
+   appliance='🟢 Cookeo';time='30–40 min';
+   steps=['Couper viande et légumes.','Cookeo mode Dorer : saisir la viande 3–5 min avec l’oignon si présent.','Ajouter carottes/poireaux et environ 120–150 ml d’eau ou bouillon par portion batch de base, sans noyer la préparation.','Cuisson sous pression : porc/veau 18–22 min; bœuf/agneau 25–30 min.','Après cuisson, incorporer crème/fromage frais et moutarde si prévue. Ne pas mettre la crème sous pression.','Cuire le féculent au Cookeo avant/après le plat, ou utiliser l’Air Fryer pour les pommes de terre/patates douces, puis portionner.'];
  }else if(n.includes('curry-coco')||has('lait_coco')){
    appliance='🟢 Cookeo';time='20–30 min';
-   steps=['Saisir la protéine 3–5 min avec l’oignon si présent.','Ajouter les légumes et cuire quelques minutes.','Ajouter curry puis lait de coco; mélanger.','Cookeo : mode Dorer pour saisir, puis 3–5 min sous pression pour crevettes/poisson ou 8–10 min pour porc.','Cuire le riz à part et servir avec la sauce coco.'];
+   steps=['Cookeo : cuire d’abord le riz si la recette en contient, puis réserver.','Mode Dorer : saisir la protéine 3–5 min avec l’oignon si présent.','Ajouter les légumes, le curry puis le lait de coco.','Cuisson sous pression : 3–5 min pour crevettes/poisson ou 8–10 min pour porc/poulet selon les morceaux.','Répartir avec le riz cuit et laisser refroidir rapidement les portions batch.'];
  }else if(n.includes('wrap')){
    appliance='🔵 Air Fryer';time='10–15 min';
-   steps=['Préparer la garniture et cuire la protéine si nécessaire.','Tiédir le wrap quelques secondes si nécessaire pour le rendre souple.','Étaler fromage frais/sauce puis répartir garniture et légumes.','Rouler serré. Pour une version chaude : Air Fryer 180 °C 4–6 min.'];
+   steps=['Cuire la protéine au Cookeo mode Dorer ou à l’Air Fryer selon la recette.','Garnir le wrap avec sauce/fromage frais, protéine et légumes.','Rouler serré.','Air Fryer 180 °C pendant 4–6 min pour une version chaude.'];
  }else if(n.includes('gnocchi')){
    appliance='🟢 Cookeo — mode Dorer';time='15–20 min';
    steps=['Saisir la viande puis réserver si nécessaire.','Cookeo mode Dorer : faire dorer les gnocchis 5–7 min en remuant.','Ajouter champignons/légumes et poursuivre la cuisson.','Remettre la viande, ajouter crème/fromage et chauffer 2–3 min à feu doux.'];
@@ -464,15 +464,15 @@ function prepInfo(r){
    steps=['Préparer tous les ingrédients avant de commencer.','Saisir viande/crevettes à feu vif puis réserver.','Cookeo mode Dorer : cuire les légumes 4–6 min pour les garder légèrement fermes.','Ajouter udon/nouilles préparés selon le paquet, puis remettre la protéine.','Mélanger 1–2 min avec l’assaisonnement et servir immédiatement.'];
  }else if(n.includes('saumon')||n.includes('cabillaud')||n.includes('poisson')||n.includes('crevette')){
    appliance='🔵 Air Fryer';time='15–25 min';
-   steps=['Préparer le féculent et les légumes.','Assaisonner le poisson. Air Fryer : saumon 180 °C 8–12 min; poisson blanc 180 °C 9–13 min selon épaisseur; crevettes 180 °C environ 6–8 min en remuant à mi-cuisson.','Préparer la sauce à feu doux séparément; ajouter crème/fromage frais en fin de cuisson.','Ne pas prolonger la cuisson du poisson une fois opaque et juste cuit.','Assembler et servir.'];
+   steps=['Cuire le féculent au Cookeo si la recette en contient, puis réserver.','Assaisonner le poisson. Air Fryer : saumon 180 °C 8–12 min; poisson blanc 180 °C 9–13 min; crevettes 180 °C 6–8 min en remuant à mi-cuisson.','Préparer la sauce au Cookeo en mode Dorer doux; ajouter crème/fromage frais en fin de cuisson.','Cuire les légumes au Cookeo ou à l’Air Fryer selon leur texture souhaitée.','Assembler et portionner sans prolonger la cuisson du poisson.'];
  }else if(has('oeuf')){
-   appliance='🍳 Poêle — exceptionnel';time='12–20 min';
-   steps=['Cuire le féculent et les légumes prévus.','Battre ou préparer les œufs; cuire à feu moyen pour garder une texture moelleuse.','Ajouter feta/fromage et légumes en fin de cuisson.','Assembler et servir.'];
+   appliance='🔵 Air Fryer / 🟢 Cookeo';time='12–20 min';
+   steps=['Cuire le féculent et les légumes au Cookeo ou à l’Air Fryer.','Battre les œufs et verser dans un petit moule compatible Air Fryer.','Air Fryer 160–170 °C jusqu’à prise, en surveillant pour garder une texture moelleuse.','Ajouter feta/fromage et légumes, puis assembler et portionner.'];
  }else{
    appliance='🟢 Cookeo';time='20–30 min';
-   steps=['Lancer d’abord le féculent ou les pommes de terre.','Couper les légumes et la viande.','Saisir la viande à feu moyen-vif puis réduire le feu.','Cuire les légumes; ajouter un petit fond d’eau si nécessaire.','Ajouter crème, fromage frais, moutarde, poivre ou fromage de la recette en fin de cuisson.','Assembler et servir sans prolonger la cuisson de la viande.'];
+   steps=['Cuire d’abord le féculent au Cookeo ou les pommes de terre à l’Air Fryer.','Couper les légumes et la viande.','Cookeo mode Dorer : saisir la viande puis ajouter les légumes; utiliser un petit fond d’eau si nécessaire.','Terminer la cuisson au Cookeo sous pression si le plat le nécessite, ou à l’Air Fryer pour une texture rôtie.','Ajouter crème, fromage frais, moutarde, poivre ou fromage en fin de cuisson au Cookeo.','Assembler et portionner.'];
  }
- tips='Les temps sont des repères : l’épaisseur des aliments et la puissance de ton appareil peuvent les faire varier. Pour un batch, refroidir rapidement les portions non consommées puis les conserver au réfrigérateur.';
+ tips='Les temps sont des repères : l’épaisseur des aliments et la puissance de ton appareil peuvent les faire varier. Pour les repas en batch cooking, les instructions utilisent uniquement le Cookeo et/ou l’Air Fryer, sans poêle ni casserole. Refroidir rapidement les portions non consommées puis les conserver au réfrigérateur.';
  return {appliance,time,steps,tips};
 }
 function batchForRecipe(id){
@@ -489,8 +489,8 @@ function closeRecipe(){document.getElementById('recipeModal').classList.remove('
 
 const PICKER_GROUPS=[
  {slot:'breakfast',cat:'PETITS-DÉJEUNERS',title:'🥣 Batch cooking petits-déjeuners',names:['Petit-déjeuner 1','Petit-déjeuner 2'],help:'Préparation dimanche soir : lundi à mercredi matin · Préparation mercredi soir : jeudi à samedi matin. Dimanche matin libre.'},
- {slot:'lunch',cat:'DÉJEUNERS & BATCH COOKING',title:'🍲 Batch cooking du midi',names:['Midi 1','Midi 2'],help:'Recette 1 : lundi à mercredi midi · Recette 2 : jeudi à samedi midi. Dimanche midi libre.'},
- {slot:'dinner',cat:'DÎNERS RAPIDES',title:'🍽️ Batch cooking du soir',names:['Soir 1','Soir 2'],help:'Recette 1 : dimanche à mardi soir · Recette 2 : mercredi à vendredi soir. Samedi soir libre.'},
+ {slot:'lunch',cat:'DÉJEUNERS & BATCH COOKING',title:'🍲 Batch cooking du midi — Cookeo / Air Fryer',names:['Midi 1','Midi 2'],help:'Recette 1 : lundi à mercredi midi · Recette 2 : jeudi à samedi midi. Dimanche midi libre.'},
+ {slot:'dinner',cat:'DÎNERS RAPIDES',title:'🍽️ Batch cooking du soir — Cookeo / Air Fryer',names:['Soir 1','Soir 2'],help:'Recette 1 : dimanche à mardi soir · Recette 2 : mercredi à vendredi soir. Samedi soir libre.'},
  {slot:'dessert',cat:'DESSERTS & COLLATIONS',title:'🍮 Batch cooking desserts',names:['Dessert 1','Dessert 2'],help:'Dessert 1 : dimanche à mardi soir et lundi à mercredi midi · Dessert 2 : mercredi à vendredi soir et jeudi à samedi midi. Repas du samedi soir et dimanche midi libres.'}
 ];
 function pickerRecipes(group){
