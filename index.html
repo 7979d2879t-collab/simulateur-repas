@@ -170,7 +170,7 @@ function curatedRecipe(r){
  if(r.generated)return r.id>=20048&&r.id<=20065&&CURATED_RECIPE_IDS.has(r.id-20000);
  return CURATED_RECIPE_IDS.has(r.id);
 }
-function allowedRecipe(r){return curatedRecipe(r)&&proteinMatches(r)&&!RECIPE_OFF.has(r.id)&&r.ings.every(x=>!excludedFood(x.key))}
+function allowedRecipe(r){const dessertOk=r.cat!=='DESSERTS & COLLATIONS'||(r.id>=48&&r.id<=65)||(r.id>=20048&&r.id<=20065);return dessertOk&&curatedRecipe(r)&&proteinMatches(r)&&!RECIPE_OFF.has(r.id)&&r.ings.every(x=>!excludedFood(x.key))}
 function persistFoods(){localStorage.setItem(FOOD_PREF_KEY,JSON.stringify(FOOD_PREF))}
 function toggleFood(key,kind,on){
  let arr=FOOD_PREF[kind];FOOD_PREF[kind]=on?[...new Set([...arr,key])]:arr.filter(x=>x!==key);
@@ -315,54 +315,17 @@ function macroFromIngredients(ings){
 }
 function rebuildGeneratedRecipes(){
  RECIPES.splice(BASE_RECIPE_COUNT);
- // Keep the two edited kiwi breakfast recipes' macros consistent with their ingredients.
+ // Keep edited base recipes consistent with their ingredient macros.
  for(const r of RECIPES.filter(x=>x.id===68||x.id===88)){const m=macroFromIngredients(r.ings);if(m)r.macros=m}
- const base=RECIPES.slice(0,BASE_RECIPE_COUNT).filter(r=>allowedRecipe(r));
- const all=[...Object.entries(META).map(([key,m])=>({key,name:m.name,category:foodCategory(key,m.name)})),...FOOD_PREF.custom].filter(f=>!excludedFood(f.key)&&foodInfo(f.key));
- const byCat=c=>all.filter(f=>f.category===c);
- const templates=[
-  {cat:'DÉJEUNERS & BATCH COOKING',label:'Assiette complète',groups:[['Viandes et œufs',160],['Féculents',65],['Légumes',200],['Légumes',100]]},
-  {cat:'DÉJEUNERS & BATCH COOKING',label:'Bol équilibré',groups:[['Poissons et fruits de mer',160],['Féculents',65],['Légumes',200]]},
-  {cat:'DÎNERS RAPIDES',label:'Poêlée complète',groups:[['Viandes et œufs',160],['Légumes',220],['Féculents',55]]},
-  {cat:'DÎNERS RAPIDES',label:'Assiette de la mer',groups:[['Poissons et fruits de mer',160],['Légumes',220],['Féculents',55]]},
-  {cat:'DESSERTS & COLLATIONS',label:'Dessert protéiné',groups:[['Produits laitiers et protéines',180],['Fruits',100],['Oléagineux et matières grasses',15]]}
- ];
- const seed=Number(localStorage.getItem('mealGenerationSeed')||'0');
- let nextId=Math.max(0,...RECIPES.map(r=>r.id))+1;
- const add=(name,cat,ings,sub)=>{
-  const macros=macroFromIngredients(ings);if(!macros)return;
-  if(macros.kcal>950||macros.kcal<80)return;
-  RECIPES.push({id:nextId++,name,cat,sub,macros,ings,generated:true});
- };
- // Independently composed dishes, not merely existing dishes with an added ingredient.
- for(const template of templates){
-  for(let variant=0;variant<16;variant++){
-   const ings=[],names=[];
-   template.groups.forEach(([cat,qty],gi)=>{
-    const pool=byCat(cat);if(!pool.length)return;
-    const f=pool[(variant*3+gi*5+seed*7)%pool.length];
-    ings.push({key:f.key,qty});names.push(f.name);
-   });
-   if(ings.length!==template.groups.length)continue;
-   if(new Set(ings.map(x=>x.key)).size!==ings.length)continue;
-   add(template.label+' : '+names.join(' / '),template.cat,ings,'Nouvelle composition automatique · macros estimées');
-  }
- }
- // Adjustable existing dishes: scale quantities proportionally, maintaining the dish.
- for(const r of base){
-  if(r.cat==='PETITS-DÉJEUNERS')continue;
-  if(r.ings.some(x=>!foodInfo(x.key)))continue;
-  for(const factor of [.85,1.15]){
-   const ings=r.ings.map(x=>({...x,qty:Math.max(5,Math.round(x.qty*factor/5)*5)}));
-   const macros={...r.macros};
-   Object.keys(macros).forEach(k=>{if(typeof macros[k]==='number')macros[k]=+(macros[k]*factor).toFixed(k==='kcal'?0:1)});
-   RECIPES.push({...r,id:nextId++,name:r.name+(factor<1?' — portion légère':' — portion renforcée'),sub:'Portions ajustées pour équilibrer la journée',ings,macros,generated:true});
-  }
- }
- addBreakfastVariants();
+ // No automatic meal compositions or scaled meal variants: each visible lunch/dinner remains a real curated recipe.
+ // Only dessert portions are generated to reach the intended ≈15 g protein serving.
  addDessertPortionVariants();
- // Reinsert frozen favorites, even when their ingredients have since been excluded.
- for(const saved of SAVED_FAV){if(saved.cat==='PETITS-DÉJEUNERS'&&!BREAKFAST_MENU_IDS.has(saved.id))continue;if(!RECIPES.some(r=>r.id===saved.id))RECIPES.push(JSON.parse(JSON.stringify(saved)))}
+ // Reinsert frozen favorites only when they belong to their original category and remain curated/usable.
+ for(const saved of SAVED_FAV){
+  if(saved.cat==='PETITS-DÉJEUNERS'&&!BREAKFAST_MENU_IDS.has(saved.id))continue;
+  if(!['PETITS-DÉJEUNERS','DÉJEUNERS & BATCH COOKING','DÎNERS RAPIDES','DESSERTS & COLLATIONS'].includes(saved.cat))continue;
+  if(!RECIPES.some(r=>r.id===saved.id))RECIPES.push(JSON.parse(JSON.stringify(saved)));
+ }
 }
 function deleteCatalogueFood(key){
  const food=META[key]||FOOD_PREF.custom.find(f=>f.key===key);
