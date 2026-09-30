@@ -483,7 +483,7 @@ function showRecipe(sel){
  if(!sel.value)return;let r=RECIPES.find(x=>x.id===+sel.value),d=document.getElementById('recipeDetail'),info=prepInfo(r),occ=batchForRecipe(r.id);
  let batch=occ.length>1?`<div class="daytotal ok"><b>🍳 Batch cooking : ${occ.length} portions</b><br>Prépare ${occ.length} portions le <b>${DAYS[occ[0].day]}</b>. Tu manges cette recette : ${occ.map(o=>'<b>'+DAYS[o.day]+'</b>').join(' puis ')}.</div>`:'';
  const dessertServings=dessertDishServings(r),dessertDish=r.cat==='DESSERTS & COLLATIONS'?dessertDishIngredients(r,dessertServings):[];
- d.innerHTML=`<h2>${r.name}</h2>${r.cat==='DESSERTS & COLLATIONS'?(dessertServings>1?'<p class="note"><b>Recette complète : '+dessertServings+' parts</b> d’environ '+Math.round(r.macros.protein)+' g de protéines chacune. Les quantités sont prévues pour réaliser directement un vrai plat/moule.</p>':'<p class="note"><b>Dessert sans cuisson : 1 portion individuelle</b> d’environ '+Math.round(r.macros.protein)+' g de protéines. Prépare directement ton pot ou ton bol.</p>'):''}<p><b>${r.macros.kcal} kcal</b> · ${Math.round(r.macros.protein)} g protéines · ${Math.round(r.macros.carbs)} g glucides · ${Math.round(r.macros.fat)} g lipides · ${Math.round(r.macros.fiber)} g fibres <b>par part</b></p>${batch}${r.cat==='DESSERTS & COLLATIONS'?'<h3>Ingrédients — '+(dessertServings>1?'recette complète ('+dessertServings+' parts)':'1 portion')+'</h3><ul>'+dessertDish.map(x=>'<li>'+(META[x.key]?.name||x.key)+' : <b>'+ingredientDisplay(x)+'</b></li>').join('')+'</ul>':'<h3>Ingrédients — 1 portion</h3><ul>'+r.ings.map(x=>'<li>'+(META[x.key]?.name||x.key)+' : <b>'+ingredientDisplay(x)+'</b></li>').join('')+'</ul>'}${r.cat!=='DESSERTS & COLLATIONS'&&occ.length>1?'<h3>Quantités batch — '+occ.length+' portions</h3><ul>'+r.ings.map(x=>'<li>'+(META[x.key]?.name||x.key)+' : <b>'+ingredientDisplay({key:x.key,qty:x.qty*occ.length})+'</b></li>').join('')+'</ul>':''}<h3>Préparation</h3><p><b>Appareil conseillé :</b> ${info.appliance} · <b>Temps :</b> ${info.time}</p><ol>${info.steps.map(x=>'<li>'+x+'</li>').join('')}</ol><p class="note">${info.tips}</p>`;
+ d.innerHTML=`<h2>${r.name}</h2>${r.cat==='DESSERTS & COLLATIONS'?(dessertServings>1?'<p class="note"><b>Recette complète : '+dessertServings+' parts</b> d’environ '+Math.round(r.macros.protein)+' g de protéines chacune. Les quantités sont prévues pour réaliser directement un vrai plat/moule.<br><b>Plat conseillé :</b> '+dessertBakeware(r)+'</p>':'<p class="note"><b>Dessert sans cuisson : 1 portion individuelle</b> d’environ '+Math.round(r.macros.protein)+' g de protéines. Prépare directement ton pot ou ton bol.</p>'):''}<p><b>${r.macros.kcal} kcal</b> · ${Math.round(r.macros.protein)} g protéines · ${Math.round(r.macros.carbs)} g glucides · ${Math.round(r.macros.fat)} g lipides · ${Math.round(r.macros.fiber)} g fibres <b>par part</b></p>${batch}${r.cat==='DESSERTS & COLLATIONS'?'<h3>Ingrédients — '+(dessertServings>1?'recette complète ('+dessertServings+' parts)':'1 portion')+'</h3><ul>'+dessertDish.map(x=>'<li>'+(META[x.key]?.name||x.key)+' : <b>'+ingredientDisplay(x)+'</b></li>').join('')+'</ul>':'<h3>Ingrédients — 1 portion</h3><ul>'+r.ings.map(x=>'<li>'+(META[x.key]?.name||x.key)+' : <b>'+ingredientDisplay(x)+'</b></li>').join('')+'</ul>'}${r.cat!=='DESSERTS & COLLATIONS'&&occ.length>1?'<h3>Quantités batch — '+occ.length+' portions</h3><ul>'+r.ings.map(x=>'<li>'+(META[x.key]?.name||x.key)+' : <b>'+ingredientDisplay({key:x.key,qty:x.qty*occ.length})+'</b></li>').join('')+'</ul>':''}<h3>Préparation</h3><p><b>Appareil conseillé :</b> ${info.appliance} · <b>Temps :</b> ${info.time}</p><ol>${info.steps.map(x=>'<li>'+x+'</li>').join('')}</ol><p class="note">${info.tips}</p>`;
  document.getElementById('recipeModal').classList.add('open');
 }
 function closeRecipe(){document.getElementById('recipeModal').classList.remove('open')}
@@ -561,7 +561,7 @@ function renderPrepSheets(){
   const entries=[...groups.values()].sort((a,b)=>order.indexOf(a.kind)-order.indexOf(b.kind));
   return '<div class="weeklyRecipeGroup" style="margin:12px 0"><h3>'+name+'</h3>'+entries.map(e=>
    '<details open><summary><b>'+escapeFoodHtml(e.recipe.name)+' — '+e.count+' portion(s)'+(e.kind==='dessert'?' · ≈ '+Math.round(e.recipe.macros.protein)+' g protéines/portion':'')+'</b></summary>'+
-   (e.kind==='dessert'?(dessertDishServings(e.recipe)>1?'<p class="note">Prépare directement une recette complète de '+dessertDishServings(e.recipe)+' parts (≈ '+Math.round(e.recipe.macros.protein)+' g de protéines par part). Tu utiliseras '+e.count+' part(s) sur ce batch ; conserve ou congèle le reste.</p>':'<p class="note">Dessert sans cuisson : les quantités ci-dessous correspondent aux '+e.count+' portion(s) individuelles prévues pour ce batch, ≈ '+Math.round(e.recipe.macros.protein)+' g de protéines par portion.</p>'):'')+
+   (e.kind==='dessert'?(dessertDishServings(e.recipe)>1?'<p class="note">Prépare directement une recette complète de '+dessertDishServings(e.recipe)+' parts (≈ '+Math.round(e.recipe.macros.protein)+' g de protéines par part). <b>Plat conseillé : '+dessertBakeware(e.recipe)+'.</b> Tu utiliseras '+e.count+' part(s) sur ce batch ; conserve ou congèle le reste.</p>':'<p class="note">Dessert sans cuisson : les quantités ci-dessous correspondent aux '+e.count+' portion(s) individuelles prévues pour ce batch, ≈ '+Math.round(e.recipe.macros.protein)+' g de protéines par portion.</p>'):'')+
    '<ul>'+Object.entries(e.ingredients).filter(([,q])=>q>0).map(([key,qty])=>{
     const m=META[key]||FOOD_PREF.custom.find(x=>x.key===key);
     return '<li>'+escapeFoodHtml(m?.name||key)+' : '+ingredientDisplay({key,qty:Math.round(q*10)/10})+'</li>';
@@ -740,6 +740,15 @@ function dessertDishServings(r){
  // Desserts cuits en moule : recette complète. Desserts sans cuisson / en pot : portion individuelle.
  if(/flan|clafoutis|gâteau|gateau|crumble/.test(n))return 6;
  return 1;
+}
+function dessertBakeware(r){
+ if(!r||r.cat!=='DESSERTS & COLLATIONS')return '';
+ const n=r.name.toLowerCase();
+ if(n.includes('flan'))return 'Moule rond Ø 20 cm, bords 4–5 cm — compatible Air Fryer';
+ if(n.includes('clafoutis'))return 'Plat rond Ø 20 cm ou plat carré 18 × 18 cm, bords 4 cm — compatible Air Fryer';
+ if(n.includes('crumble'))return 'Plat carré 18 × 18 cm ou rond Ø 20 cm, bords 4–5 cm — compatible Air Fryer';
+ if(n.includes('gâteau')||n.includes('gateau'))return 'Moule rond Ø 18–20 cm ou moule carré 18 × 18 cm, bords ≥ 5 cm — compatible Air Fryer';
+ return '';
 }
 function dessertDishIngredients(r,servings){
  return r.ings.map(x=>({...x,qty:Math.max(1,Math.round(x.qty*servings))}));
