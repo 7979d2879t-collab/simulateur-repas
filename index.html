@@ -1080,17 +1080,17 @@ function addDessertPortionVariants(){
 function dessertDishServings(r){
  if(!r||r.cat!=='DESSERTS')return 1;
  const n=r.name.toLowerCase();
- // Desserts cuits en moule : recette complète. Desserts sans cuisson / en pot : portion individuelle.
- if(/flan|clafoutis|gâteau|gateau|crumble/.test(n))return 6;
+ // Desserts cuits : 4 parts pour rester adaptés aux moules Air Fryer Ø 18–20 cm.
+ if(/flan|clafoutis|gâteau|gateau|crumble/.test(n))return 4;
  return 1;
 }
 function dessertBakeware(r){
  if(!r||r.cat!=='DESSERTS')return '';
  const n=r.name.toLowerCase();
- if(n.includes('flan'))return 'Moule rond Ø 20 cm, bords 4–5 cm — compatible Air Fryer';
- if(n.includes('clafoutis'))return 'Plat rond Ø 20 cm ou plat carré 18 × 18 cm, bords 4 cm — compatible Air Fryer';
- if(n.includes('crumble'))return 'Plat carré 18 × 18 cm ou rond Ø 20 cm, bords 4–5 cm — compatible Air Fryer';
- if(n.includes('gâteau')||n.includes('gateau'))return 'Moule rond Ø 18–20 cm ou moule carré 18 × 18 cm, bords ≥ 5 cm — compatible Air Fryer';
+ if(n.includes('flan'))return 'Moule rond Ø 20 cm, bords ≥ 5 cm — compatible Air Fryer';
+ if(n.includes('clafoutis'))return 'Moule rond Ø 20 cm, bords ≥ 5 cm — compatible Air Fryer';
+ if(n.includes('crumble'))return 'Moule rond Ø 20 cm, bords ≥ 4 cm — compatible Air Fryer';
+ if(n.includes('gâteau')||n.includes('gateau'))return 'Moule rond Ø 20 cm, bords ≥ 5 cm — compatible Air Fryer';
  return '';
 }
 function dessertDishIngredients(r,servings){
