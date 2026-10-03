@@ -325,14 +325,8 @@ function rebuildGeneratedRecipes(){
  // Keep edited base recipes consistent with their ingredient macros.
  for(const r of RECIPES.filter(x=>x.id===68||x.id===88)){const m=macroFromIngredients(r.ings);if(m)r.macros=m}
  // No automatic meal compositions or scaled meal variants: each visible lunch/dinner remains a real curated recipe.
- // Only dessert portions are generated to reach the intended ≈15 g protein serving.
+ // Only genuine dessert recipes receive generated dessert portions.
  addDessertPortionVariants();
- // Reinsert frozen favorites only when they belong to their original category and remain curated/usable.
- for(const saved of SAVED_FAV){
-  if(saved.cat==='PETITS-DÉJEUNERS')continue;
-  if(!['PETITS-DÉJEUNERS','DÉJEUNERS & BATCH COOKING','DÎNERS RAPIDES','DESSERTS & COLLATIONS'].includes(saved.cat))continue;
-  if(!RECIPES.some(r=>r.id===saved.id))RECIPES.push(JSON.parse(JSON.stringify(saved)));
- }
 }
 function deleteCatalogueFood(key){
  const food=META[key]||FOOD_PREF.custom.find(f=>f.key===key);
@@ -396,7 +390,7 @@ function renderRecipeCatalogue(){
  const root=document.getElementById('recipeCatalogue');if(!root)return;
  const q=(document.getElementById('catalogSearch')?.value||'').trim().toLowerCase();
  root.innerHTML=[...new Set(RECIPES.map(r=>r.cat))].map(cat=>{
- const arr=RECIPES.filter(r=>allowedRecipe(r)&&(cat!=='PETITS-DÉJEUNERS'||suitableBreakfast(r))&&(!q||(r.name+' '+r.ings.map(x=>META[x.key]?.name||x.key).join(' ')).toLowerCase().includes(q)));
+ const arr=RECIPES.filter(r=>r.cat===cat&&allowedRecipe(r)&&(cat!=='PETITS-DÉJEUNERS'||suitableBreakfast(r))&&(!q||(r.name+' '+r.ings.map(x=>META[x.key]?.name||x.key).join(' ')).toLowerCase().includes(q)));
  if(!arr.length)return '';
  return '<details '+(q?'open':'')+'><summary>'+cat+' ('+arr.length+')</summary><div class="catalogue-grid">'+arr.map(r=>'<div class="entry"><label><input type="checkbox" '+(!RECIPE_OFF.has(r.id)?'checked':'')+' onchange="toggleRecipeCatalogue('+r.id+',\'off\',this.checked)"> Proposer</label><label><input type="checkbox" '+(FAVORITES.has(r.id)?'checked':'')+' onchange="toggleRecipeCatalogue('+r.id+',\'fav\',this.checked)"> ⭐</label><span>'+r.name+' · '+r.macros.kcal+' kcal · '+Math.round(r.macros.protein)+' g prot.</span><button class="mini" onclick="showRecipeById('+r.id+')">📖 Fiche</button><button type="button" class="mini" onclick="deleteCatalogueRecipe('+r.id+')">🗑 Supprimer</button></div>').join('')+'</div></details>';
  }).join('');
