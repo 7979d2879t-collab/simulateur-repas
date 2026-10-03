@@ -412,10 +412,12 @@ function addOnlineFoodToCategory(p,category,root){
 }
 function renderFoodCatalogue(){
  const root=document.getElementById('foodCatalogue');if(!root)return;
+ const openGroups=new Set([...root.querySelectorAll('details[open]')].map(d=>d.dataset.group).filter(Boolean));
  const foods=[...Object.entries(META).map(([key,m])=>({key,name:m.name,category:foodCategory(key,m.name)})),...FOOD_PREF.custom.map(f=>({...f,category:FOOD_PREF.categoryOverrides?.[f.key]||f.category||foodCategory(f.key,f.name)}))].filter(f=>!excludedFood(f.key));
  root.innerHTML=Object.keys({...FOOD_GROUPS,Autres:1}).map(group=>{
  const arr=foods.filter(f=>f.category===group).sort((a,b)=>a.name.localeCompare(b.name,'fr'));
- return '<details><summary>'+group+' ('+arr.length+')</summary>'+categoryAddFoodBox(group)+'<div class="catalogue-grid">'+arr.map(f=>'<div class="entry"><span>'+f.name+'</span>'+(group==='Autres'?'<select aria-label="Catégorie de '+escapeFoodHtml(f.name)+'" onchange="setFoodCategory(\''+f.key+'\',this.value)" style="width:auto;min-width:180px"><option value="">Classer dans…</option>'+Object.keys(FOOD_GROUPS).map(g=>'<option value="'+g+'">'+g+'</option>').join('')+'</select>':'')+'<button type="button" class="mini" onclick="deleteCatalogueFood(\''+f.key+'\')">🗑 Supprimer</button>'+'</div>').join('')+'</div></details>';
+ const safeGroup=escapeFoodHtml(group);
+ return '<details data-group="'+safeGroup+'" '+(openGroups.has(group)?'open':'')+'><summary>'+group+' ('+arr.length+')</summary>'+categoryAddFoodBox(group)+'<div class="catalogue-grid">'+arr.map(f=>'<div class="entry"><span>'+f.name+'</span>'+(group==='Autres'?'<select aria-label="Catégorie de '+escapeFoodHtml(f.name)+'" onchange="setFoodCategory(\''+f.key+'\',this.value)" style="width:auto;min-width:180px"><option value="">Classer dans…</option>'+Object.keys(FOOD_GROUPS).map(g=>'<option value="'+g+'">'+g+'</option>').join('')+'</select>':'')+'<button type="button" class="mini" onclick="deleteCatalogueFood(\''+f.key+'\')">🗑 Supprimer</button>'+'</div>').join('')+'</div></details>';
  }).join('');
 }
 function toggleRecipeCatalogue(id,kind,on){
