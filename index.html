@@ -63,7 +63,7 @@ button{border:0;background:var(--teal);color:#fff;padding:9px 12px;border-radius
 
 </div>
 
-<div class="panel" style="margin-bottom:12px"><h2>1. 🍽️ Ma semaine</h2><p class="note">Choisis directement tes deux petits-déjeuners, tes deux batch cookings du midi, deux du soir et tes deux desserts. Le tableau, les macros, le graphique et la liste de courses se mettent à jour automatiquement. Les 8 recettes couvrent automatiquement la semaine selon deux sessions : samedi après-midi pour la première partie, puis mercredi soir pour la seconde. Les desserts suivent la même organisation.</p><p class="note"><b>Recettes proposées selon tes objectifs :</b> petit-déjeuner 35–42 g · déjeuner 35–45 g · dîner 35–45 g · dessert 13–17 g de protéines par portion. Les autres recettes ne sont pas proposées.</p><div id="weeklyRecipePicker" class="weeklyRecipePicker"></div><div class="panel" style="margin-top:14px"><h2>2. 🍳 Mon batch cooking</h2><p class="note">Commence par le bloc du jour : il te dit quoi préparer et dans quel ordre. Les quantités et fiches détaillées restent accessibles juste dessous.</p><div id="prepSheets"></div><button type="button" onclick="window.print()">🖨️ Imprimer les fiches</button></div><select id="breakfastMode" style="display:none"><option value="mix" selected>Libre</option></select><p class="note" id="weeklyPickerStatus" aria-live="polite"></p></div><p class="note" id="slotChangeStatus" aria-live="polite"></p><div class="weekLayout"><div class="week" id="week"></div></div>
+<div class="panel" style="margin-bottom:12px"><h2>1. 🍽️ Ma semaine</h2><p class="note">Choisis directement tes deux petits-déjeuners, tes deux batch cookings du midi, deux du soir et tes deux desserts. Le tableau, les macros, le graphique et la liste de courses se mettent à jour automatiquement. Les 8 recettes couvrent automatiquement la semaine selon deux sessions : samedi après-midi pour la première partie, puis mercredi soir pour la seconde. Les desserts suivent la même organisation.</p><p class="note"><b>Recettes proposées selon tes objectifs :</b> petit-déjeuner 35–42 g · déjeuner 35–45 g · dîner 35–45 g · dessert 13–17 g de protéines par portion. Les autres recettes ne sont pas proposées.</p><div id="weeklyRecipePicker" class="weeklyRecipePicker"></div><div class="panel" style="margin-top:14px"><h2>2. 🍳 Mon batch cooking</h2><p class="note">Choisis le premier repas qu'il te reste réellement à préparer. Les repas déjà passés sont exclus : ils ne servent ni à calculer les quantités ni à compenser les macros restantes.</p><div class="note" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap"><label style="margin:0">Je prépare à partir de<select id="prepStartDay" onchange="prepStartChanged()" style="min-width:130px"></select></label><label style="margin:0">Repas<select id="prepStartSlot" onchange="prepStartChanged()" style="min-width:190px"></select></label><button type="button" class="mini" onclick="setPrepStartNow()">À partir de maintenant</button></div><p id="prepTargetInfo" class="note"></p><div id="prepSheets"></div><button type="button" onclick="window.print()">🖨️ Imprimer les fiches</button></div><select id="breakfastMode" style="display:none"><option value="mix" selected>Libre</option></select><p class="note" id="weeklyPickerStatus" aria-live="polite"></p></div><p class="note" id="slotChangeStatus" aria-live="polite"></p><div class="weekLayout"><div class="week" id="week"></div></div>
 <div class="grid2">
 <div class="panel"><div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap"><h2 style="margin-bottom:0">3. 🛒 Ma liste de courses</h2><div class="kpi" style="min-width:190px;text-align:center"><span>Montant des courses</span><b id="weekCost">-</b></div></div><p class="note">Quantités théoriques nécessaires. Pour viande/poisson, achète le conditionnement commercial le plus proche; quelques grammes d'écart ne posent pas problème.</p>
 <div class="note" style="margin:12px 0"><b>Inclure dans les courses :</b><br><label><input type="checkbox" id="shopLunch" checked onchange="updateShopping()"> Déjeuners (batch cooking)</label><br><label><input type="checkbox" id="shopDesserts" checked onchange="updateShopping()"> Desserts du midi et du soir</label><br><label><input type="checkbox" id="shopBreakfast" checked onchange="updateShopping()"> Petits-déjeuners</label><br><label><input type="checkbox" id="shopDinner" checked onchange="updateShopping()"> Dîners</label></div><p id="shopScope" class="note"></p><table><thead><tr><th>Produit</th><th>À acheter</th><th>Coût estimé</th><th>Stock</th></tr></thead><tbody id="shopping"></tbody></table>
@@ -578,11 +578,14 @@ function batchLogistics(entries,batch){
 
 function renderPrepSheets(){
  const root=document.getElementById('prepSheets');if(!root)return;
+ initPrepStartControls();
+ const start=prepStart(),share=prepRemainingShare(start.day),info=document.getElementById('prepTargetInfo');
+ if(info)info.innerHTML='<b>'+DAYS[start.day]+' à partir de '+SLOT_LABELS[start.slot]+' :</b> objectif restant de cette journée ≈ '+Math.round(share*100)+' % des macros journalières. Aucun rattrapage des repas précédents.';
  const names=['Samedi après-midi','Mercredi soir'];
  root.innerHTML=names.map((name,batch)=>{
   const groups=new Map();
   document.querySelectorAll('select[data-slot]').forEach(sel=>{
-   if(!sel.value||prepBatchForMeal(+sel.dataset.day,sel.dataset.slot)!==batch)return;
+   if(!sel.value||!mealAtOrAfterStart(+sel.dataset.day,sel.dataset.slot)||prepBatchForMeal(+sel.dataset.day,sel.dataset.slot)!==batch)return;
    const recipe=RECIPES.find(r=>String(r.id)===sel.value);if(!recipe)return;
    const kind=sel.dataset.slot==='snack1'||sel.dataset.slot==='snack2'?'dessert':sel.dataset.slot;
    const key=kind+':'+recipe.id;
@@ -675,15 +678,17 @@ function scaledRecipeMacros(r,scale){return {k:r.macros.kcal*scale,p:r.macros.pr
 function adaptPortions(){
  const targets={k:2100,p:160,c:212,f:68,fi:32};
  for(let day=0;day<7;day++){
-  const sels=[...document.querySelectorAll('select[data-day="'+day+'"]')].filter(s=>s.value);
+  const sels=[...document.querySelectorAll('select[data-day="'+day+'"]')].filter(s=>s.value&&mealAtOrAfterStart(day,s.dataset.slot));
   if(!sels.length)continue;
+  const share=prepRemainingShare(day);
+  const dayTargets={k:targets.k*share,p:targets.p*share,c:targets.c*share,f:targets.f*share,fi:targets.fi*share};
   const extras=sels.reduce((a,s)=>{const e=extraNutrition(day,s.dataset.slot);for(const k of Object.keys(a))a[k]+=e[k]||0;return a},{k:0,p:0,c:0,f:0,fi:0,cost:0});
   let best={score:Infinity,scales:null};
   // Coarse, practical 5% portion steps. Breakfast/dessert vary less; main meals absorb most adjustment.
   const choices=sels.map(s=>['lunch','dinner'].includes(s.dataset.slot)?[.75,.8,.85,.9,.95,1,1.05,1.1,1.15,1.2,1.25,1.3,1.35,1.4]:[.85,.9,.95,1,1.05,1.1,1.15]);
   function walk(i,scales,t){
    if(i===sels.length){
-    const score=Math.pow((t.k-targets.k)/120,2)+Math.pow((t.p-targets.p)/12,2)+Math.pow((t.c-targets.c)/35,2)+Math.pow((t.f-targets.f)/12,2)+Math.pow((t.fi-targets.fi)/8,2);
+    const score=Math.pow((t.k-dayTargets.k)/Math.max(60,120*share),2)+Math.pow((t.p-dayTargets.p)/Math.max(6,12*share),2)+Math.pow((t.c-dayTargets.c)/Math.max(18,35*share),2)+Math.pow((t.f-dayTargets.f)/Math.max(6,12*share),2)+Math.pow((t.fi-dayTargets.fi)/Math.max(4,8*share),2);
     if(score<best.score)best={score,scales:[...scales]};return;
    }
    const r=RECIPES.find(x=>String(x.id)===sels[i].value);if(!r)return walk(i+1,[...scales,1],t);
@@ -986,6 +991,35 @@ function changeWeeklySlot(slot){
  const validation=weekValidation();
  status.textContent=validation.ok?'✓ Deux nouvelles recettes sur cette ligne uniquement. Les autres repas sont inchangés et les macros restent dans les cibles.':'Deux nouvelles recettes sur cette ligne uniquement. Les autres repas sont inchangés, mais '+validation.bad.length+' journée(s) restent hors cible : les macros ne peuvent pas toujours être rééquilibrées sans modifier les autres lignes.';
  renderWeeklySlotControls();
+}
+const PREP_START_KEY='mealPrepStartV1';
+const SLOT_ORDER=['breakfast','lunch','snack1','dinner','snack2'];
+const SLOT_LABELS={breakfast:'Petit-déjeuner',lunch:'Déjeuner',snack1:'Dessert du déjeuner',dinner:'Dîner',snack2:'Dessert du dîner'};
+const SLOT_TARGET_SHARE={breakfast:.20,lunch:.28,snack1:.10,dinner:.32,snack2:.10};
+function prepStart(){
+ try{const x=JSON.parse(localStorage.getItem(PREP_START_KEY)||'null');if(x&&x.day>=0&&x.day<7&&SLOT_ORDER.includes(x.slot))return x}catch(e){}
+ return {day:0,slot:'breakfast'};
+}
+function mealAtOrAfterStart(day,slot){
+ const s=prepStart(),a=day*10+SLOT_ORDER.indexOf(slot),b=s.day*10+SLOT_ORDER.indexOf(s.slot);
+ return a>=b;
+}
+function prepRemainingShare(day){
+ return SLOT_ORDER.reduce((sum,slot)=>sum+(mealAtOrAfterStart(day,slot)?SLOT_TARGET_SHARE[slot]:0),0);
+}
+function initPrepStartControls(){
+ const d=document.getElementById('prepStartDay'),s=document.getElementById('prepStartSlot');if(!d||!s)return;
+ const cur=prepStart();d.innerHTML=DAYS.map((x,i)=>'<option value="'+i+'" '+(i===cur.day?'selected':'')+'>'+x+'</option>').join('');
+ s.innerHTML=SLOT_ORDER.map(x=>'<option value="'+x+'" '+(x===cur.slot?'selected':'')+'>'+SLOT_LABELS[x]+'</option>').join('');
+}
+function prepStartChanged(){
+ const d=+document.getElementById('prepStartDay').value,slot=document.getElementById('prepStartSlot').value;
+ localStorage.setItem(PREP_START_KEY,JSON.stringify({day:d,slot}));adaptPortions();update();
+}
+function setPrepStartNow(){
+ const jsDay=new Date().getDay(),day=(jsDay+6)%7,h=new Date().getHours();
+ let slot=h<9?'breakfast':h<13?'lunch':h<15?'snack1':h<20?'dinner':'snack2';
+ localStorage.setItem(PREP_START_KEY,JSON.stringify({day,slot}));initPrepStartControls();adaptPortions();update();
 }
 function lunchBatchForDay(day){return (day<=2||day===6)?0:1}
 function dinnerBatchForDay(day){return (day<=1||day>=5)?0:1}
