@@ -347,10 +347,9 @@ function deleteCatalogueRecipe(id){
 function categoryAddFoodBox(group){
  const safe=escapeFoodHtml(group);
  return '<div class="categoryAddFood" style="margin:10px 0 4px;padding:10px;background:#f7fafb;border:1px solid #dce6e9;border-radius:9px">'+
- '<b>🔎 Ajouter un aliment dans '+safe+'</b>'+
+ '<b>🔎 Rechercher et ajouter un aliment</b>'+
  '<div style="display:flex;gap:7px;flex-wrap:wrap;margin-top:8px"><input type="search" class="categoryFoodSearch" data-category="'+safe+'" placeholder="Rechercher sur Internet…" style="flex:2;min-width:190px" onkeydown="if(event.key===\'Enter\'){event.preventDefault();searchOnlineFoodsForCategory(this)}"><button type="button" class="mini" onclick="searchOnlineFoodsForCategory(this.previousElementSibling)">🔎 Rechercher</button></div>'+
- '<div class="categoryOnlineResults" aria-live="polite"></div>'+
- '<details><summary>Ajouter manuellement</summary><div style="display:flex;gap:7px;flex-wrap:wrap;margin-top:8px"><input class="categoryFoodName" placeholder="Nom de l’aliment" style="min-width:180px"><label>kcal/100g <input class="categoryKcal" type="number" min="0" step=".1" style="width:78px"></label><label>Prot. <input class="categoryProtein" type="number" min="0" step=".1" style="width:78px"></label><label>Gluc. <input class="categoryCarbs" type="number" min="0" step=".1" style="width:78px"></label><label>Lip. <input class="categoryFat" type="number" min="0" step=".1" style="width:78px"></label><label>Fibres <input class="categoryFiber" type="number" min="0" step=".1" style="width:78px"></label><label>Prix €/100g <input class="categoryCost" type="number" min="0" step=".01" style="width:78px"></label><button type="button" class="mini" onclick="addCustomFoodForCategory(this,\''+safe.replace(/'/g,"&#39;")+'\')">Ajouter</button></div></details></div>';
+ '<div class="categoryOnlineResults" aria-live="polite"></div></div>';
 }
 async function searchOnlineFoodsForCategory(input){
  const box=input.closest('.categoryAddFood'),root=box.querySelector('.categoryOnlineResults'),q=input.value.trim(),category=input.dataset.category;
@@ -372,14 +371,6 @@ function addOnlineFoodToCategory(p,category,root){
  const label=(name+' '+(p.brands||'')).toLowerCase(),naturallyZero=/emmental|gruy[eè]re|comt[eé]|parmesan|cheddar|mozzarella|fromage|œuf|oeuf|viande|poulet|bœuf|boeuf|porc|poisson|saumon|thon|huile|beurre/.test(label),missingFiber=n.fiber===null;
  FOOD_PREF.custom.push({key:'custom_'+Date.now(),name,category,nutrition:{kcal:n.kcal,protein:n.protein,carbs:n.carbs,fat:n.fat,fiber:missingFiber?0:n.fiber},cost:0,fiberEstimated:missingFiber&&!naturallyZero});
  persistFoods();rebuildGeneratedRecipes();refreshChoices();renderFoodCatalogue();renderRecipeCatalogue();update();
-}
-function addCustomFoodForCategory(button,category){
- const box=button.closest('.categoryAddFood'),name=box.querySelector('.categoryFoodName').value.trim();if(!name)return;
- if(FOOD_PREF.custom.some(x=>x.name.toLowerCase()===name.toLowerCase())){alert('Cet aliment est déjà ajouté.');return}
- const classes=['Kcal','Protein','Carbs','Fat','Fiber'],values=classes.map(k=>box.querySelector('.category'+k).value);
- if(values.some(v=>v===''||!Number.isFinite(+v)||+v<0)){alert('Renseigne les 5 valeurs nutritionnelles pour 100 g.');return}
- FOOD_PREF.custom.push({key:'custom_'+Date.now(),name,category,nutrition:{kcal:+values[0],protein:+values[1],carbs:+values[2],fat:+values[3],fiber:+values[4]},cost:+box.querySelector('.categoryCost').value||0});
- persistFoods();rebuildGeneratedRecipes();refreshChoices();renderFoodCatalogue();renderRecipeCatalogue();autoWeek();
 }
 function renderFoodCatalogue(){
  const root=document.getElementById('foodCatalogue');if(!root)return;
