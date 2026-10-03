@@ -648,7 +648,7 @@ function build(){
    w.appendChild(el);
  });
  document.querySelectorAll('select[data-slot]').forEach(s=>{s.addEventListener('focus',()=>s.dataset.previousValue=s.value);s.addEventListener('change',()=>manualMealChanged(s));});loadMealLocks();renderWeeklySlotControls();
- document.getElementById('breakfastMode').value='mix';localStorage.setItem('breakfastMode','mix');load(); adaptPortions();update();renderWeeklyRecipePicker(); updateFavButtons();syncWeekApproval();requestAnimationFrame(alignWeeklySlotControls);
+ document.getElementById('breakfastMode').value='mix';localStorage.setItem('breakfastMode','mix');load(); adaptPortions();update();renderWeeklyRecipePicker();syncWeekApproval();requestAnimationFrame(alignWeeklySlotControls);
 }
 function selected(){
  let out=Array.from({length:7},()=>[]);
@@ -1426,18 +1426,34 @@ function printShopping(){
  w.document.write(`<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>Liste de courses</title><style>body{font-family:Arial,sans-serif;padding:24px;color:#26333c}h1{color:#17324d}table{width:100%;border-collapse:collapse}th,td{padding:9px;border-bottom:1px solid #d9e1e4;text-align:left}th{background:#edf5f3}@media print{body{padding:0}}</style></head><body><h1>Liste de courses</h1><p>Simulateur repas semaine</p><table><thead><tr><th>Produit</th><th>À acheter</th><th>Coût estimé</th><th>Stock</th></tr></thead><tbody>${rows}</tbody></table><script>window.onload=()=>{window.print();window.onafterprint=()=>window.close()}<\/script><div class="mobileNav"><button onclick="document.getElementById('weekTop').scrollIntoView()">🍽️<br>Semaine</button><button onclick="document.getElementById('prepSheets').scrollIntoView()">🍳<br>Préparation</button><button onclick="document.getElementById('shopping').scrollIntoView()">🛒<br>Courses</button></div></body></html>`);
  w.document.close();
 }
+const WEEK_STATE_KEY='mealWeekStateV4';
 function save(){
- const state={};document.querySelectorAll('select[data-slot]').forEach(s=>state[s.dataset.day+':'+s.dataset.slot]=s.value);
- localStorage.setItem('mealV3',JSON.stringify(state));
+ const state={};
+ document.querySelectorAll('select[data-slot]').forEach(s=>{
+  const r=RECIPES.find(x=>String(x.id)===s.value);
+  state[s.dataset.day+':'+s.dataset.slot]={id:s.value,name:r?.name||''};
+ });
+ const raw=JSON.stringify(state);
+ localStorage.setItem(WEEK_STATE_KEY,raw);
+ localStorage.setItem('mealV3',JSON.stringify(Object.fromEntries(Object.entries(state).map(([k,v])=>[k,v.id]))));
 }
 function load(){
  try{
-   let state=JSON.parse(localStorage.getItem('mealV3')||'null');
-   if(state){document.querySelectorAll('select[data-slot]').forEach(s=>{const id=state[s.dataset.day+':'+s.dataset.slot]||'';const recipe=RECIPES.find(r=>String(r.id)===String(id));if(recipe){s.innerHTML=opts(s.dataset.cat,id);s.value=id}else s.value=''});return}
-   let old=JSON.parse(localStorage.getItem('mealV2')||localStorage.getItem('mealV1')||'null');
-   if(old){const slots=['breakfast','lunch','snack1','dinner','snack2'];for(let d=0;d<7;d++)slots.forEach((slot,i)=>{let s=document.querySelector('select[data-day="'+d+'"][data-slot="'+slot+'"]');if(!s)return;const id=old[d*5+i]||'';const recipe=RECIPES.find(r=>String(r.id)===String(id));s.value=recipe&&allowedRecipe(recipe)&&suitableBreakfast(recipe)?id:''})}
- }catch(e){}
+  const state=JSON.parse(localStorage.getItem(WEEK_STATE_KEY)||'null');
+  if(state){
+   document.querySelectorAll('select[data-slot]').forEach(s=>{
+    const saved=state[s.dataset.day+':'+s.dataset.slot];if(!saved)return;
+    const recipe=RECIPES.find(r=>String(r.id)===String(saved.id))||RECIPES.find(r=>r.name===saved.name);
+    if(recipe){s.innerHTML=opts(s.dataset.cat,String(recipe.id));s.value=String(recipe.id)}
+   });
+   return;
+  }
+  const legacy=JSON.parse(localStorage.getItem('mealV3')||'null');
+  if(legacy){document.querySelectorAll('select[data-slot]').forEach(s=>{const id=legacy[s.dataset.day+':'+s.dataset.slot]||'';const recipe=RECIPES.find(r=>String(r.id)===String(id));if(recipe){s.innerHTML=opts(s.dataset.cat,id);s.value=id}});save();return}
+  const old=JSON.parse(localStorage.getItem('mealV2')||localStorage.getItem('mealV1')||'null');
+  if(old){const slots=['breakfast','lunch','snack1','dinner','snack2'];for(let d=0;d<7;d++)slots.forEach((slot,i)=>{const s=document.querySelector('select[data-day="'+d+'"][data-slot="'+slot+'"]');if(!s)return;const id=old[d*5+i]||'';const recipe=RECIPES.find(r=>String(r.id)===String(id));if(recipe){s.innerHTML=opts(s.dataset.cat,id);s.value=id}});save()}
+ }catch(e){console.error('Restauration semaine',e)}
 }
-function resetWeek(){localStorage.removeItem('mealV1');localStorage.removeItem('mealV2');localStorage.removeItem('mealV3');localStorage.removeItem('mealAutoValuesV1');localStorage.removeItem(PORTION_SCALE_KEY);PORTION_SCALES={};localStorage.removeItem(MEAL_LOCK_KEY);localStorage.removeItem(APPROVED_WEEK_KEY);localStorage.removeItem(SLOT_LOCK_KEY);document.querySelectorAll('.mealLock').forEach(c=>c.checked=false);document.querySelectorAll('select[data-slot]').forEach(x=>x.value='');update();renderWeeklySlotControls();}
+function resetWeek(){localStorage.removeItem('mealV1');localStorage.removeItem('mealV2');localStorage.removeItem('mealV3');localStorage.removeItem(WEEK_STATE_KEY);localStorage.removeItem('mealAutoValuesV1');localStorage.removeItem(PORTION_SCALE_KEY);PORTION_SCALES={};localStorage.removeItem(MEAL_LOCK_KEY);localStorage.removeItem(APPROVED_WEEK_KEY);localStorage.removeItem(SLOT_LOCK_KEY);document.querySelectorAll('.mealLock').forEach(c=>c.checked=false);document.querySelectorAll('select[data-slot]').forEach(x=>x.value='');update();renderWeeklySlotControls();}
 rebuildGeneratedRecipes();build();renderFoodCatalogue();renderRecipeCatalogue();window.addEventListener('resize',alignWeeklySlotControls);
 </script></body></html>
