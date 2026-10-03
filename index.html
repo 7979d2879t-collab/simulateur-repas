@@ -1447,14 +1447,15 @@ function updateShopping(){
  if(document.getElementById('shopDinner').checked)enabled.add('dinner');
  const shop={};let meals=0;const wholeDesserts=new Set();
  document.querySelectorAll('select[data-slot]').forEach(sel=>{
-  if(!enabled.has(sel.dataset.slot)||!sel.value)return;
+  if(!enabled.has(sel.dataset.slot)||!sel.value||!mealAtOrAfterStart(+sel.dataset.day,sel.dataset.slot))return;
   const recipe=RECIPES.find(r=>r.id===Number(sel.value));if(!recipe)return;meals++;
   if((sel.dataset.slot==='snack1'||sel.dataset.slot==='snack2')&&dessertDishServings(recipe)>1){if(!wholeDesserts.has(recipe.id)){wholeDesserts.add(recipe.id);dessertDishIngredients(recipe,dessertDishServings(recipe)).forEach(ing=>shop[ing.key]=(shop[ing.key]||0)+ing.qty)}}else{const sc=portionScale(Number(sel.dataset.day),sel.dataset.slot);recipe.ings.forEach(ing=>shop[ing.key]=(shop[ing.key]||0)+ing.qty*sc);}
   for(const extra of extraFor(Number(sel.dataset.day),sel.dataset.slot))shop[extra.key]=(shop[extra.key]||0)+extra.qty;
  });
  const tbody=document.getElementById('shopping');tbody.innerHTML='';
  const have=new Set(JSON.parse(localStorage.getItem('mealShoppingHaveV1')||'[]'));let shoppingTotal=0,lastCat='';
- document.getElementById('shopScope').textContent=meals+' portion(s) incluses. Le budget est calculé uniquement sur les conditionnements à acheter, pas sur la quantité consommée dans les recettes. Clique sur « J’en ai » pour retirer un produit du budget.';
+ const ps=prepStart(),scope=ps.day>=0&&ps.slot?DAYS[ps.day]+' · '+SLOT_LABELS[ps.slot]+' → Samedi midi':'Aucune période sélectionnée';
+ document.getElementById('shopScope').innerHTML='<b>Période calculée : '+scope+'.</b> '+meals+' portion(s) incluses. Le budget est calculé uniquement sur les conditionnements à acheter, pas sur la quantité consommée dans les recettes. Clique sur « J’en ai » pour retirer un produit du budget.';
  const rows=Object.entries(shop).filter(([k,q])=>q>0&&(META[k]||FOOD_PREF.custom.find(f=>f.key===k))).sort((a,b)=>shoppingCategory(a[0]).localeCompare(shoppingCategory(b[0]),'fr')||(META[a[0]]?.name||a[0]).localeCompare(META[b[0]]?.name||b[0],'fr'));
  rows.forEach(([k,q])=>{
   const base=META[k]||FOOD_PREF.custom.find(f=>f.key===k),m={...base,key:k},cat=shoppingCategory(k),qty=shoppingQty(k,q),cost=packageCost(m,q,qty),owned=have.has(k);
