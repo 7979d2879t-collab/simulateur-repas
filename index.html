@@ -185,7 +185,8 @@ function curatedRecipe(r){
  if(r.generated)return r.id>=20048&&r.id<=20065&&CURATED_RECIPE_IDS.has(r.id-20000);
  return CURATED_RECIPE_IDS.has(r.id);
 }
-function allowedRecipe(r){const dessertOk=r.cat!=='DESSERTS & COLLATIONS'||(r.id>=48&&r.id<=65)||(r.id>=20048&&r.id<=20065);const breakfastOk=r.cat!=='PETITS-DÉJEUNERS'||(r.id>=66&&r.id<=92&&CURATED_RECIPE_IDS.has(r.id));return dessertOk&&breakfastOk&&curatedRecipe(r)&&proteinMatches(r)&&!RECIPE_OFF.has(r.id)&&r.ings.every(x=>!excludedFood(x.key))}
+function activeFoodKey(key){return !excludedFood(key)&&(Object.prototype.hasOwnProperty.call(META,key)||FOOD_PREF.custom.some(f=>f.key===key))}
+function allowedRecipe(r){const dessertOk=r.cat!=='DESSERTS & COLLATIONS'||(r.id>=48&&r.id<=65)||(r.id>=20048&&r.id<=20065);const breakfastOk=r.cat!=='PETITS-DÉJEUNERS'||(r.id>=66&&r.id<=92&&CURATED_RECIPE_IDS.has(r.id));return dessertOk&&breakfastOk&&curatedRecipe(r)&&proteinMatches(r)&&!RECIPE_OFF.has(r.id)&&r.ings.every(x=>activeFoodKey(x.key))}
 function persistFoods(){localStorage.setItem(FOOD_PREF_KEY,JSON.stringify(FOOD_PREF))}
 function toggleFood(key,kind,on){
  let arr=FOOD_PREF[kind];FOOD_PREF[kind]=on?[...new Set([...arr,key])]:arr.filter(x=>x!==key);
@@ -261,9 +262,9 @@ function addCustomFood(){
  const cost=+document.getElementById('newCost').value||0;
  FOOD_PREF.custom.push({key:'custom_'+Date.now(),name,category,nutrition,cost});
  persistFoods();input.value='';fields.forEach(k=>document.getElementById('new'+k).value='');document.getElementById('newCost').value='';
- rebuildGeneratedRecipes();refreshChoices();renderFoodCatalogue();renderRecipeCatalogue();autoWeek();
+ rebuildGeneratedRecipes();refreshChoices();renderFoodCatalogue();renderRecipeCatalogue();update();
 }
-function removeCustomFood(key){FOOD_PREF.custom=FOOD_PREF.custom.filter(x=>x.key!==key);FOOD_PREF.excluded=FOOD_PREF.excluded.filter(x=>x!==key);persistFoods();rebuildGeneratedRecipes();refreshChoices();renderFoodCatalogue();renderRecipeCatalogue();autoWeek()}
+function removeCustomFood(key){FOOD_PREF.custom=FOOD_PREF.custom.filter(x=>x.key!==key);FOOD_PREF.excluded=FOOD_PREF.excluded.filter(x=>x!==key);persistFoods();rebuildGeneratedRecipes();refreshChoices();renderFoodCatalogue();renderRecipeCatalogue();update()}
 const MEAL_EXTRAS_KEY='mealExtrasV1';
 let MEAL_EXTRAS=JSON.parse(localStorage.getItem(MEAL_EXTRAS_KEY)||'{}');
 function extraFor(day,slot){return MEAL_EXTRAS[day+':'+slot]||[]}
@@ -473,8 +474,8 @@ function ingredientDisplay(x){
  let m=META[x.key]||FOOD_PREF.custom.find(f=>f.key===x.key); if(!m)return x.qty+' g';
  const liquids=new Set(['lait','lait_coco','creme','huile']);
  if(liquids.has(x.key)){return x.qty>=1000?(x.qty/1000).toFixed(2).replace('.',',')+' L':Math.round(x.qty)+' ml';}
- const pieces={oeuf:[1,'œuf'],kiwi:[100,'kiwi'],banane:[120,'banane'],avocat:[200,'avocat'],poire:[150,'poire'],wrap:[60,'wrap']};
- if(pieces[x.key]){let n=Math.round((x.qty/pieces[x.key][0])*2)/2;return n+' '+pieces[x.key][1]+(n>1?'s':'')}
+ const pieces={oeuf:[50,'œuf'],kiwi:[100,'kiwi'],banane:[120,'banane'],avocat:[200,'avocat'],poire:[150,'poire'],wrap:[60,'wrap']};
+ if(pieces[x.key]){let n=Math.round((x.qty/pieces[x.key][0])*2)/2;return n+' '+pieces[x.key][1]+(n>1?'s':'')+' ('+Math.round(x.qty)+' g)'}
  return x.qty+' g';
 }
 function prepInfo(r){
