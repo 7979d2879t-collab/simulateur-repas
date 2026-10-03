@@ -186,7 +186,7 @@ function curatedRecipe(r){
  return CURATED_RECIPE_IDS.has(r.id);
 }
 function activeFoodKey(key){return !excludedFood(key)&&(Object.prototype.hasOwnProperty.call(META,key)||FOOD_PREF.custom.some(f=>f.key===key))}
-function allowedRecipe(r){const dessertOk=r.cat!=='DESSERTS & COLLATIONS'||(r.id>=48&&r.id<=65)||(r.id>=20048&&r.id<=20065);const breakfastOk=r.cat!=='PETITS-DÉJEUNERS'||(r.id>=66&&r.id<=92&&CURATED_RECIPE_IDS.has(r.id));return dessertOk&&breakfastOk&&curatedRecipe(r)&&proteinMatches(r)&&!RECIPE_OFF.has(r.id)&&r.ings.every(x=>activeFoodKey(x.key))}
+function allowedRecipe(r){const dessertOk=r.cat!=='DESSERTS & COLLATIONS'||(r.id>=48&&r.id<=65)||(r.id>=20048&&r.id<=20065);const breakfastOk=r.cat!=='PETITS-DÉJEUNERS'||(r.id>=66&&r.id<=92&&CURATED_RECIPE_IDS.has(r.id));return dessertOk&&breakfastOk&&curatedRecipe(r)&&!RECIPE_OFF.has(r.id)&&r.ings.every(x=>activeFoodKey(x.key))}
 function persistFoods(){localStorage.setItem(FOOD_PREF_KEY,JSON.stringify(FOOD_PREF))}
 function toggleFood(key,kind,on){
  let arr=FOOD_PREF[kind];FOOD_PREF[kind]=on?[...new Set([...arr,key])]:arr.filter(x=>x!==key);
@@ -360,7 +360,7 @@ function deleteCatalogueRecipe(id){
  if(!recipe||!confirm('Supprimer « '+recipe.name+' » des recettes proposées ?'))return;
  RECIPE_OFF.add(id);localStorage.setItem(RECIPE_OFF_KEY,JSON.stringify([...RECIPE_OFF]));
  document.querySelectorAll('select[data-slot]').forEach(sel=>{if(sel.value===String(id))sel.value=''});
- refreshChoices();renderRecipeCatalogue();renderWeeklySlotControls();autoWeek();
+ refreshChoices();renderRecipeCatalogue();renderWeeklySlotControls();update();
 }
 const RAW_FOOD_REFERENCE=[
  {name:'Merguez bœuf et mouton, crue',aliases:'merguez saucisse',kcal:316,protein:17.0,carbs:2.0,fat:26.5,fiber:0,priceKg:17.9},
