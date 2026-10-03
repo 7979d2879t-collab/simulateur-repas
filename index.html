@@ -67,7 +67,7 @@ button{border:0;background:var(--teal);color:#fff;padding:9px 12px;border-radius
 <div class="grid2">
 <div class="panel"><div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap"><h2 style="margin-bottom:0">3. 🛒 Ma liste de courses</h2><div class="kpi" style="min-width:190px;text-align:center"><span>Montant des courses</span><b id="weekCost">-</b></div></div><p class="note">Quantités théoriques nécessaires. Pour viande/poisson, achète le conditionnement commercial le plus proche; quelques grammes d'écart ne posent pas problème.</p>
 <div class="note" style="margin:12px 0"><b>Inclure dans les courses :</b><br><label><input type="checkbox" id="shopLunch" checked onchange="updateShopping()"> Déjeuners (batch cooking)</label><br><label><input type="checkbox" id="shopDesserts" checked onchange="updateShopping()"> Desserts du midi et du soir</label><br><label><input type="checkbox" id="shopBreakfast" checked onchange="updateShopping()"> Petits-déjeuners</label><br><label><input type="checkbox" id="shopDinner" checked onchange="updateShopping()"> Dîners</label></div><p id="shopScope" class="note"></p><table><thead><tr><th>Produit</th><th>À acheter</th><th>Coût estimé</th><th>Stock</th></tr></thead><tbody id="shopping"></tbody></table>
-<br><button onclick="printShopping()">🖨️ Imprimer la liste de courses</button><button onclick="emailShopping()">✉️ Envoyer par mail</button></div>
+<br><button onclick="printShopping()">🖨️ Imprimer la liste de courses</button><button onclick="emailShopping()">✉️ Envoyer par mail</button><button onclick="printRecipeSummary()">📄 PDF recettes & batch cooking</button></div>
 <div class="panel"><h2>Bilan de la semaine</h2><div id="weekSummary"></div><br>
 <div id="targetBars" style="margin:12px 0"></div><p class="note" style="text-align:center">Chaque colonne verticale montre la cible en vert, ton résultat en bleu et la partie qui dépasse en rouge.</p><button onclick="resetWeek()">Réinitialiser</button>
 <p class="note">Prix indicatifs basés sur des références E.Leclerc, hors promotions. Fruits en conserve : au jus/sans sucres ajoutés et poids égoutté. Framboises : surgelées par défaut.</p></div>
@@ -1695,6 +1695,40 @@ function emailShopping(){
  const subject='Liste de courses – Simulateur repas';
  const body='LISTE DE COURSES\n'+(scope?'\n'+scope+'\n':'')+lines.join('\n')+(total?'\n\nMontant estimé : '+total:'');
  window.location.href='mailto:?subject='+encodeURIComponent(subject)+'&body='+encodeURIComponent(body);
+}
+function printRecipeSummary(){
+ const selected=[];
+ document.querySelectorAll('select[data-slot]').forEach(s=>{
+  if(!s.value)return;
+  const r=RECIPES.find(x=>x.id===+s.value);if(!r)return;
+  selected.push({r,day:+s.dataset.day,slot:s.dataset.slot,scale:portionScale(+s.dataset.day,s.dataset.slot)});
+ });
+ if(!selected.length){alert('Aucune recette sélectionnée dans la semaine.');return}
+ const byId=new Map();
+ selected.forEach(x=>{if(!byId.has(x.r.id))byId.set(x.r.id,[]);byId.get(x.r.id).push(x)});
+ const esc=s=>String(s??'').replace(/[&<>"]/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[ch]));
+ let html='<h1>Recettes & batch cooking de la semaine</h1><p class="muted">Résumé imprimable — choisis « Enregistrer au format PDF » dans la fenêtre d’impression.</p>';
+ html+='<h2>Planning</h2><table><thead><tr><th>Jour</th><th>Repas</th><th>Recette</th></tr></thead><tbody>';
+ selected.sort((a,b)=>a.day-b.day).forEach(x=>{html+='<tr><td>'+esc(DAYS[x.day])+'</td><td>'+esc(SLOT_LABELS[x.slot]||x.slot)+'</td><td>'+esc(x.r.name)+'</td></tr>'});
+ html+='</tbody></table><h2>Fiches de préparation</h2>';
+ byId.forEach((occ,id)=>{
+  const r=occ[0].r,info=prepInfo(r),serv=dessertDishServings(r);
+  const batchCount=occ.length;
+  let ings;
+  if(r.cat==='DESSERTS'&&serv>1)ings=dessertDishIngredients(r,serv);
+  else if(batchCount>1)ings=r.ings.map(x=>({key:x.key,qty:Math.round(x.qty*batchCount*100)/100}));
+  else ings=r.ings.map(x=>({key:x.key,qty:Math.round(x.qty*(occ[0]?.scale||1)*100)/100}));
+  html+='<section><h3>'+esc(r.name)+'</h3>';
+  if(r.cat==='DESSERTS'&&serv>1)html+='<p><b>Recette complète : '+serv+' parts.</b> '+esc(dessertBakeware(r))+'</p>';
+  else if(batchCount>1)html+='<p><b>Batch cooking : '+batchCount+' portions.</b> À répartir pour : '+occ.map(x=>esc(DAYS[x.day]+' — '+(SLOT_LABELS[x.slot]||x.slot))).join(', ')+'.</p>';
+  else html+='<p>Prévu : '+occ.map(x=>esc(DAYS[x.day]+' — '+(SLOT_LABELS[x.slot]||x.slot))).join(', ')+'.</p>';
+  html+='<p><b>'+r.macros.kcal+' kcal · '+Math.round(r.macros.protein)+' g protéines · '+Math.round(r.macros.carbs)+' g glucides · '+Math.round(r.macros.fat)+' g lipides par part</b></p>';
+  html+='<h4>Ingrédients à préparer</h4><ul>'+ings.map(x=>'<li>'+esc((META[x.key]||FOOD_PREF.custom.find(f=>f.key===x.key))?.name||x.key)+' : <b>'+esc(ingredientDisplay(x))+'</b></li>').join('')+'</ul>';
+  html+='<h4>Préparation</h4><p>'+esc(info.appliance)+' · '+esc(info.time)+'</p><ol>'+info.steps.map(s=>'<li>'+esc(s)+'</li>').join('')+'</ol></section>';
+ });
+ const w=window.open('','_blank','width=900,height=1000');if(!w)return;
+ w.document.write('<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>Recettes et batch cooking</title><style>@page{size:A4;margin:14mm}body{font-family:Arial,sans-serif;color:#26333c;font-size:12px;line-height:1.35}h1{color:#17324d;font-size:22px}h2{font-size:18px;border-bottom:2px solid #17324d;padding-bottom:4px}h3{font-size:15px;margin-bottom:5px}h4{margin:8px 0 3px}table{width:100%;border-collapse:collapse;margin-bottom:18px}th,td{padding:6px;border-bottom:1px solid #d9e1e4;text-align:left}th{background:#edf5f3}section{break-inside:avoid;border:1px solid #d9e1e4;border-radius:7px;padding:10px;margin:0 0 10px}.muted{color:#65747e}ul,ol{margin-top:4px;padding-left:22px}@media print{button{display:none}}</style></head><body>'+html+'<script>window.onload=()=>setTimeout(()=>window.print(),250)<\\/script></body></html>');
+ w.document.close();
 }
 function printShopping(){
  const rows=document.getElementById('shopping').innerHTML;
