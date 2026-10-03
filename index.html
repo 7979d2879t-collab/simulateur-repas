@@ -132,7 +132,7 @@ function mealGroup(r){
 }
 
 const FOOD_PREF_KEY='mealFoodPrefsV1',RECIPE_OFF_KEY='mealRecipeExcludedV1';
-const FOOD_PREF=JSON.parse(localStorage.getItem(FOOD_PREF_KEY)||'{"excluded":[],"favorites":[],"custom":[],"categoryOverrides":{}}');
+const FOOD_PREF=JSON.parse(localStorage.getItem(FOOD_PREF_KEY)||'{"excluded":[],"custom":[],"categoryOverrides":{}}');
 FOOD_PREF.categoryOverrides=FOOD_PREF.categoryOverrides||{};
 const RECIPE_OFF=new Set(JSON.parse(localStorage.getItem(RECIPE_OFF_KEY)||'[]'));
 const FOOD_GROUPS={
@@ -424,9 +424,6 @@ function refreshChoices(){
  document.querySelectorAll('select[data-cat]').forEach(s=>{let v=s.value,q=s.closest('.mealpick')?.querySelector('.slotsearch')?.value||'';s.innerHTML=opts(s.dataset.cat,v,q,false);s.value=v});
 }
 
-function updateFavButtons(){
- document.querySelectorAll('.favbtn').forEach(b=>{let s=b.parentElement.querySelector('select'),on=s&&s.value!==''&&FAVORITES.has(+s.value);b.textContent=on?'★ Favori':'☆ Favori';b.classList.toggle('favon',on)});
-}
 function ingredientDisplay(x){
  let m=META[x.key]||FOOD_PREF.custom.find(f=>f.key===x.key); if(!m)return x.qty+' g';
  const liquids=new Set(['lait','lait_coco','creme','huile']);
