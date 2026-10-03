@@ -488,6 +488,7 @@ function prepInfo(r){
  const amount=k=>{const x=r.ings.find(i=>i.key===k);return x?ingredientDisplay(x):''};
  const use=k=>label(k)+' ('+amount(k)+')';
  let appliance='🟢 Cookeo / 🔵 Air Fryer',time='20–30 min',steps=[],tips='';
+ if(r.cat==='PETITS-DÉJEUNERS'&&breakfastOvernight(r)){tips='OVERNIGHT — préparer la veille et laisser reposer une nuit au réfrigérateur.';}
  const addRest=used=>{
    const left=r.ings.filter(x=>!used.has(x.key));
    if(left.length)steps.push('Ajouter '+left.map(x=>use(x.key)).join(', ')+'.');
@@ -608,14 +609,21 @@ function pickerCurrent(slot){
  const ids=[...new Set(row.map(s=>s.value).filter(Boolean))];
  return [ids[0]||'',ids[1]||''];
 }
+function breakfastOvernight(r){
+ if(!r||r.cat!=='PETITS-DÉJEUNERS')return false;
+ const n=r.name.toLowerCase(),keys=new Set(r.ings.map(x=>x.key));
+ // Soaked oats and chia puddings need a long hydration/rest. Cooked rice/tapioca can be prepared ahead but do not require overnight rest.
+ return /overnight/.test(n)||(/chia pudding/.test(n))||(keys.has('avoine')&&keys.has('chia')&&(/bowl|overnight/.test(n)));
+}
+function breakfastOvernightTag(r){return breakfastOvernight(r)?' · OVERNIGHT':''}
 function renderWeeklyRecipePicker(){
  const root=document.getElementById('weeklyRecipePicker');if(!root)return;
  root.innerHTML=PICKER_GROUPS.map(group=>{
   const current=pickerCurrent(group.slot),recipes=pickerRecipes(group);
   return '<div class="weeklyRecipeGroup"><h3>'+group.title+'</h3>'+group.names.map((label,i)=>{
    const chosen=RECIPES.find(r=>String(r.id)===String(current[i]));
-   const meta=chosen?(Math.round(chosen.macros.kcal)+' kcal · '+Math.round(chosen.macros.protein)+' g prot. · '+prepInfo(chosen).appliance):'Aucune recette choisie';
-   return '<div class="recipeChoiceCard"><div class="choiceHead"><div><div class="choiceName">'+(chosen?escapeFoodHtml(chosen.name):label)+'</div><div class="choiceMeta">'+meta+'</div></div>'+(chosen?'<button class="mini" type="button" onclick="showRecipeById('+chosen.id+')">Fiche</button>':'')+'</div>'+'<label for="picker_'+group.slot+'_'+i+'">'+label+' — changer</label><select id="picker_'+group.slot+'_'+i+'" onchange="chooseWeeklyRecipe(\''+group.slot+'\','+i+',this.value)"><option value="">Choisir une recette…</option>'+recipes.map(r=>'<option value="'+r.id+'" '+(current[i]===String(r.id)?'selected':'')+'>'+escapeFoodHtml(r.name)+' · '+Math.round(r.macros.kcal)+' kcal · '+Math.round(r.macros.protein)+'g P</option>').join('')+'</select></div>';
+   const meta=chosen?(Math.round(chosen.macros.kcal)+' kcal · '+Math.round(chosen.macros.protein)+' g prot. · '+prepInfo(chosen).appliance+(group.slot==='breakfast'?breakfastOvernightTag(chosen):'')):'Aucune recette choisie';
+   return '<div class="recipeChoiceCard"><div class="choiceHead"><div><div class="choiceName">'+(chosen?escapeFoodHtml(chosen.name):label)+'</div><div class="choiceMeta">'+meta+'</div></div>'+(chosen?'<button class="mini" type="button" onclick="showRecipeById('+chosen.id+')">Fiche</button>':'')+'</div>'+'<label for="picker_'+group.slot+'_'+i+'">'+label+' — changer</label><select id="picker_'+group.slot+'_'+i+'" onchange="chooseWeeklyRecipe(\''+group.slot+'\','+i+',this.value)"><option value="">Choisir une recette…</option>'+recipes.map(r=>'<option value="'+r.id+'" '+(current[i]===String(r.id)?'selected':'')+'>'+escapeFoodHtml(r.name)+(group.slot==='breakfast'?breakfastOvernightTag(r):'')+' · '+Math.round(r.macros.kcal)+' kcal · '+Math.round(r.macros.protein)+'g P</option>').join('')+'</select></div>';
   }).join('')+'<p class="note">'+group.help+'</p></div>';
  }).join('');
 }
