@@ -1637,7 +1637,7 @@ function shoppingCategory(k){
  return '🧺 Épicerie & autres';
 }
 function shoppingQty(k,q){
- const pieceMap={oeuf:[1,'œuf'],kiwi:[100,'kiwi'],banane:[120,'banane'],avocat:[200,'avocat'],poire:[150,'poire'],wrap:[60,'wrap']};
+ const pieceMap={oeuf:[50,'œuf'],kiwi:[100,'kiwi'],banane:[120,'banane'],avocat:[200,'avocat'],poire:[150,'poire'],wrap:[60,'wrap']};
  const liquidKeys=new Set(['lait','lait_coco','creme','huile']);
  if(pieceMap[k]){const n=Math.ceil(q/pieceMap[k][0]),pack=k==='oeuf'?6:1,buy=Math.ceil(n/pack)*pack;return {need:n+' '+pieceMap[k][1]+(n>1?'s':''),buy:buy+' '+pieceMap[k][1]+(buy>1?'s':'')};}
  if(liquidKeys.has(k)){const ml=Math.ceil(q/50)*50;return {need:q>=1000?(q/1000).toFixed(2).replace('.',',')+' L':Math.round(q)+' ml',buy:ml>=1000?(ml/1000).toFixed(2).replace('.',',')+' L':ml+' ml'};}
@@ -1649,7 +1649,7 @@ function toggleShoppingHave(k){
  have.has(k)?have.delete(k):have.add(k);localStorage.setItem('mealShoppingHaveV1',JSON.stringify([...have]));updateShopping();
 }
 function packageCost(m,q){
- if(m.unit==='œuf'){const need=Math.ceil(q),buy=Math.ceil(need/6)*6;return buy*(m.costPer||0);}
+ if(m.unit==='œuf'){const need=Math.ceil(q/50),buy=Math.ceil(need/6)*6;return buy*(m.costPer||0);}
  const liquidKeys=new Set(['lait','lait_coco','creme','huile']),step=liquidKeys.has(m.key)?50:(q>=1000?500:50),buy=Math.ceil(q/step)*step;
  return buy/100*(m.costPer100||m.cost||0);
 }
