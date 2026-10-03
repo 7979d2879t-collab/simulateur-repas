@@ -352,12 +352,42 @@ function deleteCatalogueRecipe(id){
  document.querySelectorAll('select[data-slot]').forEach(sel=>{if(sel.value===String(id))sel.value=''});
  refreshChoices();renderRecipeCatalogue();renderWeeklySlotControls();autoWeek();
 }
+const RAW_FOOD_REFERENCE=[
+ {name:'Merguez bœuf et mouton, crue',aliases:'merguez saucisse',kcal:316,protein:17.0,carbs:2.0,fat:26.5,fiber:0},
+ {name:'Échine de porc, crue',aliases:'echine porc épaule',kcal:238,protein:17.1,carbs:0.1,fat:18.8,fiber:0},
+ {name:'Filet mignon de porc, cru',aliases:'filet mignon porc',kcal:131,protein:22.0,carbs:0,fat:4.8,fiber:0},
+ {name:'Veau, escalope crue',aliases:'veau escalope noix',kcal:112,protein:21.5,carbs:0,fat:2.9,fiber:0},
+ {name:'Veau à mijoter, cru',aliases:'veau blanquette épaule collier',kcal:145,protein:20.0,carbs:0,fat:7.2,fiber:0},
+ {name:'Bœuf haché 15 % MG, cru',aliases:'boeuf bœuf steak haché',kcal:215,protein:19.0,carbs:0,fat:15.0,fiber:0},
+ {name:'Bœuf à mijoter, cru',aliases:'boeuf bœuf bourguignon paleron',kcal:170,protein:21.0,carbs:0,fat:9.5,fiber:0},
+ {name:'Agneau, viande crue',aliases:'agneau gigot épaule',kcal:205,protein:18.5,carbs:0,fat:14.5,fiber:0},
+ {name:'Canard, viande crue',aliases:'canard magret',kcal:190,protein:20.0,carbs:0,fat:12.0,fiber:0},
+ {name:'Poulet, blanc cru',aliases:'poulet filet escalope',kcal:110,protein:23.0,carbs:0,fat:1.5,fiber:0},
+ {name:'Dinde, escalope crue',aliases:'dinde filet escalope',kcal:107,protein:24.0,carbs:0,fat:1.2,fiber:0}
+];
+function normFoodSearch(s){return String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase()}
 function categoryAddFoodBox(group){
- const safe=escapeFoodHtml(group);
+ const safe=escapeFoodHtml(group),raw=group==='Viandes et œufs'
+  ?'<div style="margin-top:10px;padding-top:10px;border-top:1px solid #dce6e9"><b>Aliment brut / boucher</b><div style="display:flex;gap:7px;flex-wrap:wrap;margin-top:8px"><input type="search" class="rawFoodSearch" data-category="'+safe+'" placeholder="Ex. merguez, échine de porc, veau…" style="flex:2;min-width:190px" onkeydown="if(event.key===\'Enter\'){event.preventDefault();searchRawFoodsForCategory(this)}"><button type="button" class="mini" onclick="searchRawFoodsForCategory(this.previousElementSibling)">Rechercher</button></div><div class="rawFoodResults" aria-live="polite"></div></div>':'';
  return '<div class="categoryAddFood" style="margin:10px 0 4px;padding:10px;background:#f7fafb;border:1px solid #dce6e9;border-radius:9px">'+
- '<b>🔎 Rechercher et ajouter un aliment</b>'+
- '<div style="display:flex;gap:7px;flex-wrap:wrap;margin-top:8px"><input type="search" class="categoryFoodSearch" data-category="'+safe+'" placeholder="Rechercher sur Internet…" style="flex:2;min-width:190px" onkeydown="if(event.key===\'Enter\'){event.preventDefault();searchOnlineFoodsForCategory(this)}"><button type="button" class="mini" onclick="searchOnlineFoodsForCategory(this.previousElementSibling)">🔎 Rechercher</button></div>'+
- '<div class="categoryOnlineResults" aria-live="polite"></div></div>';
+ '<b>Rechercher un produit emballé</b>'+
+ '<div style="display:flex;gap:7px;flex-wrap:wrap;margin-top:8px"><input type="search" class="categoryFoodSearch" data-category="'+safe+'" placeholder="Rechercher sur Open Food Facts…" style="flex:2;min-width:190px" onkeydown="if(event.key===\'Enter\'){event.preventDefault();searchOnlineFoodsForCategory(this)}"><button type="button" class="mini" onclick="searchOnlineFoodsForCategory(this.previousElementSibling)">Rechercher</button></div>'+
+ '<div class="categoryOnlineResults" aria-live="polite"></div>'+raw+'</div>';
+}
+function searchRawFoodsForCategory(input){
+ const box=input.closest('.categoryAddFood'),root=box.querySelector('.rawFoodResults'),q=normFoodSearch(input.value),category=input.dataset.category;
+ if(q.length<2){root.textContent='Saisis au moins 2 caractères.';return}
+ const terms=q.split(/\s+/).filter(Boolean);
+ const found=RAW_FOOD_REFERENCE.filter(f=>terms.every(t=>normFoodSearch(f.name+' '+f.aliases).includes(t))).slice(0,8);
+ if(!found.length){root.innerHTML='<span class="note">Aliment non trouvé dans la sélection brute intégrée. Utilise la recherche produit ou ajoute une référence Ciqual lors d’une prochaine mise à jour.</span>';return}
+ root.innerHTML=found.map((f,i)=>'<div class="entry"><b>'+escapeFoodHtml(f.name)+'</b><span class="note">'+f.kcal+' kcal · '+f.protein.toFixed(1)+' g prot. · '+f.fat.toFixed(1)+' g lip. /100 g</span><label class="note">Prix/kg <input type="number" min="0" step="0.1" placeholder="facultatif" data-price="'+i+'" style="width:95px"></label><button type="button" class="mini" data-raw-index="'+i+'">Ajouter</button></div>').join('');
+ [...root.querySelectorAll('button[data-raw-index]')].forEach(btn=>btn.onclick=()=>addRawFoodToCategory(found[+btn.dataset.rawIndex],category,root,root.querySelector('input[data-price="'+btn.dataset.rawIndex+'"]')));
+}
+function addRawFoodToCategory(f,category,root,priceInput){
+ if(FOOD_PREF.custom.some(x=>x.name.toLowerCase()===f.name.toLowerCase())||Object.values(META).some(x=>x.name.toLowerCase()===f.name.toLowerCase())){root.textContent='Cet aliment est déjà présent.';return}
+ const priceKg=Math.max(0,Number(priceInput?.value)||0);
+ FOOD_PREF.custom.push({key:'custom_raw_'+Date.now(),name:f.name,category,nutrition:{kcal:f.kcal,protein:f.protein,carbs:f.carbs,fat:f.fat,fiber:f.fiber},cost:priceKg/10,priceKg,source:'Ciqual / référence aliment brut'});
+ persistFoods();rebuildGeneratedRecipes();refreshChoices();renderFoodCatalogue();renderRecipeCatalogue();update();
 }
 async function searchOnlineFoodsForCategory(input){
  const box=input.closest('.categoryAddFood'),root=box.querySelector('.categoryOnlineResults'),q=input.value.trim(),category=input.dataset.category;
