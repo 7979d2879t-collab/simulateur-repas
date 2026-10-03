@@ -411,7 +411,12 @@ function toggleRecipeCatalogue(id,kind,on){
 function renderRecipeCatalogue(){
  const root=document.getElementById('recipeCatalogue');if(!root)return;
  const q=(document.getElementById('catalogSearch')?.value||'').trim().toLowerCase();
- root.innerHTML=[...new Set(RECIPES.map(r=>r.cat))].map(cat=>{
+ const mealCategoryOrder=['PETITS-DÉJEUNERS','DÉJEUNERS & BATCH COOKING','DESSERTS & COLLATIONS','DÎNERS RAPIDES'];
+ const categories=[...new Set(RECIPES.map(r=>r.cat))].sort((a,b)=>{
+  const ia=mealCategoryOrder.indexOf(a),ib=mealCategoryOrder.indexOf(b);
+  return (ia<0?999:ia)-(ib<0?999:ib);
+ });
+ root.innerHTML=categories.map(cat=>{
  const arr=RECIPES.filter(r=>r.cat===cat&&allowedRecipe(r)&&(cat!=='PETITS-DÉJEUNERS'||suitableBreakfast(r))&&(!q||(r.name+' '+r.ings.map(x=>META[x.key]?.name||x.key).join(' ')).toLowerCase().includes(q)));
  if(!arr.length)return '';
  const groups={};arr.forEach(r=>{const g=mealGroup(r);(groups[g]||(groups[g]=[])).push(r)});
