@@ -67,7 +67,7 @@ button{border:0;background:var(--teal);color:#fff;padding:9px 12px;border-radius
 <div class="grid2">
 <div class="panel"><div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap"><h2 style="margin-bottom:0">3. 🛒 Ma liste de courses</h2><div class="kpi" style="min-width:190px;text-align:center"><span>Montant des courses</span><b id="weekCost">-</b></div></div><p class="note">Quantités théoriques nécessaires. Pour viande/poisson, achète le conditionnement commercial le plus proche; quelques grammes d'écart ne posent pas problème.</p>
 <div class="note" style="margin:12px 0"><b>Inclure dans les courses :</b><br><label><input type="checkbox" id="shopLunch" checked onchange="updateShopping()"> Déjeuners (batch cooking)</label><br><label><input type="checkbox" id="shopDesserts" checked onchange="updateShopping()"> Desserts du midi et du soir</label><br><label><input type="checkbox" id="shopBreakfast" checked onchange="updateShopping()"> Petits-déjeuners</label><br><label><input type="checkbox" id="shopDinner" checked onchange="updateShopping()"> Dîners</label></div><p id="shopScope" class="note"></p><table><thead><tr><th>Produit</th><th>À acheter</th><th>Coût estimé</th><th>Stock</th></tr></thead><tbody id="shopping"></tbody></table>
-<br><button onclick="printShopping()">🖨️ Imprimer la liste de courses</button></div>
+<br><button onclick="printShopping()">🖨️ Imprimer la liste de courses</button><button onclick="emailShopping()">✉️ Envoyer par mail</button></div>
 <div class="panel"><h2>Bilan de la semaine</h2><div id="weekSummary"></div><br>
 <div id="targetBars" style="margin:12px 0"></div><p class="note" style="text-align:center">Chaque colonne verticale montre la cible en vert, ton résultat en bleu et la partie qui dépasse en rouge.</p><button onclick="resetWeek()">Réinitialiser</button>
 <p class="note">Prix indicatifs basés sur des références E.Leclerc, hors promotions. Fruits en conserve : au jus/sans sucres ajoutés et poids égoutté. Framboises : surgelées par défaut.</p></div>
@@ -1566,6 +1566,23 @@ function updateShopping(){
   tbody.innerHTML+='<tr class="'+(owned?'shopHave':'')+'"><td>'+m.name+'</td><td>'+qty.buy+'<span class="shopQtyHint">besoin : '+qty.need+'</span></td><td>≈ '+(owned?'0,00':cost.toFixed(2).replace('.',','))+' €</td><td><button class="haveBtn '+(owned?'isHave':'')+'" type="button" onclick="toggleShoppingHave(\''+k+'\')">'+(owned?'✓ J’en ai':'J’en ai')+'</button></td></tr>';
  });
  document.getElementById('weekCost').textContent='≈ '+shoppingTotal.toFixed(2)+' €';
+}
+function emailShopping(){
+ const rows=[...document.querySelectorAll('#shopping tr')];
+ let lines=[],section='';
+ rows.forEach(tr=>{
+  if(tr.classList.contains('shopSection')){section=tr.textContent.trim();if(section)lines.push('\n'+section.toUpperCase());return}
+  if(tr.classList.contains('shopHave'))return;
+  const cells=tr.querySelectorAll('td');if(cells.length<2)return;
+  const product=cells[0].textContent.trim(),qty=(cells[1].querySelector('.shopQtyHint')?cells[1].childNodes[0]?.textContent:cells[1].textContent)?.trim()||'';
+  if(product)lines.push('• '+product+' — '+qty);
+ });
+ if(!lines.length){alert('La liste de courses est vide.');return}
+ const scope=document.getElementById('shopScope')?.textContent.trim()||'';
+ const total=document.getElementById('weekCost')?.textContent.trim()||'';
+ const subject='Liste de courses – Simulateur repas';
+ const body='LISTE DE COURSES\n'+(scope?'\n'+scope+'\n':'')+lines.join('\n')+(total?'\n\nMontant estimé : '+total:'');
+ window.location.href='mailto:?subject='+encodeURIComponent(subject)+'&body='+encodeURIComponent(body);
 }
 function printShopping(){
  const rows=document.getElementById('shopping').innerHTML;
