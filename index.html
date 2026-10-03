@@ -579,8 +579,8 @@ function batchLogistics(entries,batch){
 function renderPrepSheets(){
  const root=document.getElementById('prepSheets');if(!root)return;
  initPrepStartControls();
- const start=prepStart(),share=prepRemainingShare(start.day),info=document.getElementById('prepTargetInfo');
- if(info)info.innerHTML='<b>'+DAYS[start.day]+' à partir de '+SLOT_LABELS[start.slot]+' :</b> objectif restant de cette journée ≈ '+Math.round(share*100)+' % des macros journalières. Aucun rattrapage des repas précédents.';
+ const start=prepStart(),share=start.day>=0?prepRemainingShare(start.day):0,info=document.getElementById('prepTargetInfo');
+ if(info)info.innerHTML=start.day>=0&&start.slot?'<b>'+DAYS[start.day]+' à partir de '+SLOT_LABELS[start.slot]+' :</b> objectif restant de cette journée ≈ '+Math.round(share*100)+' % des macros journalières. Aucun rattrapage des repas précédents.':'Choisis le jour et le premier repas à préparer.';
  const names=['Samedi après-midi','Mercredi soir'];
  root.innerHTML=names.map((name,batch)=>{
   const groups=new Map();
@@ -998,10 +998,11 @@ const SLOT_LABELS={breakfast:'Petit-déjeuner',lunch:'Déjeuner',snack1:'Dessert
 const SLOT_TARGET_SHARE={breakfast:.20,lunch:.28,snack1:.10,dinner:.32,snack2:.10};
 function prepStart(){
  try{const x=JSON.parse(localStorage.getItem(PREP_START_KEY)||'null');if(x&&x.day>=0&&x.day<7&&SLOT_ORDER.includes(x.slot))return x}catch(e){}
- return {day:0,slot:'breakfast'};
+ return {day:-1,slot:''};
 }
 function mealAtOrAfterStart(day,slot){
- const s=prepStart(),a=day*10+SLOT_ORDER.indexOf(slot),b=s.day*10+SLOT_ORDER.indexOf(s.slot);
+ const s=prepStart();if(s.day<0||!s.slot)return false;
+ const a=day*10+SLOT_ORDER.indexOf(slot),b=s.day*10+SLOT_ORDER.indexOf(s.slot);
  return a>=b;
 }
 function prepRemainingShare(day){
@@ -1009,12 +1010,14 @@ function prepRemainingShare(day){
 }
 function initPrepStartControls(){
  const d=document.getElementById('prepStartDay'),s=document.getElementById('prepStartSlot');if(!d||!s)return;
- const cur=prepStart();d.innerHTML=DAYS.map((x,i)=>'<option value="'+i+'" '+(i===cur.day?'selected':'')+'>'+x+'</option>').join('');
- s.innerHTML=SLOT_ORDER.map(x=>'<option value="'+x+'" '+(x===cur.slot?'selected':'')+'>'+SLOT_LABELS[x]+'</option>').join('');
+ const cur=prepStart();d.innerHTML='<option value="">— Jour —</option>'+DAYS.map((x,i)=>'<option value="'+i+'" '+(i===cur.day?'selected':'')+'>'+x+'</option>').join('');
+ s.innerHTML='<option value="">— Repas —</option>'+SLOT_ORDER.map(x=>'<option value="'+x+'" '+(x===cur.slot?'selected':'')+'>'+SLOT_LABELS[x]+'</option>').join('');
 }
 function prepStartChanged(){
- const d=+document.getElementById('prepStartDay').value,slot=document.getElementById('prepStartSlot').value;
- localStorage.setItem(PREP_START_KEY,JSON.stringify({day:d,slot}));adaptPortions();update();
+ const dv=document.getElementById('prepStartDay').value,slot=document.getElementById('prepStartSlot').value;
+ const day=dv===''?-1:+dv;
+ if(day<0||!slot)localStorage.removeItem(PREP_START_KEY);else localStorage.setItem(PREP_START_KEY,JSON.stringify({day,slot}));
+ adaptPortions();update();
 }
 function setPrepStartNow(){
  const jsDay=new Date().getDay(),day=(jsDay+6)%7,h=new Date().getHours();
@@ -1496,7 +1499,7 @@ function load(){
   if(old){const slots=['breakfast','lunch','snack1','dinner','snack2'];for(let d=0;d<7;d++)slots.forEach((slot,i)=>{const s=document.querySelector('select[data-day="'+d+'"][data-slot="'+slot+'"]');if(!s)return;const id=old[d*5+i]||'';const recipe=RECIPES.find(r=>String(r.id)===String(id));if(recipe){s.innerHTML=opts(s.dataset.cat,id);s.value=id}});save()}
  }catch(e){console.error('Restauration semaine',e)}
 }
-function resetWeek(){localStorage.removeItem('mealV1');localStorage.removeItem('mealV2');localStorage.removeItem('mealV3');localStorage.removeItem(WEEK_STATE_KEY);localStorage.removeItem('mealWeekStateBackupV4');localStorage.removeItem('mealAutoValuesV1');localStorage.removeItem(PORTION_SCALE_KEY);PORTION_SCALES={};localStorage.removeItem(MEAL_LOCK_KEY);localStorage.removeItem(APPROVED_WEEK_KEY);localStorage.removeItem(SLOT_LOCK_KEY);document.querySelectorAll('.mealLock').forEach(c=>c.checked=false);document.querySelectorAll('select[data-slot]').forEach(x=>x.value='');update();renderWeeklySlotControls();}
+function resetWeek(){localStorage.removeItem('mealV1');localStorage.removeItem('mealV2');localStorage.removeItem('mealV3');localStorage.removeItem(WEEK_STATE_KEY);localStorage.removeItem('mealWeekStateBackupV4');localStorage.removeItem('mealAutoValuesV1');localStorage.removeItem(PORTION_SCALE_KEY);PORTION_SCALES={};localStorage.removeItem(MEAL_LOCK_KEY);localStorage.removeItem(APPROVED_WEEK_KEY);localStorage.removeItem(SLOT_LOCK_KEY);localStorage.removeItem(PREP_START_KEY);document.querySelectorAll('.mealLock').forEach(c=>c.checked=false);document.querySelectorAll('select[data-slot]').forEach(x=>x.value='');initPrepStartControls();update();renderWeeklySlotControls();}
 rebuildGeneratedRecipes();renderFoodCatalogue();renderRecipeCatalogue();
 try{build()}catch(e){console.error('Initialisation planning',e)}
 renderFoodCatalogue();renderRecipeCatalogue();
