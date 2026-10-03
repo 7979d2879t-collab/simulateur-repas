@@ -1427,19 +1427,27 @@ function printShopping(){
  w.document.close();
 }
 const WEEK_STATE_KEY='mealWeekStateV4';
-function save(){
- const state={};
+function save(force=false){
+ const state={};let selectedCount=0;
  document.querySelectorAll('select[data-slot]').forEach(s=>{
   const r=RECIPES.find(x=>String(x.id)===s.value);
+  if(s.value)selectedCount++;
   state[s.dataset.day+':'+s.dataset.slot]={id:s.value,name:r?.name||''};
  });
+ // Never let a transient empty render during startup/update erase a previously saved week.
+ const previous=localStorage.getItem(WEEK_STATE_KEY);
+ if(!force&&selectedCount===0&&previous){
+  try{if(Object.values(JSON.parse(previous)||{}).some(v=>v&&v.id))return}catch(e){}
+ }
  const raw=JSON.stringify(state);
+ if(previous&&previous!==raw)localStorage.setItem('mealWeekStateBackupV4',previous);
  localStorage.setItem(WEEK_STATE_KEY,raw);
  localStorage.setItem('mealV3',JSON.stringify(Object.fromEntries(Object.entries(state).map(([k,v])=>[k,v.id]))));
 }
 function load(){
  try{
-  const state=JSON.parse(localStorage.getItem(WEEK_STATE_KEY)||'null');
+  let state=JSON.parse(localStorage.getItem(WEEK_STATE_KEY)||'null');
+  if(!state||!Object.values(state).some(v=>v&&v.id)){try{const backup=JSON.parse(localStorage.getItem('mealWeekStateBackupV4')||'null');if(backup&&Object.values(backup).some(v=>v&&v.id))state=backup}catch(e){}}
   if(state){
    document.querySelectorAll('select[data-slot]').forEach(s=>{
     const saved=state[s.dataset.day+':'+s.dataset.slot];if(!saved)return;
@@ -1454,6 +1462,9 @@ function load(){
   if(old){const slots=['breakfast','lunch','snack1','dinner','snack2'];for(let d=0;d<7;d++)slots.forEach((slot,i)=>{const s=document.querySelector('select[data-day="'+d+'"][data-slot="'+slot+'"]');if(!s)return;const id=old[d*5+i]||'';const recipe=RECIPES.find(r=>String(r.id)===String(id));if(recipe){s.innerHTML=opts(s.dataset.cat,id);s.value=id}});save()}
  }catch(e){console.error('Restauration semaine',e)}
 }
-function resetWeek(){localStorage.removeItem('mealV1');localStorage.removeItem('mealV2');localStorage.removeItem('mealV3');localStorage.removeItem(WEEK_STATE_KEY);localStorage.removeItem('mealAutoValuesV1');localStorage.removeItem(PORTION_SCALE_KEY);PORTION_SCALES={};localStorage.removeItem(MEAL_LOCK_KEY);localStorage.removeItem(APPROVED_WEEK_KEY);localStorage.removeItem(SLOT_LOCK_KEY);document.querySelectorAll('.mealLock').forEach(c=>c.checked=false);document.querySelectorAll('select[data-slot]').forEach(x=>x.value='');update();renderWeeklySlotControls();}
-rebuildGeneratedRecipes();build();renderFoodCatalogue();renderRecipeCatalogue();window.addEventListener('resize',alignWeeklySlotControls);
+function resetWeek(){localStorage.removeItem('mealV1');localStorage.removeItem('mealV2');localStorage.removeItem('mealV3');localStorage.removeItem(WEEK_STATE_KEY);localStorage.removeItem('mealWeekStateBackupV4');localStorage.removeItem('mealAutoValuesV1');localStorage.removeItem(PORTION_SCALE_KEY);PORTION_SCALES={};localStorage.removeItem(MEAL_LOCK_KEY);localStorage.removeItem(APPROVED_WEEK_KEY);localStorage.removeItem(SLOT_LOCK_KEY);document.querySelectorAll('.mealLock').forEach(c=>c.checked=false);document.querySelectorAll('select[data-slot]').forEach(x=>x.value='');update();renderWeeklySlotControls();}
+rebuildGeneratedRecipes();build();renderFoodCatalogue();renderRecipeCatalogue();
+document.addEventListener('change',e=>{if(e.target?.matches?.('select[data-slot]'))setTimeout(()=>save(),0)},true);
+window.addEventListener('beforeunload',()=>save());
+window.addEventListener('resize',alignWeeklySlotControls);
 </script></body></html>
