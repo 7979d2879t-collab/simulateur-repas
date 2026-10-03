@@ -478,57 +478,49 @@ function ingredientDisplay(x){
  return x.qty+' g';
 }
 function prepInfo(r){
- const n=r.name.toLowerCase(),k=new Set(r.ings.map(x=>x.key));
- const has=(...x)=>x.some(v=>k.has(v));
- let appliance='🟢 Cookeo / 🔵 Air Fryer',time='20–25 min',steps=[],tips='';
- if(r.cat==='DESSERTS & COLLATIONS'){
-   if(n.includes('flan')||n.includes('clafoutis')||n.includes('gâteau')){
-     appliance='🔵 Air Fryer';time='25–35 min';
-     steps=['Mélanger œuf, lait et ingrédients secs jusqu’à texture lisse.','Incorporer la whey lorsque le mélange est tiède/froid, puis ajouter les fruits ou garnitures.','Verser dans un moule adapté.','Air Fryer : 160–170 °C environ 15–22 min. Vérifier le centre avant de sortir.','Laisser tiédir puis réserver au frais si la recette se mange froide.'];
-   }else if(n.includes('riz au lait')||n.includes('tapioca')||n.includes('crème')){
-     appliance='🟢 Cookeo — mode Dorer doux';time='15–25 min';
-     steps=['Chauffer doucement le lait sans forte ébullition.','Ajouter riz, tapioca ou épaississant et cuire en remuant jusqu’à texture crémeuse.','Retirer du feu 2–3 min avant d’ajouter la whey pour éviter les grumeaux.','Ajouter coco, cacao ou fruit selon la recette puis laisser refroidir.'];
-   }else{
-     appliance='❄️ Frigo / sans cuisson';time='5–10 min';
-     steps=['Peser les ingrédients.','Mélanger le laitage et la whey jusqu’à texture homogène.','Ajouter avoine/chia/cacao selon la recette.','Terminer par fruits et oléagineux.','Consommer immédiatement ou réserver au frais.'];
-   }
- }else if(r.cat==='PETITS-DÉJEUNERS'){
-   if(has('oeuf','jambon','thon','feta','saumon_fume')){
-     appliance='🍳 Poêle — exceptionnel';time='10–15 min';
-     steps=['Préparer séparément la partie salée et la partie sucrée si c’est un duo.','Cuire les œufs à feu moyen sans les dessécher; réchauffer/toaster pain ou wrap si prévu.','Ajouter fromage, jambon, thon ou saumon hors feu selon la recette.','Pour la partie sucrée, mélanger le laitage avec la whey puis ajouter fruit/avoine/graines.','Servir les deux éléments séparément.'];
-   }else{
-     appliance=n.includes('overnight')||n.includes('chia')?'❄️ Frigo / sans cuisson':'❄️ Sans cuisson';time=n.includes('overnight')?'5 min + nuit au frais':'5–10 min';
-     steps=['Mélanger le laitage, la whey et les ingrédients secs.','Ajouter lait ou lait de coco progressivement pour régler la texture.','Ajouter les fruits et oléagineux.','Pour overnight/chia : couvrir et laisser au réfrigérateur au moins 4 h, idéalement une nuit.'];
-   }
- }else if(n.includes('pané')){
-   appliance='🔵 Air Fryer';time='20–25 min';
-   steps=['Préparer le poisson et l’éponger.','Passer dans l’œuf battu puis la chapelure; assaisonner.','Air Fryer préchauffé : 190 °C, 10–14 min selon l’épaisseur, retourner à mi-cuisson.','Cuire patate douce/pommes de terre et légumes en parallèle; Air Fryer possible à 190 °C 18–25 min en petits morceaux.','Servir dès que le poisson est juste cuit.'];
- }else if(n.includes('blanquette')||n.includes('pulled')||n.includes('mijoter')||has('boeuf_mijoter','veau','agneau')){
-   appliance='🟢 Cookeo';time='30–40 min';
-   steps=['Couper viande et légumes.','Cookeo mode Dorer : saisir la viande 3–5 min avec l’oignon si présent.','Ajouter carottes/poireaux et environ 120–150 ml d’eau ou bouillon par portion batch de base, sans noyer la préparation.','Cuisson sous pression : porc/veau 18–22 min; bœuf/agneau 25–30 min.','Après cuisson, incorporer crème/fromage frais et moutarde si prévue. Ne pas mettre la crème sous pression.','Cuire le féculent au Cookeo avant/après le plat, ou utiliser l’Air Fryer pour les pommes de terre/patates douces, puis portionner.'];
- }else if(n.includes('curry-coco')||has('lait_coco')){
-   appliance='🟢 Cookeo';time='20–30 min';
-   steps=['Cookeo : cuire d’abord le riz si la recette en contient, puis réserver.','Mode Dorer : saisir la protéine 3–5 min avec l’oignon si présent.','Ajouter les légumes, le curry puis le lait de coco.','Cuisson sous pression : 3–5 min pour crevettes/poisson ou 8–10 min pour porc/poulet selon les morceaux.','Répartir avec le riz cuit et laisser refroidir rapidement les portions batch.'];
- }else if(n.includes('wrap')){
-   appliance='🔵 Air Fryer';time='10–15 min';
-   steps=['Cuire la protéine au Cookeo mode Dorer ou à l’Air Fryer selon la recette.','Garnir le wrap avec sauce/fromage frais, protéine et légumes.','Rouler serré.','Air Fryer 180 °C pendant 4–6 min pour une version chaude.'];
- }else if(n.includes('gnocchi')){
-   appliance='🟢 Cookeo — mode Dorer';time='15–20 min';
-   steps=['Saisir la viande puis réserver si nécessaire.','Cookeo mode Dorer : faire dorer les gnocchis 5–7 min en remuant.','Ajouter champignons/légumes et poursuivre la cuisson.','Remettre la viande, ajouter crème/fromage et chauffer 2–3 min à feu doux.'];
- }else if(n.includes('udon')||n.includes('nouilles')){
-   appliance='🟢 Cookeo — mode Dorer';time='15–20 min';
-   steps=['Préparer tous les ingrédients avant de commencer.','Saisir viande/crevettes à feu vif puis réserver.','Cookeo mode Dorer : cuire les légumes 4–6 min pour les garder légèrement fermes.','Ajouter udon/nouilles préparés selon le paquet, puis remettre la protéine.','Mélanger 1–2 min avec l’assaisonnement et servir immédiatement.'];
- }else if(n.includes('saumon')||n.includes('cabillaud')||n.includes('poisson')||n.includes('crevette')){
-   appliance='🔵 Air Fryer';time='15–25 min';
-   steps=['Cuire le féculent au Cookeo si la recette en contient, puis réserver.','Assaisonner le poisson. Air Fryer : saumon 180 °C 8–12 min; poisson blanc 180 °C 9–13 min; crevettes 180 °C 6–8 min en remuant à mi-cuisson.','Préparer la sauce au Cookeo en mode Dorer doux; ajouter crème/fromage frais en fin de cuisson.','Cuire les légumes au Cookeo ou à l’Air Fryer selon leur texture souhaitée.','Assembler et portionner sans prolonger la cuisson du poisson.'];
- }else if(has('oeuf')){
-   appliance='🔵 Air Fryer / 🟢 Cookeo';time='12–20 min';
-   steps=['Cuire le féculent et les légumes au Cookeo ou à l’Air Fryer.','Battre les œufs et verser dans un petit moule compatible Air Fryer.','Air Fryer 160–170 °C jusqu’à prise, en surveillant pour garder une texture moelleuse.','Ajouter feta/fromage et légumes, puis assembler et portionner.'];
+ const n=r.name.toLowerCase(), keys=new Set(r.ings.map(x=>x.key));
+ const has=(...xs)=>xs.some(x=>keys.has(x));
+ const label=k=>(META[k]||FOOD_PREF.custom.find(f=>f.key===k))?.name||k;
+ const amount=k=>{const x=r.ings.find(i=>i.key===k);return x?ingredientDisplay(x):''};
+ const use=k=>label(k)+' ('+amount(k)+')';
+ let appliance='🟢 Cookeo / 🔵 Air Fryer',time='20–30 min',steps=[],tips='';
+ const addRest=used=>{
+   const left=r.ings.filter(x=>!used.has(x.key));
+   if(left.length)steps.push('Ajouter '+left.map(x=>use(x.key)).join(', ')+'.');
+ };
+ if(n.includes('wrap')){
+   const used=new Set(['wrap']); const wrap=use('wrap');
+   const cold=has('thon','surimi','saumon_fume','oeuf','avocat')&&!has('boeuf_hache','porc_filet','porc_echine','veau','jambon');
+   appliance=cold?'❄️ Sans cuisson / Air Fryer facultatif':'🔵 Air Fryer';time=cold?'5–10 min':'10–15 min';
+   const cooked=['boeuf_hache','porc_filet','porc_echine','veau'].filter(k=>has(k));
+   if(cooked.length){cooked.forEach(k=>used.add(k));steps.push('Cuire '+cooked.map(use).join(', ')+' jusqu’à cuisson complète. Air Fryer : 180 °C, environ 8–12 min selon l’épaisseur, en contrôlant la cuisson.');}
+   if(has('oeuf')){used.add('oeuf');steps.push('Cuire '+use('oeuf')+', laisser refroidir puis couper avant de garnir.');}
+   const sauce=['philadelphia','fromage_blanc','moutarde','pesto','curry','ail','poivre','lait_coco'].filter(k=>has(k));
+   if(sauce.length){sauce.forEach(k=>used.add(k));steps.push((sauce.length>1?'Préparer la sauce en mélangeant ':'Utiliser ')+sauce.map(use).join(', ')+(sauce.length>1?'.':'.'));}
+   const filling=r.ings.filter(x=>!used.has(x.key)&&x.key!=='wrap');
+   filling.forEach(x=>used.add(x.key));
+   if(filling.length)steps.push('Répartir sur '+wrap+' : '+filling.map(x=>use(x.key)).join(', ')+'.');
+   steps.push('Rouler le wrap bien serré.');
+   if(!cold)steps.push('Pour servir chaud, passer le wrap garni à l’Air Fryer à 180 °C pendant 4–6 min. Si la recette contient de la mâche ou une salade, la mettre après cuisson.');
+ }else if(r.cat==='DESSERTS & COLLATIONS'){
+   appliance=n.includes('flan')||n.includes('clafoutis')||n.includes('gâteau')?'🔵 Air Fryer':'❄️ Frigo / sans cuisson';time=appliance.includes('Air Fryer')?'25–35 min':'5–10 min';
+   steps.push('Peser exactement : '+r.ings.map(x=>use(x.key)).join(', ')+'.');
+   steps.push(appliance.includes('Air Fryer')?'Mélanger les ingrédients adaptés à la pâte, ajouter fruits ou garnitures, puis cuire à 160–170 °C jusqu’à prise.':'Mélanger les ingrédients dans l’ordre permettant une texture homogène, puis ajouter fruits et garnitures.');
+   if(!appliance.includes('Air Fryer'))steps.push('Réserver au frais jusqu’au service.');
  }else{
-   appliance='🟢 Cookeo';time='20–30 min';
-   steps=['Cuire d’abord le féculent au Cookeo ou les pommes de terre à l’Air Fryer.','Couper les légumes et la viande.','Cookeo mode Dorer : saisir la viande puis ajouter les légumes; utiliser un petit fond d’eau si nécessaire.','Terminer la cuisson au Cookeo sous pression si le plat le nécessite, ou à l’Air Fryer pour une texture rôtie.','Ajouter crème, fromage frais, moutarde, poivre ou fromage en fin de cuisson au Cookeo.','Assembler et portionner.'];
+   const used=new Set();
+   const starch=['riz','pates','udon','nouilles','semoule','pomme_terre','patate_douce','wrap','pain'].filter(k=>has(k));
+   if(starch.length){starch.forEach(k=>used.add(k));steps.push('Préparer le féculent : '+starch.map(use).join(', ')+', avec le Cookeo ou l’Air Fryer selon l’aliment.');}
+   const proteins=['porc_filet','porc_echine','boeuf_hache','boeuf_mijoter','veau','agneau','canard','jambon','jambon_cru','saumon','saumon_fume','thon','cabillaud','crevettes','surimi','oeuf'].filter(k=>has(k));
+   if(proteins.length){proteins.forEach(k=>used.add(k));steps.push('Préparer la protéine : '+proteins.map(use).join(', ')+'. Cuire seulement les aliments qui le nécessitent, jusqu’à cuisson complète, puis réserver.');}
+   const veg=r.ings.filter(x=>!used.has(x.key)&&['courgette','poireau','carotte','champignon','brocoli','epinard','aubergine','mache','tomate','oignon','mais'].includes(x.key));
+   veg.forEach(x=>used.add(x.key));if(veg.length)steps.push('Préparer les légumes : '+veg.map(x=>use(x.key)).join(', ')+'. Les cuire au Cookeo/Air Fryer si nécessaire; garder crus ceux prévus crus.');
+   const sauce=['creme','philadelphia','fromage_blanc','lait_coco','moutarde','pesto','curry','ail','poivre','bouillon','roquefort','feta','parmesan'].filter(k=>has(k)&&!used.has(k));
+   sauce.forEach(k=>used.add(k));if(sauce.length)steps.push('Préparer la sauce ou l’assaisonnement avec '+sauce.map(use).join(', ')+'. Mélanger et chauffer doucement uniquement si la recette le nécessite.');
+   addRest(used);
+   steps.push('Assembler tous les éléments préparés et répartir en portion.');
  }
- tips='Les temps sont des repères : l’épaisseur des aliments et la puissance de ton appareil peuvent les faire varier. Pour les repas en batch cooking, les instructions utilisent uniquement le Cookeo et/ou l’Air Fryer, sans poêle ni casserole. Refroidir rapidement les portions non consommées puis les conserver au réfrigérateur.';
+ tips='Les étapes ci-dessus sont générées uniquement à partir des ingrédients réellement présents dans cette recette. Les quantités affichées correspondent à la portion et servent aussi au calcul des macros et de la liste de courses.';
  return {appliance,time,steps,tips};
 }
 function batchForRecipe(id){
