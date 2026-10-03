@@ -87,7 +87,7 @@ const SLOTS=[
 ];
 function mealGroup(r){
  if(r.sub) return r.sub;
- const n=r.name.toLowerCase();
+ const n=(r.name+' '+r.ings.map(x=>(META[x.key]?.name||x.key)).join(' ')).toLowerCase();
  if(r.cat==='DÉJEUNERS & BATCH COOKING'||r.cat==='DÎNERS RAPIDES'){
    if(n.includes('wrap')||n.includes('pinsa')) return 'WRAPS & REPAS PRATIQUES';
    if(n.includes('saumon')||n.includes('cabillaud')||n.includes('poisson')||n.includes('thon')||n.includes('crevette')) return 'POISSONS & FRUITS DE MER';
@@ -128,7 +128,8 @@ function renderSavedFavorites(){
 }
 
 const FOOD_PREF_KEY='mealFoodPrefsV1',RECIPE_OFF_KEY='mealRecipeExcludedV1';
-const FOOD_PREF=JSON.parse(localStorage.getItem(FOOD_PREF_KEY)||'{"excluded":[],"favorites":[],"custom":[]}');
+const FOOD_PREF=JSON.parse(localStorage.getItem(FOOD_PREF_KEY)||'{"excluded":[],"favorites":[],"custom":[],"categoryOverrides":{}}');
+FOOD_PREF.categoryOverrides=FOOD_PREF.categoryOverrides||{};
 const RECIPE_OFF=new Set(JSON.parse(localStorage.getItem(RECIPE_OFF_KEY)||'[]'));
 const FOOD_GROUPS={
  'Viandes et œufs':/porc|boeuf|bœuf|veau|agneau|canard|poulet|dinde|jambon|oeuf|œuf|steak/,
@@ -141,8 +142,14 @@ const FOOD_GROUPS={
  'Sauces et assaisonnements':/curry|moutarde|poivre|ail|pesto|bouillon|stevia|cacao/
 };
 function foodCategory(key,name){
+ if(FOOD_PREF.categoryOverrides?.[key])return FOOD_PREF.categoryOverrides[key];
  const label=(key+' '+name).toLowerCase();
  return Object.entries(FOOD_GROUPS).find(([group,re])=>re.test(label))?.[0]||'Autres';
+}
+function setFoodCategory(key,category){
+ if(!category||category==='Autres')delete FOOD_PREF.categoryOverrides[key];else FOOD_PREF.categoryOverrides[key]=category;
+ const custom=FOOD_PREF.custom.find(f=>f.key===key);if(custom)custom.category=category;
+ persistFoods();renderFoodCatalogue();update();
 }
 function excludedFood(key){return FOOD_PREF.excluded.includes(key)}
 // Planning preference, not a food-safety guarantee: later portions should be frozen promptly.
@@ -374,10 +381,10 @@ function addOnlineFoodToCategory(p,category,root){
 }
 function renderFoodCatalogue(){
  const root=document.getElementById('foodCatalogue');if(!root)return;
- const foods=[...Object.entries(META).map(([key,m])=>({key,name:m.name,category:foodCategory(key,m.name)})),...FOOD_PREF.custom].filter(f=>!excludedFood(f.key));
+ const foods=[...Object.entries(META).map(([key,m])=>({key,name:m.name,category:foodCategory(key,m.name)})),...FOOD_PREF.custom.map(f=>({...f,category:FOOD_PREF.categoryOverrides?.[f.key]||f.category||foodCategory(f.key,f.name)}))].filter(f=>!excludedFood(f.key));
  root.innerHTML=Object.keys({...FOOD_GROUPS,Autres:1}).map(group=>{
  const arr=foods.filter(f=>f.category===group).sort((a,b)=>a.name.localeCompare(b.name,'fr'));
- return '<details><summary>'+group+' ('+arr.length+')</summary>'+categoryAddFoodBox(group)+'<div class="catalogue-grid">'+arr.map(f=>'<div class="entry '+(excludedFood(f.key)?'muted':'')+'"><label><input type="checkbox" '+(!excludedFood(f.key)?'checked':'')+' onchange="toggleFood(\''+f.key+'\',\'excluded\',!this.checked)"> Autorisé</label><label><input type="checkbox" '+(FOOD_PREF.favorites.includes(f.key)?'checked':'')+' onchange="toggleFood(\''+f.key+'\',\'favorites\',this.checked)"> ⭐</label><span>'+f.name+'</span>'+'<button type="button" class="mini" onclick="deleteCatalogueFood(\''+f.key+'\')">🗑 Supprimer</button>'+'</div>').join('')+'</div></details>';
+ return '<details><summary>'+group+' ('+arr.length+')</summary>'+categoryAddFoodBox(group)+'<div class="catalogue-grid">'+arr.map(f=>'<div class="entry '+(excludedFood(f.key)?'muted':'')+'"><label><input type="checkbox" '+(!excludedFood(f.key)?'checked':'')+' onchange="toggleFood(\''+f.key+'\',\'excluded\',!this.checked)"> Autorisé</label><label><input type="checkbox" '+(FOOD_PREF.favorites.includes(f.key)?'checked':'')+' onchange="toggleFood(\''+f.key+'\',\'favorites\',this.checked)"> ⭐</label><span>'+f.name+'</span>'+(group==='Autres'?'<select aria-label="Catégorie de '+escapeFoodHtml(f.name)+'" onchange="setFoodCategory(\''+f.key+'\',this.value)" style="width:auto;min-width:180px"><option value="">Classer dans…</option>'+Object.keys(FOOD_GROUPS).map(g=>'<option value="'+g+'">'+g+'</option>').join('')+'</select>':'')+'<button type="button" class="mini" onclick="deleteCatalogueFood(\''+f.key+'\')">🗑 Supprimer</button>'+'</div>').join('')+'</div></details>';
  }).join('');
 }
 function toggleRecipeCatalogue(id,kind,on){
