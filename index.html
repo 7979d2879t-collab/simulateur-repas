@@ -499,6 +499,43 @@ function prepInfo(r){
    steps.push('Répartir la préparation dans des moules à muffins légèrement huilés ou antiadhésifs.');
    steps.push('Cuire à l’Air Fryer à 160–170 °C pendant environ 10–15 min, jusqu’à ce que les muffins soient pris à cœur.');
    steps.push('Laisser tiédir quelques minutes avant de démouler. La totalité de la préparation correspond à 1 portion repas.');
+ }else if(n.includes('omelette')||n.includes('œufs brouillés')){
+   appliance='🔵 Air Fryer / 🟢 Cookeo';time='10–15 min';
+   steps.push('Battre '+use('oeuf')+'.');
+   const veg=r.ings.filter(x=>['champignon','epinard'].includes(x.key));
+   if(veg.length)steps.push('Cuire '+veg.map(x=>use(x.key)).join(', ')+' puis ajouter les œufs battus.');
+   const cheese=r.ings.filter(x=>['feta','parmesan','philadelphia'].includes(x.key));
+   if(cheese.length)steps.push('Ajouter '+cheese.map(x=>use(x.key)).join(', ')+' en fin de cuisson.');
+   if(has('pain'))steps.push('Servir avec '+use('pain')+'.');
+   const rest=r.ings.filter(x=>!['oeuf','champignon','epinard','feta','parmesan','philadelphia','pain'].includes(x.key));
+   if(rest.length)steps.push('Servir avec '+rest.map(x=>use(x.key)).join(', ')+'.');
+ }else if(n.includes('croque')){
+   appliance='🔵 Air Fryer';time='8–12 min';
+   steps.push('Garnir '+use('pain')+' avec '+[...['jambon','philadelphia'].filter(k=>has(k)).map(use)].join(', ')+'.');
+   if(has('oeuf'))steps.push('Cuire '+use('oeuf')+' et l’ajouter au croque ou le servir à côté.');
+   steps.push('Passer le croque à l’Air Fryer à 180 °C pendant 4–6 min.');
+   if(has('mache'))steps.push('Servir avec '+use('mache')+' sans la cuire.');
+ }else if(n.includes('tartine')){
+   appliance='🔵 Air Fryer / sans cuisson';time='8–12 min';
+   steps.push('Toaster légèrement '+use('pain')+'.');
+   if(has('philadelphia'))steps.push('Étaler '+use('philadelphia')+' sur le pain.');
+   if(has('thon'))steps.push('Ajouter '+use('thon')+'.');
+   if(has('oeuf'))steps.push('Cuire '+use('oeuf')+', puis l’ajouter sur la tartine.');
+   if(has('mache'))steps.push('Terminer avec '+use('mache')+' sans la cuire.');
+ }else if(n.includes('salade')||n.includes('bowl')){
+   appliance='🟢 Cookeo / sans cuisson';time='10–20 min';
+   const cooked=r.ings.filter(x=>['riz','pomme_terre','oeuf'].includes(x.key));
+   if(cooked.length)steps.push('Cuire puis laisser tiédir '+cooked.map(x=>use(x.key)).join(', ')+'.');
+   const rest=r.ings.filter(x=>!['riz','pomme_terre','oeuf'].includes(x.key));
+   steps.push('Ajouter '+rest.map(x=>use(x.key)).join(', ')+'.');
+   steps.push('Mélanger et servir. Les ingrédients prévus crus restent crus.');
+ }else if(n.includes('udon')){
+   appliance='🟢 Cookeo — mode Dorer';time='15–20 min';
+   const protein=r.ings.filter(x=>['porc_echine','crevettes'].includes(x.key));
+   if(protein.length)steps.push('Cuire '+protein.map(x=>use(x.key)).join(', ')+' puis réserver.');
+   const veg=r.ings.filter(x=>['courgette','champignon','oignon'].includes(x.key));
+   if(veg.length)steps.push('Faire revenir '+veg.map(x=>use(x.key)).join(', ')+' 4–6 min.');
+   steps.push('Ajouter '+use('udon')+' et remettre la protéine. Mélanger 2–3 min et servir.');
  }else if(n.includes('wrap')){
    const used=new Set(['wrap']); const wrap=use('wrap');
    const cold=has('thon','surimi','saumon_fume','oeuf','avocat')&&!has('boeuf_hache','porc_filet','porc_echine','veau','jambon');
