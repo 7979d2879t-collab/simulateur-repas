@@ -597,9 +597,14 @@ function pickerRecipes(group){
  return RECIPES.filter(r=>allowedRecipe(r)&&r.cat===group.cat&&(group.slot!=='breakfast'||suitableBreakfast(r))).sort((a,b)=>a.name.localeCompare(b.name,'fr'));
 }
 function pickerCurrent(slot){
- const row=[...document.querySelectorAll('select[data-slot="'+(slot==='dessert'?'snack1':slot)+'"]')];
- if(slot==='lunch'||slot==='breakfast'||slot==='dessert')return [row[0]?.value||'',row[3]?.value||''];
- if(slot==='dinner')return [row[0]?.value||'',row[3]?.value||''];
+ const actualSlot=slot==='dessert'?'snack1':slot;
+ const row=[...document.querySelectorAll('select[data-slot="'+actualSlot+'"]')];
+ // Read each picker from the first meal that really belongs to that batch.
+ // Do not use fixed row indexes: Saturday/Saturday-midi have missing slots, so indexes do not match batch boundaries.
+ const batchFn=slot==='dinner'?dinnerBatchForDay:lunchBatchForDay;
+ if(['lunch','breakfast','dessert','dinner'].includes(slot)){
+  return [0,1].map(batch=>row.find(sel=>batchFn(+sel.dataset.day)===batch)?.value||'');
+ }
  const ids=[...new Set(row.map(s=>s.value).filter(Boolean))];
  return [ids[0]||'',ids[1]||''];
 }
