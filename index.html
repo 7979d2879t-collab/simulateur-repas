@@ -179,7 +179,7 @@ const CURATED_RECIPE_IDS=new Set([
  // Desserts.
  48,50,51,52,53,54,56,58,60,61,62,63,64,65,
  // Petits-déjeuners.
- 66,67,68,69,70,71,72,73,74,75,76,77,78,79,80,82,83
+ 66,67,68,69,70,71,72,73,74,75,76,77,78,79,82,83
 ]);
 function curatedRecipe(r){
  if(r.generated)return r.id>=20048&&r.id<=20065&&CURATED_RECIPE_IDS.has(r.id-20000);
