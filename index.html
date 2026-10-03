@@ -1729,6 +1729,7 @@ function printRecipeSummary(){
  const w=window.open('','_blank','width=900,height=1000');if(!w)return;
  w.document.write('<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>Recettes et batch cooking</title><style>@page{size:A4;margin:14mm}body{font-family:Arial,sans-serif;color:#26333c;font-size:12px;line-height:1.35}h1{color:#17324d;font-size:22px}h2{font-size:18px;border-bottom:2px solid #17324d;padding-bottom:4px}h3{font-size:15px;margin-bottom:5px}h4{margin:8px 0 3px}table{width:100%;border-collapse:collapse;margin-bottom:18px}th,td{padding:6px;border-bottom:1px solid #d9e1e4;text-align:left}th{background:#edf5f3}section{break-inside:avoid;border:1px solid #d9e1e4;border-radius:7px;padding:10px;margin:0 0 10px}.muted{color:#65747e}ul,ol{margin-top:4px;padding-left:22px}@media print{button{display:none}}</style></head><body>'+html+'<script>window.onload=()=>setTimeout(()=>window.print(),250)<\\/script></body></html>');
  w.document.close();
+ setTimeout(()=>{try{w.focus();w.print()}catch(e){console.error(e)}},500);
 }
 function printShopping(){
  const rows=document.getElementById('shopping').innerHTML;
