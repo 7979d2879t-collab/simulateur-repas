@@ -1707,7 +1707,7 @@ function printRecipeSummary(){
  const byId=new Map();
  selected.forEach(x=>{if(!byId.has(x.r.id))byId.set(x.r.id,[]);byId.get(x.r.id).push(x)});
  const esc=s=>String(s??'').replace(/[&<>"]/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[ch]));
- let html='<h1>Recettes & batch cooking de la semaine</h1><p class="muted">Résumé imprimable — choisis « Enregistrer au format PDF » dans la fenêtre d’impression.</p>';
+ let html='<div class="actions"><button onclick="window.print()">Enregistrer / imprimer en PDF</button></div><h1>Recettes & batch cooking de la semaine</h1><p class="muted">Clique sur le bouton ci-dessus puis choisis « Enregistrer au format PDF » comme destination.</p>';
  html+='<h2>Planning</h2><table><thead><tr><th>Jour</th><th>Repas</th><th>Recette</th></tr></thead><tbody>';
  selected.sort((a,b)=>a.day-b.day).forEach(x=>{html+='<tr><td>'+esc(DAYS[x.day])+'</td><td>'+esc(SLOT_LABELS[x.slot]||x.slot)+'</td><td>'+esc(x.r.name)+'</td></tr>'});
  html+='</tbody></table><h2>Fiches de préparation</h2>';
@@ -1727,7 +1727,7 @@ function printRecipeSummary(){
   html+='<h4>Préparation</h4><p>'+esc(info.appliance)+' · '+esc(info.time)+'</p><ol>'+info.steps.map(s=>'<li>'+esc(s)+'</li>').join('')+'</ol></section>';
  });
  const w=window.open('','_blank','width=900,height=1000');if(!w)return;
- w.document.write('<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>Recettes et batch cooking</title><style>@page{size:A4;margin:14mm}body{font-family:Arial,sans-serif;color:#26333c;font-size:12px;line-height:1.35}h1{color:#17324d;font-size:22px}h2{font-size:18px;border-bottom:2px solid #17324d;padding-bottom:4px}h3{font-size:15px;margin-bottom:5px}h4{margin:8px 0 3px}table{width:100%;border-collapse:collapse;margin-bottom:18px}th,td{padding:6px;border-bottom:1px solid #d9e1e4;text-align:left}th{background:#edf5f3}section{break-inside:avoid;border:1px solid #d9e1e4;border-radius:7px;padding:10px;margin:0 0 10px}.muted{color:#65747e}ul,ol{margin-top:4px;padding-left:22px}@media print{button{display:none}}</style></head><body>'+html+'<script>window.onload=()=>setTimeout(()=>window.print(),250)<\\/script></body></html>');
+ w.document.write('<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>Recettes et batch cooking</title><style>@page{size:A4;margin:14mm}body{font-family:Arial,sans-serif;color:#26333c;font-size:12px;line-height:1.35}h1{color:#17324d;font-size:22px}h2{font-size:18px;border-bottom:2px solid #17324d;padding-bottom:4px}h3{font-size:15px;margin-bottom:5px}h4{margin:8px 0 3px}table{width:100%;border-collapse:collapse;margin-bottom:18px}th,td{padding:6px;border-bottom:1px solid #d9e1e4;text-align:left}th{background:#edf5f3}section{break-inside:avoid;border:1px solid #d9e1e4;border-radius:7px;padding:10px;margin:0 0 10px}.muted{color:#65747e}.actions{position:sticky;top:0;background:#fff;padding:12px 0;border-bottom:1px solid #d9e1e4;z-index:10}.actions button{font-size:16px;font-weight:700;padding:12px 18px;border:0;border-radius:8px;background:#17324d;color:#fff;cursor:pointer}ul,ol{margin-top:4px;padding-left:22px}@media print{.actions{display:none}}</style></head><body>'+html+'<script>window.onload=()=>setTimeout(()=>window.print(),250)<\\/script></body></html>');
  w.document.close();
  setTimeout(()=>{try{w.focus();w.print()}catch(e){console.error(e)}},500);
 }
