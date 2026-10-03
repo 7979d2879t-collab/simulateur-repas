@@ -62,8 +62,8 @@ button{border:0;background:var(--teal);color:#fff;padding:9px 12px;border-radius
 <div class="kpi"><span>Lipides moy.</span><b id="avgF">-</b></div>
 <div class="kpi"><span>Budget des repas cochés</span><b id="weekCost">-</b></div>
 </div>
-<details class="advancedBox"><summary>🎯 Analyse nutritionnelle détaillée</summary><div class="advancedInner"><p class="note">Analyse du lundi au mercredi et du jeudi au dimanche, sans modifier automatiquement tes choix.</p><div id="halfWeekAdvice"></div></div></details>
-<div class="panel" style="margin-bottom:12px"><h2>1. 🍽️ Ma semaine</h2><p class="note">Choisis directement tes deux petits-déjeuners, tes deux batch cookings du midi, deux du soir et tes deux desserts. Le tableau, les macros, le graphique et la liste de courses se mettent à jour automatiquement. Les 8 recettes couvrent automatiquement les 7 jours : trois portions issues du batch du dimanche et quatre du batch du mercredi. Les desserts alternent entre midi et soir.</p><p class="note"><b>Recettes proposées selon tes objectifs :</b> petit-déjeuner 35–42 g · déjeuner 35–45 g · dîner 35–45 g · dessert 13–17 g de protéines par portion. Les autres recettes ne sont pas proposées.</p><div id="weeklyRecipePicker" class="weeklyRecipePicker"></div><div class="panel" style="margin-top:14px"><h2>2. 🍳 Mon batch cooking</h2><p class="note">Commence par le bloc du jour : il te dit quoi préparer et dans quel ordre. Les quantités et fiches détaillées restent accessibles juste dessous.</p><div id="prepSheets"></div><button type="button" onclick="window.print()">🖨️ Imprimer les fiches</button></div><select id="breakfastMode" style="display:none"><option value="mix" selected>Libre</option></select><p class="note" id="weeklyPickerStatus" aria-live="polite"></p></div><p class="note" id="slotChangeStatus" aria-live="polite"></p><div class="weekLayout"><div class="week" id="week"></div></div>
+<details class="advancedBox"><summary>🎯 Analyse nutritionnelle détaillée</summary><div class="advancedInner"><p class="note">Analyse selon tes deux sessions de batch cooking : samedi après-midi et mercredi soir, sans modifier automatiquement tes choix.</p><div id="halfWeekAdvice"></div></div></details>
+<div class="panel" style="margin-bottom:12px"><h2>1. 🍽️ Ma semaine</h2><p class="note">Choisis directement tes deux petits-déjeuners, tes deux batch cookings du midi, deux du soir et tes deux desserts. Le tableau, les macros, le graphique et la liste de courses se mettent à jour automatiquement. Les 8 recettes couvrent automatiquement la semaine selon deux sessions : samedi après-midi pour la première partie, puis mercredi soir pour la seconde. Les desserts suivent la même organisation.</p><p class="note"><b>Recettes proposées selon tes objectifs :</b> petit-déjeuner 35–42 g · déjeuner 35–45 g · dîner 35–45 g · dessert 13–17 g de protéines par portion. Les autres recettes ne sont pas proposées.</p><div id="weeklyRecipePicker" class="weeklyRecipePicker"></div><div class="panel" style="margin-top:14px"><h2>2. 🍳 Mon batch cooking</h2><p class="note">Commence par le bloc du jour : il te dit quoi préparer et dans quel ordre. Les quantités et fiches détaillées restent accessibles juste dessous.</p><div id="prepSheets"></div><button type="button" onclick="window.print()">🖨️ Imprimer les fiches</button></div><select id="breakfastMode" style="display:none"><option value="mix" selected>Libre</option></select><p class="note" id="weeklyPickerStatus" aria-live="polite"></p></div><p class="note" id="slotChangeStatus" aria-live="polite"></p><div class="weekLayout"><div class="week" id="week"></div></div>
 <div class="grid2">
 <div class="panel"><h2>3. 🛒 Ma liste de courses</h2><p class="note">Quantités théoriques nécessaires. Pour viande/poisson, achète le conditionnement commercial le plus proche; quelques grammes d'écart ne posent pas problème.</p>
 <div class="note" style="margin:12px 0"><b>Inclure dans les courses :</b><br><label><input type="checkbox" id="shopLunch" checked onchange="updateShopping()"> Déjeuners (batch cooking)</label><br><label><input type="checkbox" id="shopDesserts" checked onchange="updateShopping()"> Desserts du midi et du soir</label><br><label><input type="checkbox" id="shopBreakfast" checked onchange="updateShopping()"> Petits-déjeuners</label><br><label><input type="checkbox" id="shopDinner" checked onchange="updateShopping()"> Dîners</label></div><p id="shopScope" class="note"></p><table><thead><tr><th>Produit</th><th>À acheter</th><th>Coût estimé</th><th>Stock</th></tr></thead><tbody id="shopping"></tbody></table>
@@ -469,10 +469,10 @@ function showRecipe(sel){
 function closeRecipe(){document.getElementById('recipeModal').classList.remove('open')}
 
 const PICKER_GROUPS=[
- {slot:'breakfast',cat:'PETITS-DÉJEUNERS',title:'🥣 Batch cooking petits-déjeuners',names:['Petit-déjeuner 1','Petit-déjeuner 2'],help:'Batch 1 : lundi à mercredi matin · Batch 2 : jeudi à dimanche matin (prévoir/congeler la portion de dimanche).'},
- {slot:'lunch',cat:'DÉJEUNERS & BATCH COOKING',title:'🍲 Batch cooking du midi — Cookeo / Air Fryer',names:['Midi 1','Midi 2'],help:'Recette 1 : lundi à mercredi midi · Recette 2 : jeudi à dimanche midi (4 portions).'},
- {slot:'dinner',cat:'DÎNERS RAPIDES',title:'🍽️ Batch cooking du soir — Cookeo / Air Fryer',names:['Soir 1','Soir 2'],help:'Recette 1 : dimanche à mardi soir · Recette 2 : mercredi à samedi soir (4 portions).'},
- {slot:'dessert',cat:'DESSERTS & COLLATIONS',title:'🍮 Batch cooking desserts',names:['Dessert 1','Dessert 2'],help:'Deux desserts alternés sur tous les déjeuners et dîners de la semaine ; aucun repas du week-end n’est laissé vide.'}
+ {slot:'breakfast',cat:'PETITS-DÉJEUNERS',title:'🥣 Batch cooking petits-déjeuners',names:['Petit-déjeuner 1','Petit-déjeuner 2'],help:'Batch 1 : samedi après-midi → mercredi midi · Batch 2 : mercredi soir → samedi midi.'},
+ {slot:'lunch',cat:'DÉJEUNERS & BATCH COOKING',title:'🍲 Batch cooking du midi — Cookeo / Air Fryer',names:['Midi 1','Midi 2'],help:'Recette 1 : samedi après-midi → mercredi midi · Recette 2 : mercredi soir → samedi midi.'},
+ {slot:'dinner',cat:'DÎNERS RAPIDES',title:'🍽️ Batch cooking du soir — Cookeo / Air Fryer',names:['Soir 1','Soir 2'],help:'Recette 1 : samedi soir → mardi soir · Recette 2 : mercredi soir → vendredi soir.'},
+ {slot:'dessert',cat:'DESSERTS & COLLATIONS',title:'🍮 Batch cooking desserts',names:['Dessert 1','Dessert 2'],help:'Deux desserts répartis entre la session du samedi après-midi et celle du mercredi soir ; aucun repas du week-end n’est laissé vide.'}
 ];
 function pickerRecipes(group){
  return RECIPES.filter(r=>allowedRecipe(r)&&r.cat===group.cat&&(group.slot!=='breakfast'||suitableBreakfast(r))).sort((a,b)=>a.name.localeCompare(b.name,'fr'));
@@ -512,7 +512,8 @@ function setFreeMeal(day,slot,id){
 }
 function prepBatchForMeal(day,slot){
  if(day<0||day>6)return -1;
- return day<3?0:1;
+ if(slot==='dinner'||slot==='snack2')return dinnerBatchForDay(day);
+ return lunchBatchForDay(day);
 }
 function prepMinutes(r){const m=(prepInfo(r).time||'20').match(/(\d+)(?:–|-)(\d+)|(\d+)/);return m?+(m[2]||m[3]||m[1]):20}
 function batchTimeline(entries){
@@ -546,7 +547,7 @@ function batchLogistics(entries,batch){
 
 function renderPrepSheets(){
  const root=document.getElementById('prepSheets');if(!root)return;
- const names=['Dimanche soir','Mercredi soir'];
+ const names=['Samedi après-midi','Mercredi soir'];
  root.innerHTML=names.map((name,batch)=>{
   const groups=new Map();
   document.querySelectorAll('select[data-slot]').forEach(sel=>{
@@ -563,7 +564,7 @@ function renderPrepSheets(){
   const order=['breakfast','lunch','dinner','dessert'];
   groups.forEach(e=>{if(e.kind==='dessert'&&dessertDishServings(e.recipe)>1){e.ingredients={};dessertDishIngredients(e.recipe,dessertDishServings(e.recipe)).forEach(ing=>e.ingredients[ing.key]=(e.ingredients[ing.key]||0)+ing.qty)}});
   const entries=[...groups.values()].sort((a,b)=>order.indexOf(a.kind)-order.indexOf(b.kind));
-  const period=batch===0?'Prépare lundi → mercredi':'Prépare jeudi → dimanche';
+  const period=batch===0?'Prépare samedi soir → mercredi midi':'Prépare mercredi soir → samedi midi';
   const recipeSummary=entries.map(e=>escapeFoodHtml(e.recipe.name)+' × '+e.count).join(' · ');
   return '<div class="batchDayCard"><h3>🗓️ '+name+'</h3><div class="batchPeriod">'+period+'</div><div class="batchRecipeList"><b>À préparer :</b> '+(recipeSummary||'Aucune préparation sélectionnée')+'</div>'+batchTimeline(entries)+batchLogistics(entries,batch)+'<details class="batchDetails"><summary><b>📋 Quantités et fiches détaillées</b></summary>'+entries.map(e=>
    '<details open><summary><b>'+escapeFoodHtml(e.recipe.name)+' — '+e.count+' portion(s)'+(e.kind==='dessert'?' · ≈ '+Math.round(e.recipe.macros.protein)+' g protéines/portion':'')+'</b></summary>'+
@@ -924,8 +925,8 @@ function changeWeeklySlot(slot){
  status.textContent=validation.ok?'✓ Deux nouvelles recettes sur cette ligne uniquement. Les autres repas sont inchangés et les macros restent dans les cibles.':'Deux nouvelles recettes sur cette ligne uniquement. Les autres repas sont inchangés, mais '+validation.bad.length+' journée(s) restent hors cible : les macros ne peuvent pas toujours être rééquilibrées sans modifier les autres lignes.';
  renderWeeklySlotControls();
 }
-function lunchBatchForDay(day){return day<3?0:1}
-function dinnerBatchForDay(day){return day<3?0:1}
+function lunchBatchForDay(day){return (day<=2||day===6)?0:1}
+function dinnerBatchForDay(day){return (day<=1||day>=5)?0:1}
 function applyLunchBatchBlocks(){
  const row=[...document.querySelectorAll('select[data-slot="lunch"]')];
  const ids=[...new Set(row.map(s=>s.value).filter(Boolean))];
