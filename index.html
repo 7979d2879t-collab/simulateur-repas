@@ -776,22 +776,36 @@ function adaptPortions(){
   const share=prepRemainingShare(day);
   const dayTargets={k:targets.k*share,p:targets.p*share,c:targets.c*share,f:targets.f*share,fi:targets.fi*share};
   const extras=sels.reduce((a,s)=>{const e=extraNutrition(day,s.dataset.slot);for(const k of Object.keys(a))a[k]+=e[k]||0;return a},{k:0,p:0,c:0,f:0,fi:0,cost:0});
-  let best={score:Infinity,scales:null};
-  // Coarse, practical 5% portion steps. Breakfast/dessert vary less; main meals absorb most adjustment.
-  const choices=sels.map(s=>['lunch','dinner'].includes(s.dataset.slot)?[.75,.8,.85,.9,.95,1,1.05,1.1,1.15,1.2,1.25,1.3,1.35,1.4]:[.85,.9,.95,1,1.05,1.1,1.15]);
-  function walk(i,scales,t){
-   if(i===sels.length){
-    const score=Math.pow((t.k-dayTargets.k)/Math.max(60,120*share),2)+Math.pow((t.p-dayTargets.p)/Math.max(6,12*share),2)+Math.pow((t.c-dayTargets.c)/Math.max(18,35*share),2)+Math.pow((t.f-dayTargets.f)/Math.max(6,12*share),2)+Math.pow((t.fi-dayTargets.fi)/Math.max(4,8*share),2);
-    if(score<best.score)best={score,scales:[...scales]};return;
+  // Fine 1% adjustment: each selected recipe gets its own portion multiplier.
+  // Main meals may absorb more variation; breakfasts/desserts stay closer to their reference portion.
+  const bounds=sels.map(s=>['lunch','dinner'].includes(s.dataset.slot)?[.70,1.45]:[.80,1.20]);
+  const scales=sels.map(s=>Math.min(bounds[sels.indexOf(s)][1],Math.max(bounds[sels.indexOf(s)][0],portionScale(day,s.dataset.slot)||1)));
+  const total=()=>sels.reduce((t,s,i)=>{
+   const recipe=RECIPES.find(x=>String(x.id)===s.value);if(!recipe)return t;
+   const m=scaledRecipeMacros(recipe,scales[i]);t.k+=m.k;t.p+=m.p;t.c+=m.c;t.f+=m.f;t.fi+=m.fi;return t;
+  },{k:extras.k,p:extras.p,c:extras.c,f:extras.f,fi:extras.fi});
+  const score=t=>{
+   // Tighter weighting than before: kcal/protein are prioritised, while carbs/fat/fibre remain constrained.
+   const denom={k:35,p:4,c:10,f:3.5,fi:2.5};
+   return Object.keys(denom).reduce((sum,k)=>sum+Math.pow((t[k]-dayTargets[k])/Math.max(1,denom[k]*share),2),0);
+  };
+  let bestScore=score(total());
+  // Coordinate optimisation at 1% precision avoids an explosive exhaustive search.
+  for(let pass=0;pass<8;pass++){
+   let improved=false;
+   for(let i=0;i<sels.length;i++){
+    const current=scales[i];let localScale=current,localScore=bestScore;
+    for(let v=bounds[i][0];v<=bounds[i][1]+.0001;v+=.01){
+     scales[i]=Math.round(v*100)/100;
+     const s=score(total());
+     if(s<localScore){localScore=s;localScale=scales[i]}
+    }
+    scales[i]=localScale;
+    if(localScore+1e-8<bestScore){bestScore=localScore;improved=true}
    }
-   const r=RECIPES.find(x=>String(x.id)===sels[i].value);if(!r)return walk(i+1,[...scales,1],t);
-   for(const scale of choices[i]){
-    const m=scaledRecipeMacros(r,scale);
-    walk(i+1,[...scales,scale],{k:t.k+m.k,p:t.p+m.p,c:t.c+m.c,f:t.f+m.f,fi:t.fi+m.fi,cost:t.cost+m.cost});
-   }
+   if(!improved)break;
   }
-  walk(0,[],extras);
-  if(best.scales)sels.forEach((s,i)=>PORTION_SCALES[portionKey(day,s.dataset.slot)]=best.scales[i]);
+  sels.forEach((s,i)=>PORTION_SCALES[portionKey(day,s.dataset.slot)]=scales[i]);
  }
  localStorage.setItem(PORTION_SCALE_KEY,JSON.stringify(PORTION_SCALES));
 }
