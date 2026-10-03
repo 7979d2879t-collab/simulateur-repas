@@ -118,7 +118,6 @@ function mealGroup(r){
    return 'AUTRES PLATS';
  }
  if(r.cat==='DESSERTS'){
-  if(n.includes('riz au lait'))return {appliance:'Casserole / Cookeo',temp:'Feu doux',time:'25–30 min',cue:'Riz tendre et préparation crémeuse; whey incorporée hors du feu'};
    if(/clafoutis/.test(name))return 'CLAFOUTIS';
    if(/crumble/.test(name))return 'CRUMBLES';
    if(/flan/.test(name))return 'FLANS';
@@ -584,6 +583,7 @@ function ingredientDisplay(x){
 function cookingGuide(r){
  const n=r.name.toLowerCase(),keys=new Set(r.ings.map(x=>x.key)),has=k=>keys.has(k);
  if(r.cat==='DESSERTS'){
+  if(n.includes('riz au lait'))return {appliance:'Casserole / Cookeo',temp:'Feu doux',time:'25–30 min',cue:'Riz tendre et préparation crémeuse; whey incorporée hors du feu'};
   if(n.includes('clafoutis'))return {appliance:'Air Fryer',temp:'160 °C',time:'35–40 min + 3–5 min à 170 °C si besoin',cue:'Centre pris mais légèrement souple'};
   if(n.includes('flan'))return {appliance:'Air Fryer',temp:'170 °C',time:'25–30 min',cue:'Centre pris, légère oscillation possible; laisser refroidir avant de couper'};
   if(n.includes('gâteau')||n.includes('gateau'))return {appliance:'Air Fryer',temp:'160 °C',time:'22–30 min',cue:'Lame presque sèche au centre'};
