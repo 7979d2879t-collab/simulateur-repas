@@ -87,23 +87,45 @@ const SLOTS=[
 ];
 function mealGroup(r){
  if(r.sub) return r.sub;
+ const name=r.name.toLowerCase();
  const n=(r.name+' '+r.ings.map(x=>(META[x.key]?.name||x.key)).join(' ')).toLowerCase();
+ if(r.cat==='PETITS-DÉJEUNERS'){
+   if(/overnight/.test(name))return 'OVERNIGHT OATS';
+   if(/bowlcake|bowl cake/.test(name))return 'BOWLCAKES';
+   if(/pancake|crêpe/.test(name))return 'PANCAKES & CRÊPES';
+   if(/chia/.test(name))return 'CHIA & PUDDINGS';
+   if(/tapioca|perles du japon/.test(name))return 'PERLES DU JAPON';
+   if(/œuf|oeuf|omelette|salé|sale/.test(name))return 'SALÉS';
+   if(/pain|tartine/.test(name))return 'PAIN & TARTINES';
+   if(/fromage blanc|skyr|yaourt|bowl/.test(name))return 'BOWLS & LAITIERS';
+   return 'AUTRES PETITS-DÉJEUNERS';
+ }
  if(r.cat==='DÉJEUNERS & BATCH COOKING'||r.cat==='DÎNERS RAPIDES'){
-   if(n.includes('wrap')||n.includes('pinsa')) return 'WRAPS & REPAS PRATIQUES';
-   if(n.includes('saumon')||n.includes('cabillaud')||n.includes('poisson')||n.includes('thon')||n.includes('crevette')) return 'POISSONS & FRUITS DE MER';
-   if(n.includes('œuf')||n.includes('omelette')) return 'ŒUFS';
-   if(n.includes('bœuf')||n.includes('steak')) return 'BŒUF';
-   if(n.includes('veau')) return 'VEAU';
-   if(n.includes('agneau')) return 'AGNEAU';
-   if(n.includes('canard')) return 'CANARD';
-   if(n.includes('porc')||n.includes('filet mignon')) return 'PORC';
-   return 'AUTRES';
+   if(/bowl/.test(name))return 'BOWLS';
+   if(/wrap|pinsa|sandwich|burger/.test(name))return 'WRAPS & REPAS PRATIQUES';
+   if(/udon|nouille|wok/.test(name))return 'WOKS & NOUILLES';
+   if(/salade|crudité|crudites/.test(name))return 'SALADES & REPAS FROIDS';
+   if(/curry|crème|creme|moutarde|roquefort|sauce|blanquette|mijot|coco/.test(name))return 'PLATS EN SAUCE & MIJOTÉS';
+   if(/gratin|lasagne/.test(name))return 'GRATINS & PLATS AU FOUR';
+   if(/saumon|cabillaud|poisson|thon|crevette/.test(n))return 'POISSONS & FRUITS DE MER';
+   if(/œuf|oeuf|omelette/.test(n))return 'ŒUFS';
+   if(/bœuf|boeuf|steak/.test(n))return 'BŒUF';
+   if(/veau/.test(n))return 'VEAU';
+   if(/agneau/.test(n))return 'AGNEAU';
+   if(/canard/.test(n))return 'CANARD';
+   if(/porc|filet mignon/.test(n))return 'PORC';
+   if(/poulet|dinde/.test(n))return 'POULET & DINDE';
+   return 'AUTRES PLATS';
  }
  if(r.cat==='DESSERTS & COLLATIONS'){
-   if(n.includes('chocolat')||n.includes('cacao')||n.includes('cookie')) return 'CHOCOLAT & GOURMAND';
-   if(n.includes('coco')) return 'COCO';
-   if(n.includes('flan')||n.includes('crème')||n.includes('mousse')) return 'FLANS, CRÈMES & MOUSSES';
-   if(n.includes('framboise')||n.includes('mangue')||n.includes('fruit')) return 'FRUITS';
+   if(/clafoutis/.test(name))return 'CLAFOUTIS';
+   if(/crumble/.test(name))return 'CRUMBLES';
+   if(/flan/.test(name))return 'FLANS';
+   if(/mousse/.test(name))return 'MOUSSES';
+   if(/crème|creme/.test(name))return 'CRÈMES';
+   if(/riz au lait|tapioca|perles du japon/.test(name))return 'RIZ AU LAIT & PERLES DU JAPON';
+   if(/gâteau|gateau|cookie|chocolat|cacao/.test(name))return 'GÂTEAUX & CHOCOLAT';
+   if(/fromage blanc|skyr|yaourt|faisselle/.test(name))return 'LAITIERS & FRUITS';
    return 'AUTRES DESSERTS';
  }
  return 'AUTRES';
@@ -392,7 +414,8 @@ function renderRecipeCatalogue(){
  root.innerHTML=[...new Set(RECIPES.map(r=>r.cat))].map(cat=>{
  const arr=RECIPES.filter(r=>r.cat===cat&&allowedRecipe(r)&&(cat!=='PETITS-DÉJEUNERS'||suitableBreakfast(r))&&(!q||(r.name+' '+r.ings.map(x=>META[x.key]?.name||x.key).join(' ')).toLowerCase().includes(q)));
  if(!arr.length)return '';
- return '<details '+(q?'open':'')+'><summary>'+cat+' ('+arr.length+')</summary><div class="catalogue-grid">'+arr.map(r=>'<div class="entry"><label><input type="checkbox" '+(!RECIPE_OFF.has(r.id)?'checked':'')+' onchange="toggleRecipeCatalogue('+r.id+',\'off\',this.checked)"> Proposer</label><label><input type="checkbox" '+(FAVORITES.has(r.id)?'checked':'')+' onchange="toggleRecipeCatalogue('+r.id+',\'fav\',this.checked)"> ⭐</label><span>'+r.name+' · '+r.macros.kcal+' kcal · '+Math.round(r.macros.protein)+' g prot.</span><button class="mini" onclick="showRecipeById('+r.id+')">📖 Fiche</button><button type="button" class="mini" onclick="deleteCatalogueRecipe('+r.id+')">🗑 Supprimer</button></div>').join('')+'</div></details>';
+ const groups={};arr.forEach(r=>{const g=mealGroup(r);(groups[g]||(groups[g]=[])).push(r)});
+ return '<details '+(q?'open':'')+'><summary>'+cat+' ('+arr.length+')</summary>'+Object.entries(groups).map(([g,rs])=>'<details class="recipeSubcategory" '+(q?'open':'')+'><summary>'+g+' ('+rs.length+')</summary><div class="catalogue-grid">'+rs.map(r=>'<div class="entry"><label><input type="checkbox" '+(!RECIPE_OFF.has(r.id)?'checked':'')+' onchange="toggleRecipeCatalogue('+r.id+',\'off\',this.checked)"> Proposer</label><label><input type="checkbox" '+(FAVORITES.has(r.id)?'checked':'')+' onchange="toggleRecipeCatalogue('+r.id+',\'fav\',this.checked)"> ⭐</label><span>'+r.name+' · '+r.macros.kcal+' kcal · '+Math.round(r.macros.protein)+' g prot.</span><button class="mini" onclick="showRecipeById('+r.id+')">📖 Fiche</button><button type="button" class="mini" onclick="deleteCatalogueRecipe('+r.id+')">🗑 Supprimer</button></div>').join('')+'</div></details>').join('')+'</details>';
  }).join('');
 }
 function showRecipeById(id){
