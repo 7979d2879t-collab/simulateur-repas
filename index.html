@@ -360,13 +360,24 @@ function editRecipe(id){
  const d=document.getElementById('recipeDetail');d.style.display='block';
  document.getElementById('recipeModal').classList.add('open');
  d.innerHTML='<h3>Modifier — '+escapeFoodHtml(r.name)+'</h3><p class="note">La recette modifiée devient la nouvelle recette. Son nom, ses macros, portions, batch cooking et courses sont mis à jour.</p><label><b>Nom de la recette</b><input id="recipeEditName" type="text" value="'+escapeFoodHtml(r.name)+'" style="width:100%;margin-top:5px"></label>'+
- '<div id="recipeEditRows">'+r.ings.map((x,i)=>'<div style="display:grid;grid-template-columns:minmax(180px,1fr) 110px auto;gap:8px;align-items:end;margin:8px 0"><label>Ingrédient<select id="reiKey'+i+'">'+editableFoodOptions(x.key)+'</select></label><label>Quantité (g/ml)<input id="reiQty'+i+'" type="number" min="1" step="1" value="'+x.qty+'"></label><button type="button" class="mini" onclick="this.parentElement.remove()">Retirer</button></div>').join('')+
+ '<div id="recipeEditRows">'+r.ings.map((x,i)=>'<div style="display:grid;grid-template-columns:minmax(180px,1fr) 110px auto;gap:8px;align-items:end;margin:8px 0"><label>Ingrédient<select id="reiKey'+i+'" onchange="recipeEditIngredientChanged(this)">'+editableFoodOptions(x.key)+'</select></label><label>Quantité (g/ml)<input id="reiQty'+i+'" type="number" min="1" step="1" value="'+x.qty+'"></label><button type="button" class="mini" onclick="this.parentElement.remove()">Retirer</button></div>').join('')+
  '<button type="button" class="mini" onclick="addRecipeEditRow()">+ Ajouter un ingrédient</button> <button type="button" onclick="saveRecipeEdit('+id+')">Enregistrer et recalculer</button> <button type="button" class="mini" onclick="resetRecipeEdit('+id+')">Réinitialiser la recette</button>';
  d.scrollIntoView({behavior:'smooth',block:'center'});
 }
+function suggestedRecipeQty(key){
+ const n=foodInfo(key);if(!n)return 30;
+ if(/beurre_cacahuete|noix|amandes|pecan|chia|coco_rapee|huile/.test(key))return 15;
+ if(/whey/.test(key))return 20;
+ if(/moutarde|pesto/.test(key))return 15;
+ if(/ail|curry|poivre/.test(key))return 5;
+ if(/creme|philadelphia|feta|mozzarella|roquefort|parmesan/.test(key))return 30;
+ if(n[0]>400||n[3]>30)return 15;if(n[0]>250)return 30;if(n[0]>120)return 60;return 100;
+}
+function recipeEditIngredientChanged(sel){sel.closest('div').querySelector('input').value=suggestedRecipeQty(sel.value)}
 function addRecipeEditRow(){
  const box=document.getElementById('recipeEditRows'),i=Date.now();
- box.insertAdjacentHTML('beforeend','<div style="display:grid;grid-template-columns:minmax(180px,1fr) 110px auto;gap:8px;align-items:end;margin:8px 0"><label>Ingrédient<select id="reiKey'+i+'">'+editableFoodOptions('')+'</select></label><label>Quantité (g/ml)<input id="reiQty'+i+'" type="number" min="1" step="1" value="100"></label><button type="button" class="mini" onclick="this.parentElement.remove()">Retirer</button></div>');
+ box.insertAdjacentHTML('beforeend','<div style="display:grid;grid-template-columns:minmax(180px,1fr) 110px auto;gap:8px;align-items:end;margin:8px 0"><label>Ingrédient<select id="reiKey'+i+'" onchange="recipeEditIngredientChanged(this)">'+editableFoodOptions('')+'</select></label><label>Quantité (g/ml)<input id="reiQty'+i+'" type="number" min="1" step="1" value="15"></label><button type="button" class="mini" onclick="this.parentElement.remove()">Retirer</button></div>');
+ const row=box.lastElementChild,sel=row.querySelector('select');row.querySelector('input').value=suggestedRecipeQty(sel.value);
 }
 function saveRecipeEdit(id){
  const r=RECIPES.find(x=>x.id===id);if(!r)return;
