@@ -131,6 +131,8 @@ function mealGroup(r){
  return 'AUTRES';
 }
 
+const RECIPE_EDIT_KEY='mealRecipeEditsV1';
+let RECIPE_EDITS=JSON.parse(localStorage.getItem(RECIPE_EDIT_KEY)||'{}');
 const FOOD_PREF_KEY='mealFoodPrefsV1',RECIPE_OFF_KEY='mealRecipeExcludedV1';
 const FOOD_PREF=JSON.parse(localStorage.getItem(FOOD_PREF_KEY)||'{"excluded":[],"custom":[],"categoryOverrides":{}}');
 FOOD_PREF.categoryOverrides=FOOD_PREF.categoryOverrides||{};
@@ -341,6 +343,41 @@ function macroFromIngredients(ings){
  Object.keys(m).forEach(k=>m[k]=+(k==='kcal'?Math.round(m[k]):m[k].toFixed(1)));
  return m;
 }
+function applySavedRecipeEdits(){
+ Object.entries(RECIPE_EDITS).forEach(([id,edit])=>{
+  const r=RECIPES.find(x=>String(x.id)===String(id));if(!r||!Array.isArray(edit.ings))return;
+  r.ings=edit.ings.map(x=>({key:x.key,qty:Number(x.qty)||0})).filter(x=>x.qty>0&&activeFoodKey(x.key));
+  const m=macroFromIngredients(r.ings);if(m)r.macros=m;
+ });
+}
+function editableFoodOptions(current){
+ const foods=[...Object.entries(META).map(([key,m])=>({key,name:m.name||key})),...FOOD_PREF.custom.map(f=>({key:f.key,name:f.name||f.key}))];
+ return foods.filter(f=>activeFoodKey(f.key)).sort((a,b)=>a.name.localeCompare(b.name,'fr')).map(f=>'<option value="'+f.key+'" '+(f.key===current?'selected':'')+'>'+escapeFoodHtml(f.name)+'</option>').join('');
+}
+function editRecipe(id){
+ const r=RECIPES.find(x=>x.id===id);if(!r)return;
+ const d=document.getElementById('recipeDetail');d.style.display='block';
+ d.innerHTML='<h3>Modifier — '+escapeFoodHtml(r.name)+'</h3><p class="note">Remplace un ingrédient et/ou ajuste sa quantité. Les macros, portions, batch cooking et courses seront recalculés automatiquement.</p>'+
+ '<div id="recipeEditRows">'+r.ings.map((x,i)=>'<div style="display:grid;grid-template-columns:minmax(180px,1fr) 110px auto;gap:8px;align-items:end;margin:8px 0"><label>Ingrédient<select id="reiKey'+i+'">'+editableFoodOptions(x.key)+'</select></label><label>Quantité (g/ml)<input id="reiQty'+i+'" type="number" min="1" step="1" value="'+x.qty+'"></label><button type="button" class="mini" onclick="this.parentElement.remove()">Retirer</button></div>').join('')+
+ '<button type="button" class="mini" onclick="addRecipeEditRow()">+ Ajouter un ingrédient</button> <button type="button" onclick="saveRecipeEdit('+id+')">Enregistrer et recalculer</button> <button type="button" class="mini" onclick="resetRecipeEdit('+id+')">Réinitialiser la recette</button>';
+ d.scrollIntoView({behavior:'smooth',block:'center'});
+}
+function addRecipeEditRow(){
+ const box=document.getElementById('recipeEditRows'),i=Date.now();
+ box.insertAdjacentHTML('beforeend','<div style="display:grid;grid-template-columns:minmax(180px,1fr) 110px auto;gap:8px;align-items:end;margin:8px 0"><label>Ingrédient<select id="reiKey'+i+'">'+editableFoodOptions('')+'</select></label><label>Quantité (g/ml)<input id="reiQty'+i+'" type="number" min="1" step="1" value="100"></label><button type="button" class="mini" onclick="this.parentElement.remove()">Retirer</button></div>');
+}
+function saveRecipeEdit(id){
+ const r=RECIPES.find(x=>x.id===id);if(!r)return;
+ const rows=[...document.querySelectorAll('#recipeEditRows > div')];
+ const ings=rows.map(row=>({key:row.querySelector('select')?.value,qty:Number(row.querySelector('input')?.value)})).filter(x=>x.key&&x.qty>0);
+ if(!ings.length){alert('La recette doit contenir au moins un ingrédient.');return}
+ r.ings=ings;const m=macroFromIngredients(ings);if(!m){alert('Impossible de recalculer les macros avec un des ingrédients choisis.');return}r.macros=m;
+ RECIPE_EDITS[id]={ings};localStorage.setItem(RECIPE_EDIT_KEY,JSON.stringify(RECIPE_EDITS));
+ refreshChoices();renderRecipeCatalogue();renderWeeklyRecipePicker();adaptPortions();update();save();showRecipeById(id);
+}
+function resetRecipeEdit(id){
+ delete RECIPE_EDITS[id];localStorage.setItem(RECIPE_EDIT_KEY,JSON.stringify(RECIPE_EDITS));location.reload();
+}
 function rebuildGeneratedRecipes(){
  RECIPES.splice(BASE_RECIPE_COUNT);
  // Keep edited base recipes consistent with their ingredient macros.
@@ -449,7 +486,7 @@ function renderRecipeCatalogue(){
  const arr=RECIPES.filter(r=>r.cat===cat&&allowedRecipe(r)&&(cat!=='PETITS-DÉJEUNERS'||suitableBreakfast(r))&&(!q||(r.name+' '+r.ings.map(x=>META[x.key]?.name||x.key).join(' ')).toLowerCase().includes(q)));
  if(!arr.length)return '';
  const groups={};arr.forEach(r=>{const g=mealGroup(r);(groups[g]||(groups[g]=[])).push(r)});
- return '<details '+(q?'open':'')+'><summary>'+cat+' ('+arr.length+')</summary><div class="catalogue-grid">'+Object.entries(groups).map(([g,rs])=>'<div class="recipeSubcategoryTitle" style="grid-column:1/-1;font-weight:700;font-style:italic;margin:10px 0 2px">'+g+'</div>'+rs.map(r=>'<div class="entry"><span>'+r.name+' · '+r.macros.kcal+' kcal · '+Math.round(r.macros.protein)+' g prot.</span><button class="mini" onclick="showRecipeById('+r.id+')">📖 Fiche</button><button type="button" class="mini" onclick="deleteCatalogueRecipe('+r.id+')">🗑 Supprimer</button></div>').join('')).join('')+'</div></details>';
+ return '<details '+(q?'open':'')+'><summary>'+cat+' ('+arr.length+')</summary><div class="catalogue-grid">'+Object.entries(groups).map(([g,rs])=>'<div class="recipeSubcategoryTitle" style="grid-column:1/-1;font-weight:700;font-style:italic;margin:10px 0 2px">'+g+'</div>'+rs.map(r=>'<div class="entry"><span>'+r.name+' · '+r.macros.kcal+' kcal · '+Math.round(r.macros.protein)+' g prot.</span><button class="mini" onclick="showRecipeById('+r.id+')">📖 Fiche</button><button type="button" class="mini" onclick="editRecipe('+r.id+')">Modifier</button><button type="button" class="mini" onclick="deleteCatalogueRecipe('+r.id+')">🗑 Supprimer</button></div>').join('')).join('')+'</div></details>';
  }).join('');
 }
 function showRecipeById(id){
@@ -1640,7 +1677,7 @@ function load(){
  }catch(e){console.error('Restauration semaine',e)}
 }
 function resetWeek(){localStorage.removeItem('mealV1');localStorage.removeItem('mealV2');localStorage.removeItem('mealV3');localStorage.removeItem(WEEK_STATE_KEY);localStorage.removeItem('mealWeekStateBackupV4');localStorage.removeItem('mealAutoValuesV1');localStorage.removeItem(PORTION_SCALE_KEY);PORTION_SCALES={};localStorage.removeItem(MEAL_LOCK_KEY);localStorage.removeItem(APPROVED_WEEK_KEY);localStorage.removeItem(SLOT_LOCK_KEY);localStorage.removeItem(PREP_START_KEY);document.querySelectorAll('.mealLock').forEach(c=>c.checked=false);document.querySelectorAll('select[data-slot]').forEach(x=>x.value='');initPrepStartControls();update();renderWeeklySlotControls();}
-rebuildGeneratedRecipes();renderFoodCatalogue();renderRecipeCatalogue();
+applySavedRecipeEdits();rebuildGeneratedRecipes();renderFoodCatalogue();renderRecipeCatalogue();
 try{build()}catch(e){console.error('Initialisation planning',e)}
 renderFoodCatalogue();renderRecipeCatalogue();
 document.addEventListener('change',e=>{if(e.target?.matches?.('select[data-slot]'))setTimeout(()=>save(),0)},true);
