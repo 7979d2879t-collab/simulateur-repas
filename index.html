@@ -539,7 +539,7 @@ function renderWeekendExtras(){
 function setFreeMeal(day,slot,id){
  const sel=document.querySelector('select[data-day="'+day+'"][data-slot="'+slot+'"]');if(!sel)return;
  sel.innerHTML=opts(sel.dataset.cat,id);sel.value=id||'';
- update();save();
+ adaptPortions();update();save();
 }
 function prepBatchForMeal(day,slot){
  if(day<0||day>6)return -1;
@@ -588,7 +588,8 @@ function renderPrepSheets(){
    const key=kind+':'+recipe.id;
    const entry=groups.get(key)||{recipe,kind,count:0,ingredients:{}};
    entry.count++;
-   recipe.ings.forEach(ing=>entry.ingredients[ing.key]=(entry.ingredients[ing.key]||0)+ing.qty);
+   const sc=portionScale(+sel.dataset.day,sel.dataset.slot);
+   recipe.ings.forEach(ing=>entry.ingredients[ing.key]=(entry.ingredients[ing.key]||0)+ing.qty*sc);
    extraFor(+sel.dataset.day,sel.dataset.slot).forEach(ing=>entry.ingredients[ing.key]=(entry.ingredients[ing.key]||0)+ing.qty);
    groups.set(key,entry);
   });
@@ -632,7 +633,7 @@ function chooseWeeklyRecipe(groupSlot,index,id){
    sel.innerHTML=opts(sel.dataset.cat,chosen);sel.value=chosen||'';
   });
  }
- update();save();renderWeeklyRecipePicker();
+ adaptPortions();update();save();renderWeeklyRecipePicker();
  status.textContent='Choix appliqué : le planning, les moyennes, le graphique et les courses ont été actualisés.';
 }
 function weekDates(){const d=new Date();d.setHours(12,0,0,0);const wd=(d.getDay()+6)%7;d.setDate(d.getDate()-wd);return [...Array(7)].map((_,i)=>{const x=new Date(d);x.setDate(d.getDate()+i);return x})}
@@ -647,7 +648,7 @@ function build(){
    w.appendChild(el);
  });
  document.querySelectorAll('select[data-slot]').forEach(s=>{s.addEventListener('focus',()=>s.dataset.previousValue=s.value);s.addEventListener('change',()=>manualMealChanged(s));});loadMealLocks();renderWeeklySlotControls();
- document.getElementById('breakfastMode').value='mix';localStorage.setItem('breakfastMode','mix');load(); update();renderWeeklyRecipePicker(); updateFavButtons();syncWeekApproval();requestAnimationFrame(alignWeeklySlotControls);
+ document.getElementById('breakfastMode').value='mix';localStorage.setItem('breakfastMode','mix');load(); adaptPortions();update();renderWeeklyRecipePicker(); updateFavButtons();syncWeekApproval();requestAnimationFrame(alignWeeklySlotControls);
 }
 function selected(){
  let out=Array.from({length:7},()=>[]);
@@ -666,9 +667,39 @@ const DAY_RANGE={k:[1950,2250],p:[145,175],fi:[27,38],f:[55,80]};
 const WEEK_RANGE={k:[2050,2150],p:[150,170],fi:[30,35],f:[60,75]};
 function withinRange(t,range){return Object.keys(range).every(k=>t[k]>=range[k][0]&&t[k]<=range[k][1])}
 function weeklyTargets(t){return withinRange(t,WEEK_RANGE)};
+const PORTION_SCALE_KEY='mealPortionScalesV1';
+let PORTION_SCALES=JSON.parse(localStorage.getItem(PORTION_SCALE_KEY)||'{}');
+function portionKey(day,slot){return day+':'+slot}
+function portionScale(day,slot){const v=Number(PORTION_SCALES[portionKey(day,slot)]);return Number.isFinite(v)&&v>0?v:1}
+function scaledRecipeMacros(r,scale){return {k:r.macros.kcal*scale,p:r.macros.protein*scale,c:r.macros.carbs*scale,f:r.macros.fat*scale,fi:r.macros.fiber*scale,cost:r.macros.cost*scale}}
+function adaptPortions(){
+ const targets={k:2100,p:160,c:212,f:68,fi:32};
+ for(let day=0;day<7;day++){
+  const sels=[...document.querySelectorAll('select[data-day="'+day+'"]')].filter(s=>s.value);
+  if(!sels.length)continue;
+  const extras=sels.reduce((a,s)=>{const e=extraNutrition(day,s.dataset.slot);for(const k of Object.keys(a))a[k]+=e[k]||0;return a},{k:0,p:0,c:0,f:0,fi:0,cost:0});
+  let best={score:Infinity,scales:null};
+  // Coarse, practical 5% portion steps. Breakfast/dessert vary less; main meals absorb most adjustment.
+  const choices=sels.map(s=>['lunch','dinner'].includes(s.dataset.slot)?[.75,.8,.85,.9,.95,1,1.05,1.1,1.15,1.2,1.25,1.3,1.35,1.4]:[.85,.9,.95,1,1.05,1.1,1.15]);
+  function walk(i,scales,t){
+   if(i===sels.length){
+    const score=Math.pow((t.k-targets.k)/120,2)+Math.pow((t.p-targets.p)/12,2)+Math.pow((t.c-targets.c)/35,2)+Math.pow((t.f-targets.f)/12,2)+Math.pow((t.fi-targets.fi)/8,2);
+    if(score<best.score)best={score,scales:[...scales]};return;
+   }
+   const r=RECIPES.find(x=>String(x.id)===sels[i].value);if(!r)return walk(i+1,[...scales,1],t);
+   for(const scale of choices[i]){
+    const m=scaledRecipeMacros(r,scale);
+    walk(i+1,[...scales,scale],{k:t.k+m.k,p:t.p+m.p,c:t.c+m.c,f:t.f+m.f,fi:t.fi+m.fi,cost:t.cost+m.cost});
+   }
+  }
+  walk(0,[],extras);
+  if(best.scales)sels.forEach((s,i)=>PORTION_SCALES[portionKey(day,s.dataset.slot)]=best.scales[i]);
+ }
+ localStorage.setItem(PORTION_SCALE_KEY,JSON.stringify(PORTION_SCALES));
+}
 function dayTotalsFromSelects(day){
  let t={k:0,p:0,fi:0,f:0,c:0,cost:0};
- document.querySelectorAll(`select[data-day="${day}"]`).forEach(s=>{if(s.value){let r=RECIPES.find(x=>x.id===+s.value);if(!r)return; t.k+=r.macros.kcal;t.p+=r.macros.protein;t.fi+=r.macros.fiber;t.f+=r.macros.fat;t.c+=r.macros.carbs;t.cost+=r.macros.cost;const e=extraNutrition(day,s.dataset.slot);for(const k of Object.keys(t))t[k]+=e[k]||0}});
+ document.querySelectorAll(`select[data-day="${day}"]`).forEach(s=>{if(s.value){let r=RECIPES.find(x=>x.id===+s.value);if(!r)return; const sc=portionScale(day,s.dataset.slot),m=scaledRecipeMacros(r,sc);t.k+=m.k;t.p+=m.p;t.fi+=m.fi;t.f+=m.f;t.c+=m.c;t.cost+=m.cost;const e=extraNutrition(day,s.dataset.slot);for(const k of Object.keys(t))t[k]+=e[k]||0}});
  return t;
 }
 function rangePenalty(v,min,max,hard=1){
@@ -997,7 +1028,7 @@ function manualMealChanged(sel){
   });
   if(slot==='snack1'||slot==='snack2')syncDessertOpposites(slot);
  }
- update();save();
+ adaptPortions();update();save();
  status.textContent=group<0?'Repas libre enregistré sans modifier les autres jours.':'Recette du batch mise à jour sans rééquilibrage automatique.';
 }
 function validateSimpleWeek(){
@@ -1308,9 +1339,7 @@ function update(){
  const days=selected(); let shop={}, totals=[];
  days.forEach((rs,i)=>{
    let t={k:0,p:0,c:0,f:0,fi:0,cost:0};
-   rs.forEach(r=>{t.k+=r.macros.kcal;t.p+=r.macros.protein;t.c+=r.macros.carbs;t.f+=r.macros.fat;t.fi+=r.macros.fiber;t.cost+=r.macros.cost;
-     r.ings.forEach(x=>shop[x.key]=(shop[x.key]||0)+x.qty);
-   });
+   document.querySelectorAll('select[data-day="'+i+'"]').forEach(sel=>{if(!sel.value)return;const r=RECIPES.find(x=>String(x.id)===sel.value);if(!r)return;const sc=portionScale(i,sel.dataset.slot),m=scaledRecipeMacros(r,sc);t.k+=m.k;t.p+=m.p;t.c+=m.c;t.f+=m.f;t.fi+=m.fi;t.cost+=m.cost;r.ings.forEach(x=>shop[x.key]=(shop[x.key]||0)+x.qty*sc);});
    
    document.querySelectorAll('select[data-day="'+i+'"]').forEach(sel=>{if(!sel.value)return;const e=extraNutrition(i,sel.dataset.slot);for(const k of Object.keys(t))t[k]+=e[k]||0});
    totals.push(t); let box=document.getElementById('tot'+i); box.className='daytotal '+quality(t.k,t.p,t.fi,t.f);
@@ -1376,7 +1405,7 @@ function updateShopping(){
  document.querySelectorAll('select[data-slot]').forEach(sel=>{
   if(!enabled.has(sel.dataset.slot)||!sel.value)return;
   const recipe=RECIPES.find(r=>r.id===Number(sel.value));if(!recipe)return;meals++;
-  if((sel.dataset.slot==='snack1'||sel.dataset.slot==='snack2')&&dessertDishServings(recipe)>1){if(!wholeDesserts.has(recipe.id)){wholeDesserts.add(recipe.id);dessertDishIngredients(recipe,dessertDishServings(recipe)).forEach(ing=>shop[ing.key]=(shop[ing.key]||0)+ing.qty)}}else recipe.ings.forEach(ing=>shop[ing.key]=(shop[ing.key]||0)+ing.qty);
+  if((sel.dataset.slot==='snack1'||sel.dataset.slot==='snack2')&&dessertDishServings(recipe)>1){if(!wholeDesserts.has(recipe.id)){wholeDesserts.add(recipe.id);dessertDishIngredients(recipe,dessertDishServings(recipe)).forEach(ing=>shop[ing.key]=(shop[ing.key]||0)+ing.qty)}}else{const sc=portionScale(Number(sel.dataset.day),sel.dataset.slot);recipe.ings.forEach(ing=>shop[ing.key]=(shop[ing.key]||0)+ing.qty*sc);}
   for(const extra of extraFor(Number(sel.dataset.day),sel.dataset.slot))shop[extra.key]=(shop[extra.key]||0)+extra.qty;
  });
  const tbody=document.getElementById('shopping');tbody.innerHTML='';
@@ -1409,6 +1438,6 @@ function load(){
    if(old){const slots=['breakfast','lunch','snack1','dinner','snack2'];for(let d=0;d<7;d++)slots.forEach((slot,i)=>{let s=document.querySelector('select[data-day="'+d+'"][data-slot="'+slot+'"]');if(!s)return;const id=old[d*5+i]||'';const recipe=RECIPES.find(r=>String(r.id)===String(id));s.value=recipe&&allowedRecipe(recipe)&&suitableBreakfast(recipe)?id:''})}
  }catch(e){}
 }
-function resetWeek(){localStorage.removeItem('mealV1');localStorage.removeItem('mealV2');localStorage.removeItem('mealV3');localStorage.removeItem('mealAutoValuesV1');localStorage.removeItem(MEAL_LOCK_KEY);localStorage.removeItem(APPROVED_WEEK_KEY);localStorage.removeItem(SLOT_LOCK_KEY);document.querySelectorAll('.mealLock').forEach(c=>c.checked=false);document.querySelectorAll('select[data-slot]').forEach(x=>x.value='');update();renderWeeklySlotControls();}
+function resetWeek(){localStorage.removeItem('mealV1');localStorage.removeItem('mealV2');localStorage.removeItem('mealV3');localStorage.removeItem('mealAutoValuesV1');localStorage.removeItem(PORTION_SCALE_KEY);PORTION_SCALES={};localStorage.removeItem(MEAL_LOCK_KEY);localStorage.removeItem(APPROVED_WEEK_KEY);localStorage.removeItem(SLOT_LOCK_KEY);document.querySelectorAll('.mealLock').forEach(c=>c.checked=false);document.querySelectorAll('select[data-slot]').forEach(x=>x.value='');update();renderWeeklySlotControls();}
 rebuildGeneratedRecipes();build();renderFoodCatalogue();renderRecipeCatalogue();window.addEventListener('resize',alignWeeklySlotControls);
 </script></body></html>
