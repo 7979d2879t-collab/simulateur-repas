@@ -347,6 +347,7 @@ function applySavedRecipeEdits(){
  Object.entries(RECIPE_EDITS).forEach(([id,edit])=>{
   const r=RECIPES.find(x=>String(x.id)===String(id));if(!r||!Array.isArray(edit.ings))return;
   r.ings=edit.ings.map(x=>({key:x.key,qty:Number(x.qty)||0})).filter(x=>x.qty>0&&activeFoodKey(x.key));
+  if(edit.name)r.name=edit.name;
   const m=macroFromIngredients(r.ings);if(m)r.macros=m;
  });
 }
@@ -358,7 +359,7 @@ function editRecipe(id){
  const r=RECIPES.find(x=>x.id===id);if(!r)return;
  const d=document.getElementById('recipeDetail');d.style.display='block';
  document.getElementById('recipeModal').classList.add('open');
- d.innerHTML='<h3>Modifier — '+escapeFoodHtml(r.name)+'</h3><p class="note">Remplace un ingrédient et/ou ajuste sa quantité. Les macros, portions, batch cooking et courses seront recalculés automatiquement.</p>'+
+ d.innerHTML='<h3>Modifier — '+escapeFoodHtml(r.name)+'</h3><p class="note">La recette modifiée devient la nouvelle recette. Son nom, ses macros, portions, batch cooking et courses sont mis à jour.</p><label><b>Nom de la recette</b><input id="recipeEditName" type="text" value="'+escapeFoodHtml(r.name)+'" style="width:100%;margin-top:5px"></label>'+
  '<div id="recipeEditRows">'+r.ings.map((x,i)=>'<div style="display:grid;grid-template-columns:minmax(180px,1fr) 110px auto;gap:8px;align-items:end;margin:8px 0"><label>Ingrédient<select id="reiKey'+i+'">'+editableFoodOptions(x.key)+'</select></label><label>Quantité (g/ml)<input id="reiQty'+i+'" type="number" min="1" step="1" value="'+x.qty+'"></label><button type="button" class="mini" onclick="this.parentElement.remove()">Retirer</button></div>').join('')+
  '<button type="button" class="mini" onclick="addRecipeEditRow()">+ Ajouter un ingrédient</button> <button type="button" onclick="saveRecipeEdit('+id+')">Enregistrer et recalculer</button> <button type="button" class="mini" onclick="resetRecipeEdit('+id+')">Réinitialiser la recette</button>';
  d.scrollIntoView({behavior:'smooth',block:'center'});
@@ -370,10 +371,19 @@ function addRecipeEditRow(){
 function saveRecipeEdit(id){
  const r=RECIPES.find(x=>x.id===id);if(!r)return;
  const rows=[...document.querySelectorAll('#recipeEditRows > div')];
+ const oldIngs=r.ings.map(x=>({...x}));
  const ings=rows.map(row=>({key:row.querySelector('select')?.value,qty:Number(row.querySelector('input')?.value)})).filter(x=>x.key&&x.qty>0);
  if(!ings.length){alert('La recette doit contenir au moins un ingrédient.');return}
- r.ings=ings;const m=macroFromIngredients(ings);if(!m){alert('Impossible de recalculer les macros avec un des ingrédients choisis.');return}r.macros=m;
- RECIPE_EDITS[id]={ings};localStorage.setItem(RECIPE_EDIT_KEY,JSON.stringify(RECIPE_EDITS));
+ const foodName=k=>(META[k]||FOOD_PREF.custom.find(f=>f.key===k))?.name||k;
+ let name=(document.getElementById('recipeEditName')?.value||r.name).trim();
+ oldIngs.forEach((x,i)=>{
+  const y=ings[i];if(!y||x.key===y.key)return;
+  const a=foodName(x.key),b=foodName(y.key);
+  if(name.toLowerCase().includes(a.toLowerCase()))name=name.replace(new RegExp(a,'i'),b);
+ });
+ r.ings=ings;r.name=name;
+ const m=macroFromIngredients(ings);if(!m){alert('Impossible de recalculer les macros avec un des ingrédients choisis.');return}r.macros=m;
+ RECIPE_EDITS[id]={ings,name};localStorage.setItem(RECIPE_EDIT_KEY,JSON.stringify(RECIPE_EDITS));
  refreshChoices();renderRecipeCatalogue();renderWeeklyRecipePicker();adaptPortions();update();save();showRecipeById(id);
 }
 function resetRecipeEdit(id){
