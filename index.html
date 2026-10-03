@@ -654,10 +654,24 @@ function prepInfo(r){
    steps.push('Rouler le wrap bien serré.');
    if(!cold)steps.push('Pour servir chaud, passer le wrap garni à l’Air Fryer à 180 °C pendant 4–6 min. Si la recette contient de la mâche ou une salade, la mettre après cuisson.');
  }else if(r.cat==='DESSERTS'){
-   appliance=n.includes('flan')||n.includes('clafoutis')||n.includes('gâteau')?'🔵 Air Fryer':'❄️ Frigo / sans cuisson';time=appliance.includes('Air Fryer')?'25–35 min':'5–10 min';
-   steps.push('Peser exactement : '+r.ings.map(x=>use(x.key)).join(', ')+'.');
-   steps.push(appliance.includes('Air Fryer')?'Mélanger les ingrédients adaptés à la pâte, ajouter fruits ou garnitures, puis cuire à 160–170 °C jusqu’à prise.':'Mélanger les ingrédients dans l’ordre permettant une texture homogène, puis ajouter fruits et garnitures.');
-   if(!appliance.includes('Air Fryer'))steps.push('Réserver au frais jusqu’au service.');
+   const fullServings=dessertDishServings(r),full=fullServings>1?dessertDishIngredients(r,fullServings):r.ings;
+   const fullUse=x=>label(x.key)+' ('+ingredientDisplay(x)+')';
+   if(n.includes('clafoutis')){
+     appliance='🔵 Air Fryer';time='30–40 min';
+     steps.push('Cette fiche prépare un clafoutis complet de '+fullServings+' parts. Utiliser toutes les quantités indiquées dans « Ingrédients — recette complète ».');
+     steps.push('Dans un saladier, fouetter '+full.filter(x=>x.key==='oeuf').map(fullUse).join(', ')+' avec '+full.filter(x=>['whey','farine'].includes(x.key)).map(fullUse).join(', ')+' jusqu’à obtenir un mélange homogène.');
+     steps.push('Ajouter progressivement '+full.filter(x=>x.key==='lait').map(fullUse).join(', ')+' en mélangeant pour obtenir un appareil lisse.');
+     steps.push('Répartir '+full.filter(x=>!['oeuf','whey','farine','lait'].includes(x.key)).map(fullUse).join(', ')+' dans le moule, puis verser l’appareil par-dessus.');
+     steps.push('Cuire à l’Air Fryer à 160 °C environ 30–40 min. Le centre doit être pris mais rester légèrement souple.');
+     steps.push('Laisser refroidir, puis couper le clafoutis en '+fullServings+' parts égales. Une part correspond aux macros affichées en haut de la fiche.');
+   }else{
+     appliance=n.includes('flan')||n.includes('gâteau')?'🔵 Air Fryer':'❄️ Frigo / sans cuisson';time=appliance.includes('Air Fryer')?'25–35 min':'5–10 min';
+     if(fullServings>1)steps.push('Préparer la recette complète de '+fullServings+' parts avec toutes les quantités indiquées dans la liste des ingrédients.');
+     else steps.push('Peser exactement : '+r.ings.map(x=>use(x.key)).join(', ')+'.');
+     steps.push(appliance.includes('Air Fryer')?'Mélanger les ingrédients de la pâte jusqu’à obtenir un appareil homogène, ajouter les fruits ou garnitures, puis verser dans le moule conseillé.':'Mélanger les ingrédients jusqu’à obtenir une texture homogène, puis ajouter les fruits ou garnitures.');
+     if(appliance.includes('Air Fryer'))steps.push('Cuire à 160–170 °C jusqu’à ce que le centre soit pris. Laisser refroidir avant de découper en '+fullServings+' parts égales.');
+     else steps.push('Réserver au frais jusqu’au service.');
+   }
  }else{
    const used=new Set();
    const starch=['riz','pates','udon','nouilles','semoule','pomme_terre','patate_douce','wrap','pain'].filter(k=>has(k));
