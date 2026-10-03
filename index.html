@@ -899,7 +899,7 @@ function restoreChangedWeeklySlot(slot){
   sel.innerHTML=opts(sel.dataset.cat,id);sel.value=id;
  });
  delete changedWeeklySlots[slot];
- update();updateFavButtons();renderWeeklySlotControls();
+ update();renderWeeklySlotControls();
  document.getElementById('slotChangeStatus').textContent='La proposition précédente a été rétablie pour « '+SLOTS.find(x=>x[0]===slot)[1]+' ».';
  return true;
 }
@@ -956,7 +956,7 @@ function changeWeeklySlot(slot){
   pool.sort((a,b)=>(history[a.name]||0)-(history[b.name]||0));
   const pair=pool.slice(0,2),row=[...document.querySelectorAll('select[data-slot="'+slot+'"]')];
   row.forEach((sel,d)=>{const id=String(pair[d%2].id);sel.innerHTML=opts(sel.dataset.cat,id);sel.value=id});
-  syncDessertOpposites(slot);update();updateFavButtons();markChangedWeeklySlot(slot,changeSnapshot);
+  syncDessertOpposites(slot);update();markChangedWeeklySlot(slot,changeSnapshot);
   status.textContent='Deux nouveaux desserts proposés : le dessert du soir est toujours l’inverse de celui du midi. Les autres repas sont inchangés ; vérifie les macros.';
   return;
  }
@@ -1165,7 +1165,7 @@ function autoWeek(){
  localStorage.setItem(RECIPE_HISTORY_KEY,JSON.stringify(history));
  if(!slotLocks.lunch&&!window.mealTemporaryLocks?.size)applyLunchBatchBlocks();
  if(!slotLocks.dinner&&!window.mealTemporaryLocks?.size)applyDinnerBatchBlocks();
- update();updateFavButtons();panel.style.display='block';
+ update();panel.style.display='block';
  const validation=weekValidation();
  const a=best.avg;
  box.innerHTML='<p><b>Proposition optimisée sur 7 jours.</b> Moyennes : '+Math.round(a.k)+' kcal, '+Math.round(a.p)+' g protéines, '+Math.round(a.fi)+' g fibres, '+Math.round(a.f)+' g lipides.</p>'+
@@ -1271,7 +1271,7 @@ function applyWeeklySubstitution(slot,oldId,newId){
   if(sel.value!==String(oldId))return;
   sel.innerHTML=opts(sel.dataset.cat,String(newId));sel.value=String(newId);
  });
- update();updateFavButtons();
+ update();
  document.getElementById('slotChangeStatus').textContent='Substitution appliquée à '+option.label+' uniquement, sur '+option.affected.length+' jour(s). Les autres lignes restent inchangées.';
 }
 function applySubstitution(day,slot,id){
@@ -1301,7 +1301,7 @@ function smartSuggestions(){
 }
 function applySuggestion(day,slot,id){
  let s=document.querySelector(`select[data-day="${day}"][data-slot="${slot}"]`);if(!s)return;
- s.innerHTML=opts(s.dataset.cat,String(id));s.value=String(id);update();updateFavButtons();smartSuggestions();
+ s.innerHTML=opts(s.dataset.cat,String(id));s.value=String(id);update();smartSuggestions();
 }
 function drawTargetBars(values){
  const el=document.getElementById('targetBars');if(!el)return;
