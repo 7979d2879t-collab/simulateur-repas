@@ -651,7 +651,7 @@ function breakfastOvernight(r){
  if(!r||r.cat!=='PETITS-DÉJEUNERS')return false;
  const n=r.name.toLowerCase(),keys=new Set(r.ings.map(x=>x.key));
  // Soaked oats and chia puddings need a long hydration/rest. Cooked rice/tapioca can be prepared ahead but do not require overnight rest.
- return /overnight|bowl/.test(n)||(/chia pudding/.test(n))||(keys.has('avoine')&&keys.has('chia'));
+ return /overnight/.test(n)||/chia pudding/.test(n);
 }
 function breakfastOvernightTag(r){return breakfastOvernight(r)?' · OVERNIGHT':''}
 function renderWeeklyRecipePicker(){
