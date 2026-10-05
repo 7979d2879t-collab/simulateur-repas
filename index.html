@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Simulateur repas semaine - V6.9</title>
+<title>Simulateur repas semaine - V7.0</title>
 <style>
 :root{--bg:#f4f7f8;--card:#fff;--navy:#17324d;--teal:#2d7d77;--line:#d9e1e4;--ok:#e8f5ec;--warn:#fff4dd;--bad:#fde8e7}
 *{box-sizing:border-box} body{margin:0;font-family:Arial,sans-serif;background:var(--bg);color:#26333c}
@@ -1723,12 +1723,28 @@ function update(){
    document.querySelectorAll('select[data-day="'+i+'"]').forEach(sel=>{if(!sel.value)return;const e=extraNutrition(i,sel.dataset.slot);for(const k of Object.keys(t))t[k]+=e[k]||0});
    totals.push(t); let box=document.getElementById('tot'+i); box.className='daytotal '+quality(t.k,t.p,t.fi,t.f);
    let rk=Math.max(0,2100-t.k), rp=Math.max(0,160-t.p), rfi=Math.max(0,32-t.fi), rf=Math.max(0,68-t.f);
-   box.innerHTML=rs.length?`<b>${Math.round(t.k)} kcal · ${Math.round(t.p)} g prot.</b><br>${Math.round(t.fi)} g fibres · ≈ ${t.cost.toFixed(2)} €`:'Aucun repas sélectionné.';
+   if(i===7){
+    // Le samedi midi complète le samedi soir du début de cycle : pas de total séparé ici.
+    box.className='daytotal';
+    box.innerHTML='';
+   }else if(i===0){
+    // Afficher sous "Samedi soir" le résultat du samedi complet (samedi soir + samedi midi suivant).
+    // totals[7] n'est pas encore calculé dans cette boucle; l'affichage est finalisé juste après.
+    box.innerHTML='';
+   }else{
+    box.innerHTML=rs.length?`<b>${Math.round(t.k)} kcal · ${Math.round(t.p)} g prot.</b><br>${Math.round(t.fi)} g fibres · ≈ ${t.cost.toFixed(2)} €`:'Aucun repas sélectionné.';
+   }
  });
  // DAYS contains two partial Saturdays ("Samedi soir" and "Samedi midi").
  // For the weekly average they must count together as one calendar day, not as two low-calorie days.
  const satCombined={k:0,p:0,c:0,f:0,fi:0,cost:0};
  for(const k of Object.keys(satCombined))satCombined[k]=(totals[0]?.[k]||0)+(totals[7]?.[k]||0);
+ const satBox=document.getElementById('tot0');
+ if(satBox){
+  satBox.className='daytotal '+quality(satCombined.k,satCombined.p,satCombined.fi,satCombined.f);
+  satBox.innerHTML=satCombined.k>0?`<b>${Math.round(satCombined.k)} kcal · ${Math.round(satCombined.p)} g prot.</b><br>${Math.round(satCombined.fi)} g fibres · ≈ ${satCombined.cost.toFixed(2)} €`:'Aucun repas sélectionné.';
+ }
+ const satMidiBox=document.getElementById('tot7');if(satMidiBox){satMidiBox.className='daytotal';satMidiBox.innerHTML='';}
  const active=[satCombined,...totals.slice(1,7)].filter(t=>t.k>0), n=active.length||1;
  const avg=x=>active.reduce((a,t)=>a+t[x],0)/n;
  document.getElementById('avgK').textContent=active.length?Math.round(avg('k')):'-';
