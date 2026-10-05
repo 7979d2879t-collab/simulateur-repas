@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Simulateur repas semaine - V5.2</title>
+<title>Simulateur repas semaine - V5.3</title>
 <style>
 :root{--bg:#f4f7f8;--card:#fff;--navy:#17324d;--teal:#2d7d77;--line:#d9e1e4;--ok:#e8f5ec;--warn:#fff4dd;--bad:#fde8e7}
 *{box-sizing:border-box} body{margin:0;font-family:Arial,sans-serif;background:var(--bg);color:#26333c}
@@ -139,6 +139,24 @@ function mealGroup(r){
 
 const RECIPE_EDIT_KEY='mealRecipeEditsV1';
 let RECIPE_EDITS=JSON.parse(localStorage.getItem(RECIPE_EDIT_KEY)||'{}');
+// V5.3 migration: keep the user's planning/selections, but discard legacy recipe edits
+// that can re-inject absurd quantities from older optimizer versions.
+const RECIPE_EDIT_MIGRATION_KEY='mealRecipeEditsSanitizedV53';
+if(!localStorage.getItem(RECIPE_EDIT_MIGRATION_KEY)){
+ const saneMax={beurre_cacahuete:30,huile:25,beurre:30,amandes:30,noix:30,pecan:30,coco_rapee:30,chia:30,whey:40};
+ let changed=false;
+ Object.entries(RECIPE_EDITS).forEach(([id,edit])=>{
+   if(!edit||!Array.isArray(edit.ings))return;
+   const absurd=edit.ings.some(x=>{
+     const q=Number(x.qty)||0;
+     if(saneMax[x.key]!=null&&q>saneMax[x.key])return true;
+     return q>1000;
+   });
+   if(absurd){delete RECIPE_EDITS[id];changed=true;}
+ });
+ if(changed)localStorage.setItem(RECIPE_EDIT_KEY,JSON.stringify(RECIPE_EDITS));
+ localStorage.setItem(RECIPE_EDIT_MIGRATION_KEY,'1');
+}
 const FOOD_PREF_KEY='mealFoodPrefsV1',RECIPE_OFF_KEY='mealRecipeExcludedV1';
 const FOOD_PREF=JSON.parse(localStorage.getItem(FOOD_PREF_KEY)||'{"excluded":[],"custom":[],"categoryOverrides":{}}');
 FOOD_PREF.categoryOverrides=FOOD_PREF.categoryOverrides||{};
@@ -350,9 +368,15 @@ function macroFromIngredients(ings){
  return m;
 }
 function applySavedRecipeEdits(){
+ const saneMax={beurre_cacahuete:30,huile:25,beurre:30,amandes:30,noix:30,pecan:30,coco_rapee:30,chia:30,whey:40};
  Object.entries(RECIPE_EDITS).forEach(([id,edit])=>{
   const r=RECIPES.find(x=>String(x.id)===String(id));if(!r||!Array.isArray(edit.ings))return;
-  r.ings=edit.ings.map(x=>({key:x.key,qty:Number(x.qty)||0})).filter(x=>x.qty>0&&activeFoodKey(x.key));
+  const cleaned=edit.ings.map(x=>({key:x.key,qty:Number(x.qty)||0})).filter(x=>x.qty>0&&activeFoodKey(x.key));
+  // Never let a legacy local edit overwrite the curated recipe with implausible concentrated-food amounts.
+  if(cleaned.some(x=>(saneMax[x.key]!=null&&x.qty>saneMax[x.key])||x.qty>1000)){
+    delete RECIPE_EDITS[id];localStorage.setItem(RECIPE_EDIT_KEY,JSON.stringify(RECIPE_EDITS));return;
+  }
+  r.ings=cleaned;
   if(edit.name)r.name=edit.name;
   const m=macroFromIngredients(r.ings);if(m)r.macros=m;
  });
