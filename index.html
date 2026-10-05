@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Simulateur repas semaine - V7.5</title>
+<title>Simulateur repas semaine - V7.6</title>
 <style>
 :root{--bg:#f4f7f8;--card:#fff;--navy:#17324d;--teal:#2d7d77;--line:#d9e1e4;--ok:#e8f5ec;--warn:#fff4dd;--bad:#fde8e7}
 *{box-sizing:border-box} body{margin:0;font-family:Arial,sans-serif;background:var(--bg);color:#26333c}
@@ -86,6 +86,19 @@ const SLOTS=[
  ["dinner","Dîner","DÎNERS RAPIDES"],
  ["snack2","Dessert du dîner (optionnel)","DESSERTS"]
 ];
+// Les plats salés doivent être disponibles avec les mêmes catégories au déjeuner et au dîner.
+function mirrorSavoryMealsAcrossLunchDinner(){
+ const additions=[];
+ const cats=['DÉJEUNERS & BATCH COOKING','DÎNERS RAPIDES'];
+ RECIPES.filter(r=>cats.includes(r.cat)).forEach(r=>{
+  const other=r.cat===cats[0]?cats[1]:cats[0];
+  const exists=RECIPES.some(x=>x.cat===other&&x.name===r.name);
+  if(!exists)additions.push({...r,id:190000+r.id,cat:other,ings:r.ings.map(x=>({...x})),macros:{...r.macros},generated:true});
+ });
+ RECIPES.push(...additions);
+}
+mirrorSavoryMealsAcrossLunchDinner();
+
 // Les wraps doivent être proposés indifféremment au déjeuner et au dîner.
 function mirrorWrapsAcrossMeals(){
  const additions=[];
