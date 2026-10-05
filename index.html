@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Simulateur repas semaine - V7.3</title>
+<title>Simulateur repas semaine - V7.4</title>
 <style>
 :root{--bg:#f4f7f8;--card:#fff;--navy:#17324d;--teal:#2d7d77;--line:#d9e1e4;--ok:#e8f5ec;--warn:#fff4dd;--bad:#fde8e7}
 *{box-sizing:border-box} body{margin:0;font-family:Arial,sans-serif;background:var(--bg);color:#26333c}
@@ -1751,7 +1751,7 @@ function update(){
     // totals[7] n'est pas encore calculé dans cette boucle; l'affichage est finalisé juste après.
     box.innerHTML='';
    }else{
-    box.innerHTML=rs.length?dailyMacroLine(t)+'<br>≈ '+t.cost.toFixed(2)+' €':'Aucun repas sélectionné.';
+    box.innerHTML=rs.length?dailyMacroLine(t):'Aucun repas sélectionné.';
    }
  });
  // DAYS contains two partial Saturdays ("Samedi soir" and "Samedi midi").
@@ -1761,7 +1761,7 @@ function update(){
  const satBox=document.getElementById('tot0');
  if(satBox){
   satBox.className='daytotal '+quality(satCombined.k,satCombined.p,satCombined.fi,satCombined.f);
-  satBox.innerHTML=satCombined.k>0?dailyMacroLine(satCombined)+'<br>≈ '+satCombined.cost.toFixed(2)+' €':'Aucun repas sélectionné.';
+  satBox.innerHTML=satCombined.k>0?dailyMacroLine(satCombined):'Aucun repas sélectionné.';
  }
  const satMidiBox=document.getElementById('tot7');if(satMidiBox){satMidiBox.className='daytotal';satMidiBox.innerHTML='';}
  const active=[satCombined,...totals.slice(1,7)].filter(t=>t.k>0), n=active.length||1;
