@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Simulateur repas semaine - V5.6</title>
+<title>Simulateur repas semaine - V5.7</title>
 <style>
 :root{--bg:#f4f7f8;--card:#fff;--navy:#17324d;--teal:#2d7d77;--line:#d9e1e4;--ok:#e8f5ec;--warn:#fff4dd;--bad:#fde8e7}
 *{box-sizing:border-box} body{margin:0;font-family:Arial,sans-serif;background:var(--bg);color:#26333c}
@@ -123,6 +123,7 @@ function mealGroup(r){
    if(/cacao|chocolat/.test(name))return 'CACAO & CHOCOLAT';
    return 'PROTÉINÉES';
  }
+ if(r.cat==='COLLATIONS') return 'COLLATIONS APRÈS-MIDI';
  if(r.cat==='DESSERTS'){
    if(/clafoutis/.test(name))return 'CLAFOUTIS';
    if(/crumble/.test(name))return 'CRUMBLES';
@@ -581,7 +582,7 @@ function toggleRecipeCatalogue(id,kind,on){
 function renderRecipeCatalogue(){
  const root=document.getElementById('recipeCatalogue');if(!root)return;
  const q=(document.getElementById('catalogSearch')?.value||'').trim().toLowerCase();
- const mealCategoryOrder=['PETITS-DÉJEUNERS','DÉJEUNERS & BATCH COOKING','DESSERTS','DÎNERS RAPIDES'];
+ const mealCategoryOrder=['PETITS-DÉJEUNERS','DÉJEUNERS & BATCH COOKING','DESSERTS','COLLATIONS','DÎNERS RAPIDES'];
  const categories=[...new Set(RECIPES.map(r=>r.cat))].sort((a,b)=>{
   const ia=mealCategoryOrder.indexOf(a),ib=mealCategoryOrder.indexOf(b);
   return (ia<0?999:ia)-(ib<0?999:ib);
@@ -610,7 +611,11 @@ function filterSlot(inp){
  const box=inp.closest('.mealpick'),s=box.querySelector('select'),v=s.value;
  s.innerHTML=opts(s.dataset.cat,v,inp.value,false);s.value=v;
 }
+function normalizeAfternoonSnackCategories(){
+ document.querySelectorAll('select[data-slot="afternoonSnack"]').forEach(sel=>sel.dataset.cat='COLLATIONS');
+}
 function refreshChoices(){
+ normalizeAfternoonSnackCategories();
  document.querySelectorAll('select[data-cat]').forEach(s=>{let v=s.value,q=s.closest('.mealpick')?.querySelector('.slotsearch')?.value||'';s.innerHTML=opts(s.dataset.cat,v,q,false);s.value=v});
 }
 
@@ -1915,7 +1920,7 @@ function resetWeek(){localStorage.removeItem('mealV1');localStorage.removeItem('
  }
  localStorage.setItem(key,'1');
 })();
-applySavedRecipeEdits();rebuildGeneratedRecipes();renderFoodCatalogue();renderRecipeCatalogue();
+applySavedRecipeEdits();rebuildGeneratedRecipes();normalizeAfternoonSnackCategories();renderFoodCatalogue();renderRecipeCatalogue();
 try{build()}catch(e){console.error('Initialisation planning',e)}
 renderFoodCatalogue();renderRecipeCatalogue();
 document.addEventListener('change',e=>{if(e.target?.matches?.('select[data-slot]'))setTimeout(()=>save(),0)},true);
