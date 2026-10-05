@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Simulateur repas semaine - V6.4</title>
+<title>Simulateur repas semaine - V6.5</title>
 <style>
 :root{--bg:#f4f7f8;--card:#fff;--navy:#17324d;--teal:#2d7d77;--line:#d9e1e4;--ok:#e8f5ec;--warn:#fff4dd;--bad:#fde8e7}
 *{box-sizing:border-box} body{margin:0;font-family:Arial,sans-serif;background:var(--bg);color:#26333c}
@@ -1813,9 +1813,11 @@ function updateShopping(){
   const needToBuy=Math.max(0,q-stockBase);
   const qty=shoppingQty(k,needToBuy),needDisplay=shoppingQty(k,q).need,cost=needToBuy>0?packageCost(m,needToBuy):0;
   const stockUnit=m.unit==='œuf'?'œuf(s)':(['lait','lait_coco','creme','huile'].includes(k)?'ml':(m.unit||'g'));
+  const stockDisplay=m.unit==='œuf'?stockRaw+' œuf(s)':shoppingQty(k,stockBase).need;
+  const netDisplay=needToBuy>0?shoppingQty(k,needToBuy).need:'0 '+stockUnit;
   if(cat!==lastCat){tbody.innerHTML+='<tr class="shopSection"><td colspan="4">'+cat+'</td></tr>';lastCat=cat;}
   shoppingTotal+=cost;
-  tbody.innerHTML+='<tr><td>'+m.name+'</td><td>'+(needToBuy>0?qty.buy:'0')+'<span class="shopQtyHint">besoin total : '+needDisplay+'</span></td><td>≈ '+cost.toFixed(2).replace('.',',')+' €</td><td><input type="number" min="0" step="1" value="'+stockRaw+'" style="width:82px;padding:5px" onchange="setShoppingStock(\''+k+'\',this.value)"> <span class="shopQtyHint" style="display:inline">'+stockUnit+'</span></td></tr>';
+  tbody.innerHTML+='<tr><td>'+m.name+'</td><td><b>'+(needToBuy>0?qty.buy:'0')+'</b><span class="shopQtyHint">besoin total : '+needDisplay+' · stock : '+stockDisplay+' · reste net : '+netDisplay+'</span></td><td>≈ '+cost.toFixed(2).replace('.',',')+' €</td><td><input type="number" min="0" step="1" value="'+stockRaw+'" style="width:82px;padding:5px" onchange="setShoppingStock(\''+k+'\',this.value)"> <span class="shopQtyHint" style="display:inline">'+stockUnit+'</span></td></tr>';
  });
  document.getElementById('weekCost').textContent='≈ '+shoppingTotal.toFixed(2)+' €';
 }
