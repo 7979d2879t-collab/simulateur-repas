@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Simulateur repas semaine - V6.6</title>
+<title>Simulateur repas semaine - V6.7</title>
 <style>
 :root{--bg:#f4f7f8;--card:#fff;--navy:#17324d;--teal:#2d7d77;--line:#d9e1e4;--ok:#e8f5ec;--warn:#fff4dd;--bad:#fde8e7}
 *{box-sizing:border-box} body{margin:0;font-family:Arial,sans-serif;background:var(--bg);color:#26333c}
@@ -1874,9 +1874,37 @@ function printRecipeSummary(){
  setTimeout(()=>{try{w.focus();w.print()}catch(e){console.error(e)}},500);
 }
 function printShopping(){
- const rows=document.getElementById('shopping').innerHTML;
- const w=window.open('','_blank','width=760,height=900');
- w.document.write(`<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>Liste de courses</title><style>body{font-family:Arial,sans-serif;padding:24px;color:#26333c}h1{color:#17324d}table{width:100%;border-collapse:collapse}th,td{padding:9px;border-bottom:1px solid #d9e1e4;text-align:left}th{background:#edf5f3}@media print{body{padding:0}}</style></head><body><h1>Liste de courses</h1><p>Simulateur repas semaine</p><table><thead><tr><th>Produit</th><th>À acheter</th><th>Coût estimé</th><th>Stock</th></tr></thead><tbody>${rows}</tbody></table><script>window.onload=()=>{window.print();window.onafterprint=()=>window.close()}<\/script><div class="mobileNav"><button onclick="document.getElementById('weekTop').scrollIntoView()">🍽️<br>Semaine</button><button onclick="document.getElementById('prepSheets').scrollIntoView()">🍳<br>Préparation</button><button onclick="document.getElementById('shopping').scrollIntoView()">🛒<br>Courses</button></div></body></html>`);
+ const source=[...document.querySelectorAll('#shopping tr')];
+ let html='',hasItems=false;
+ source.forEach(tr=>{
+  if(tr.classList.contains('shopSection')){
+   const cat=tr.textContent.trim();
+   html+='<tr class="cat"><td colspan="2">'+escapeFoodHtml(cat)+'</td></tr>';
+   return;
+  }
+  const cells=tr.querySelectorAll('td');if(cells.length<2)return;
+  const product=cells[0].textContent.trim();
+  const qty=(cells[1].childNodes[0]?.textContent||'').trim();
+  if(!product||!qty||qty==='0')return;
+  hasItems=true;
+  html+='<tr class="item"><td>'+escapeFoodHtml(product)+'</td><td>'+escapeFoodHtml(qty)+'</td></tr>';
+ });
+ if(!hasItems){alert('Aucun produit à acheter.');return}
+ // Remove category headings that have no purchasable product below them.
+ const tmp=document.createElement('tbody');tmp.innerHTML=html;
+ [...tmp.querySelectorAll('tr.cat')].forEach(cat=>{
+  let n=cat.nextElementSibling,keep=false;
+  while(n&&!n.classList.contains('cat')){if(n.classList.contains('item')){keep=true;break}n=n.nextElementSibling}
+  if(!keep)cat.remove();
+ });
+ const w=window.open('','_blank','width=720,height=900');
+ w.document.write(`<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>Liste de courses</title><style>
+ @page{margin:12mm}body{font-family:Arial,sans-serif;color:#1f2d35;margin:0;font-size:14px}
+ h1{font-size:22px;margin:0 0 14px}.list{width:100%;border-collapse:collapse}
+ td{padding:7px 5px;border-bottom:1px solid #dfe5e8}.item td:last-child{text-align:right;font-weight:700;white-space:nowrap}
+ .cat td{padding:13px 5px 6px;font-size:14px;font-weight:700;text-transform:uppercase;border-bottom:2px solid #87969d}
+ @media print{body{margin:0}}
+ </style></head><body><h1>Liste de courses</h1><table class="list"><tbody>${tmp.innerHTML}</tbody></table><script>window.onload=()=>{window.print();window.onafterprint=()=>window.close()}<\/script></body></html>`);
  w.document.close();
 }
 const WEEK_STATE_KEY='mealWeekStateV4';
