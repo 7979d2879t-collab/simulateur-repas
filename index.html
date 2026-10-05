@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Simulateur repas semaine - V6.2</title>
+<title>Simulateur repas semaine - V6.3</title>
 <style>
 :root{--bg:#f4f7f8;--card:#fff;--navy:#17324d;--teal:#2d7d77;--line:#d9e1e4;--ok:#e8f5ec;--warn:#fff4dd;--bad:#fde8e7}
 *{box-sizing:border-box} body{margin:0;font-family:Arial,sans-serif;background:var(--bg);color:#26333c}
@@ -206,7 +206,14 @@ const CURATED_RECIPE_IDS=new Set([
  // Desserts.
  48,50,51,52,53,54,56,58,60,61,62,63,64,65,105,106,107,108,
  // Petits-déjeuners.
- 66,67,68,69,70,71,72,73,74,75,76,77,78,79,82,83
+ 66,67,68,69,70,71,72,73,74,75,76,77,78,79,82,83,
+ // Collations ajoutées V5.2/V6.1.
+ 30105,30106,30107,30108,30109,30110,30111,30112,
+ 30200,30201,30202,30203,30204,30205,30206,30207,30208,30209,30210,30211,
+ // Wraps froids/chauds ajoutés V6.1.
+ 30300,30301,30302,30303,30304,30305,30306,30307,30308,30309,
+ // Vraies mousses protéinées V6.2.
+ 30400,30401,30402,30403
 ]);
 function curatedRecipe(r){
  if(r.generated)return r.id>=20048&&r.id<=20065&&CURATED_RECIPE_IDS.has(r.id-20000);
