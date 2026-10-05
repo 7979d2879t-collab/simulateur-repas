@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Simulateur repas semaine - V7.4</title>
+<title>Simulateur repas semaine - V7.5</title>
 <style>
 :root{--bg:#f4f7f8;--card:#fff;--navy:#17324d;--teal:#2d7d77;--line:#d9e1e4;--ok:#e8f5ec;--warn:#fff4dd;--bad:#fde8e7}
 *{box-sizing:border-box} body{margin:0;font-family:Arial,sans-serif;background:var(--bg);color:#26333c}
@@ -86,6 +86,17 @@ const SLOTS=[
  ["dinner","Dîner","DÎNERS RAPIDES"],
  ["snack2","Dessert du dîner (optionnel)","DESSERTS"]
 ];
+// Les wraps doivent être proposés indifféremment au déjeuner et au dîner.
+function mirrorWrapsAcrossMeals(){
+ const additions=[];
+ RECIPES.filter(r=>/wrap/i.test(r.name)&&['DÉJEUNERS & BATCH COOKING','DÎNERS RAPIDES'].includes(r.cat)).forEach(r=>{
+  const other=r.cat==='DÉJEUNERS & BATCH COOKING'?'DÎNERS RAPIDES':'DÉJEUNERS & BATCH COOKING';
+  const exists=RECIPES.some(x=>x.cat===other&&x.name===r.name);
+  if(!exists)additions.push({...r,id:90000+r.id,cat:other,ings:r.ings.map(x=>({...x})),macros:{...r.macros},generated:true});
+ });
+ RECIPES.push(...additions);
+}
+mirrorWrapsAcrossMeals();
 function mealGroup(r){
  if(r.sub) return r.sub;
  const name=r.name.toLowerCase();
