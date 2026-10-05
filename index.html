@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Simulateur repas semaine - V7.6</title>
+<title>Simulateur repas semaine - V7.7</title>
 <style>
 :root{--bg:#f4f7f8;--card:#fff;--navy:#17324d;--teal:#2d7d77;--line:#d9e1e4;--ok:#e8f5ec;--warn:#fff4dd;--bad:#fde8e7}
 *{box-sizing:border-box} body{margin:0;font-family:Arial,sans-serif;background:var(--bg);color:#26333c}
@@ -658,6 +658,10 @@ function ingredientDisplay(x){
  if(liquids.has(x.key)){return x.qty>=1000?(x.qty/1000).toFixed(2).replace('.',',')+' L':Math.round(x.qty)+' ml';}
  const pieces={oeuf:[50,'œuf'],kiwi:[100,'kiwi'],banane:[120,'banane'],avocat:[200,'avocat'],poire:[150,'poire'],wrap:[60,'wrap']};
  if(pieces[x.key]){let n=Math.round((x.qty/pieces[x.key][0])*2)/2;return n+' '+pieces[x.key][1]+(n>1?'s':'')+' ('+Math.round(x.qty)+' g)'}
+ const dryStarches=new Set(['riz','pates','nouilles','semoule','tapioca']);
+ if(dryStarches.has(x.key))return x.qty+' g cru';
+ if(x.key==='udon')return x.qty+' g précuits (poids du paquet)';
+ if(x.key==='pomme_terre'||x.key==='patate_douce')return x.qty+' g cru';
  return x.qty+' g';
 }
 function cookingGuide(r){
