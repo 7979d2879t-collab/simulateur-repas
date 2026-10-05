@@ -1718,7 +1718,14 @@ function updateShopping(){
  document.querySelectorAll('select[data-slot]').forEach(sel=>{
   if(!enabled.has(sel.dataset.slot)||!sel.value||!mealAtOrAfterStart(+sel.dataset.day,sel.dataset.slot))return;
   const recipe=RECIPES.find(r=>r.id===Number(sel.value));if(!recipe)return;meals++;
-  if((sel.dataset.slot==='snack1'||sel.dataset.slot==='snack2')&&dessertDishServings(recipe)>1){if(!wholeDesserts.has(recipe.id)){wholeDesserts.add(recipe.id);dessertDishIngredients(recipe,dessertDishServings(recipe)).forEach(ing=>shop[ing.key]=(shop[ing.key]||0)+ing.qty)}}else{const sc=portionScale(Number(sel.dataset.day),sel.dataset.slot);recipe.ings.forEach(ing=>shop[ing.key]=(shop[ing.key]||0)+ing.qty*sc);}
+  if((sel.dataset.slot==='snack1'||sel.dataset.slot==='snack2')&&dessertDishServings(recipe)>1){
+   // A baked dessert is prepared as one whole dish, once, even if several portions are eaten later.
+   if(!wholeDesserts.has(recipe.id)){wholeDesserts.add(recipe.id);dessertDishIngredients(recipe,dessertDishServings(recipe)).forEach(ing=>shop[ing.key]=(shop[ing.key]||0)+ing.qty)}
+  }else{
+   // Shopping must match the preparation sheets exactly: 1 reference portion × each remaining meal.
+   // Do not apply day-by-day macro portion scales here, otherwise batch quantities and shopping diverge.
+   recipe.ings.forEach(ing=>shop[ing.key]=(shop[ing.key]||0)+ing.qty);
+  }
   for(const extra of extraFor(Number(sel.dataset.day),sel.dataset.slot))shop[extra.key]=(shop[extra.key]||0)+extra.qty;
  });
  const tbody=document.getElementById('shopping');tbody.innerHTML='';
