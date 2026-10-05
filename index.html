@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Simulateur repas semaine - V7.2</title>
+<title>Simulateur repas semaine - V7.3</title>
 <style>
 :root{--bg:#f4f7f8;--card:#fff;--navy:#17324d;--teal:#2d7d77;--line:#d9e1e4;--ok:#e8f5ec;--warn:#fff4dd;--bad:#fde8e7}
 *{box-sizing:border-box} body{margin:0;font-family:Arial,sans-serif;background:var(--bg);color:#26333c}
@@ -1488,6 +1488,12 @@ function autoWeek(){
   let totalScore=0,week=emptyTotal(),assignment=[],usage={};
   for(let day=0;day<DAYS.length;day++){
    const sels=days[day],open=sels.filter(s=>!s.value);
+   // Samedi midi est une demi-journée : le dessert du déjeuner reste obligatoire.
+   // Sécurité explicite contre les anciens états sauvegardés où snack1 pouvait rester vide.
+   if(day===7){
+    const lunchDessert=sels.find(s=>s.dataset.slot==='snack1');
+    if(lunchDessert&&!lunchDessert.value&&!open.includes(lunchDessert))open.push(lunchDessert);
+   }
    let base=dayTotalsFromSelects(day),best={score:Infinity,rs:[],total:null},trial=[];
    const walk=(i,t)=>{
     if(i===open.length){
@@ -1523,7 +1529,7 @@ function autoWeek(){
   }
   const avg=Object.fromEntries(Object.entries(week).map(([k,v])=>[k,v/7]));
   totalScore+=Object.keys(WEEK_RANGE).reduce((sum,k)=>sum+rangePenalty(avg[k],...WEEK_RANGE[k],3.2),0)*55;
-  const allDaysValid=assignment.every((row,d)=>{const t=emptyTotal();for(const slot of SLOTS){const r=RECIPES.find(x=>x.id===row[slot[0]]);if(!r)return false;Object.assign(t,addMeal(t,r))}return inTargets(t)});
+  const allDaysValid=assignment.every((row,d)=>{const t=emptyTotal();for(const slot of SLOTS.filter(x=>slotInPlanning(d,x[0]))){const r=RECIPES.find(x=>x.id===row[slot[0]]);if(!r)return false;Object.assign(t,addMeal(t,r))}return d===0||d===7?true:inTargets(t)});
   const pairsValid=configs.every(cfg=>new Set(assignment.map(row=>row[cfg.slot])).size===2);
   const lunchBlocks=assignment.every((row,day)=>day===0||day===3||row.lunch===assignment[day-1].lunch);
   const dinnerBlocks=assignment.every((row,day)=>day===0||day===3||row.dinner===assignment[day-1].dinner);
