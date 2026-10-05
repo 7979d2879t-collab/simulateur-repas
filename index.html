@@ -97,7 +97,6 @@ function mirrorSavoryMealsAcrossLunchDinner(){
  });
  RECIPES.push(...additions);
 }
-mirrorSavoryMealsAcrossLunchDinner();
 
 // Les wraps doivent être proposés indifféremment au déjeuner et au dîner.
 function mirrorWrapsAcrossMeals(){
@@ -109,7 +108,6 @@ function mirrorWrapsAcrossMeals(){
  });
  RECIPES.push(...additions);
 }
-mirrorWrapsAcrossMeals();
 function mealGroup(r){
  if(r.sub) return r.sub;
  const name=r.name.toLowerCase();
@@ -515,10 +513,18 @@ function saveRecipeEdit(id){
 function resetRecipeEdit(id){
  delete RECIPE_EDITS[id];localStorage.setItem(RECIPE_EDIT_KEY,JSON.stringify(RECIPE_EDITS));location.reload();
 }
+function recalculateAllRecipeMacros(){
+ // Nutrition is always derived from the actual ingredient weights.
+ // Each ingredient contributes: nutrition per 100 g × recipe quantity / 100.
+ for(const r of RECIPES){
+  if(!Array.isArray(r.ings))continue;
+  const m=macroFromIngredients(r.ings);
+  if(m)r.macros=m;
+ }
+}
 function rebuildGeneratedRecipes(){
  RECIPES.splice(BASE_RECIPE_COUNT);
- // Keep edited base recipes consistent with their ingredient macros.
- for(const r of RECIPES.slice(0,BASE_RECIPE_COUNT)){const m=macroFromIngredients(r.ings);if(m)r.macros=m}
+ recalculateAllRecipeMacros();
  // No automatic meal compositions or scaled meal variants: each visible lunch/dinner remains a real curated recipe.
  // Only genuine dessert recipes receive generated dessert portions.
  // V5.4: no generated dessert portion variants; one canonical recipe only.
@@ -2034,7 +2040,7 @@ function resetWeek(){localStorage.removeItem('mealV1');localStorage.removeItem('
  }
  localStorage.setItem(key,'1');
 })();
-applySavedRecipeEdits();rebuildGeneratedRecipes();normalizeAfternoonSnackCategories();renderFoodCatalogue();renderRecipeCatalogue();
+applySavedRecipeEdits();rebuildGeneratedRecipes();mirrorSavoryMealsAcrossLunchDinner();mirrorWrapsAcrossMeals();recalculateAllRecipeMacros();normalizeAfternoonSnackCategories();renderFoodCatalogue();renderRecipeCatalogue();
 try{build()}catch(e){console.error('Initialisation planning',e)}
 renderFoodCatalogue();renderRecipeCatalogue();
 document.addEventListener('change',e=>{if(e.target?.matches?.('select[data-slot]'))setTimeout(()=>save(),0)},true);
