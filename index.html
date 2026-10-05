@@ -1020,7 +1020,7 @@ function macroStatus(v,min,max,unit){
 function dailyMacroLine(t){
  return macroStatus(t.k,DAY_RANGE.k[0],DAY_RANGE.k[1],'kcal')+' · '+
  macroStatus(t.p,DAY_RANGE.p[0],DAY_RANGE.p[1],'g prot.')+'<br>'+
- macroStatus(t.c,192,232,'g gluc.')+' · '+
+ macroStatus(t.c,150,230,'g gluc.')+' · '+
  macroStatus(t.f,DAY_RANGE.f[0],DAY_RANGE.f[1],'g lip.')+' · '+
  macroStatus(t.fi,DAY_RANGE.fi[0],DAY_RANGE.fi[1],'g fibres');
 }
