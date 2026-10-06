@@ -2784,6 +2784,15 @@ function chooseWeeklyRecipe(groupSlot,index,id){
  adaptPortions();update();save();renderWeeklyRecipePicker();
  status.textContent='Choix appliqué : le planning, les moyennes, le graphique et les courses ont été actualisés.';
 }
+const DAYS=["Samedi soir","Dimanche","Lundi","Mardi","Mercredi","Jeudi","Vendredi","Samedi midi"];
+const SLOTS=[
+ ["breakfast","Petit-déjeuner","PETITS-DÉJEUNERS"],
+ ["lunch","Déjeuner","REPAS"],
+ ["snack1","Dessert déjeuner","DESSERTS"],
+ ["afternoonSnack","Collation après-midi","COLLATIONS"],
+ ["dinner","Dîner","REPAS"],
+ ["snack2","Dessert dîner","DESSERTS"]
+];
 function weekDates(){const d=new Date();d.setHours(12,0,0,0);const wd=d.getDay();const sinceSaturday=(wd+1)%7;d.setDate(d.getDate()-sinceSaturday);return [...Array(8)].map((_,i)=>{const x=new Date(d);x.setDate(d.getDate()+i);return x})}
 function shortDate(day){return weekDates()[day].toLocaleDateString('fr-FR',{day:'numeric',month:'short'})}
 function slotInPlanning(day,slot){
