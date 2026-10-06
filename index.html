@@ -75,7 +75,1804 @@ button{border:0;background:var(--teal);color:#fff;padding:9px 12px;border-radius
 </main>
 <div class="modal" id="recipeModal" onclick="if(event.target===this)closeRecipe()"><div class="modalbox"><button class="close" onclick="closeRecipe()">Fermer</button><div id="recipeDetail"></div></div></div>
 <script>
-const RECIPES=[{"id":3,"name":"Porc curry-coco + riz et courgette","cat":"REPAS","sub":"","ings":[{"key":"porc_echine","qty":150},{"key":"riz","qty":50},{"key":"courgette","qty":150},{"key":"lait_coco","qty":60},{"key":"curry","qty":6},{"key":"ail","qty":4}]},{"id":5,"name":"Wrap porc-avocat-carottes","cat":"REPAS","sub":"","ings":[{"key":"porc_echine","qty":150},{"key":"wrap","qty":60},{"key":"carotte","qty":100},{"key":"mache","qty":50},{"key":"avocat","qty":50}]},{"id":9,"name":"Bœuf Roquefort + pâtes","cat":"REPAS","sub":"","ings":[{"key":"boeuf_hache","qty":125},{"key":"pates","qty":50},{"key":"roquefort","qty":20},{"key":"creme","qty":25},{"key":"courgette","qty":150}]},{"id":12,"name":"Blanquette de veau légère + riz","cat":"REPAS","sub":"","ings":[{"key":"veau","qty":150},{"key":"riz","qty":50},{"key":"carotte","qty":150},{"key":"poireau","qty":100},{"key":"creme","qty":30}]},{"id":17,"name":"Udon porc courgette-champignons","cat":"REPAS","sub":"","ings":[{"key":"porc_echine","qty":150},{"key":"udon","qty":180},{"key":"courgette","qty":150},{"key":"champignon","qty":120}]},{"id":19,"name":"Pâtes thon-crème-poireaux","cat":"REPAS","sub":"","ings":[{"key":"thon","qty":110},{"key":"pates","qty":50},{"key":"poireau","qty":150},{"key":"philadelphia","qty":30}]},{"id":21,"name":"Pâtes saumon-crème-épinards","cat":"REPAS","sub":"","ings":[{"key":"saumon","qty":125},{"key":"pates","qty":50},{"key":"epinard","qty":150},{"key":"creme","qty":30}]},{"id":22,"name":"Cabillaud crème-poireaux + riz","cat":"REPAS","sub":"","ings":[{"key":"cabillaud","qty":150},{"key":"riz","qty":50},{"key":"poireau","qty":150},{"key":"creme","qty":30}]},{"id":27,"name":"Thon-courgette façon risotto rapide","cat":"REPAS","sub":"","ings":[{"key":"thon","qty":110},{"key":"riz","qty":50},{"key":"courgette","qty":150},{"key":"parmesan","qty":15},{"key":"philadelphia","qty":20}]},{"id":29,"name":"Poisson blanc pané maison + patate douce","cat":"REPAS","sub":"","ings":[{"key":"cabillaud","qty":150},{"key":"chapelure","qty":18},{"key":"oeuf","qty":50},{"key":"patate_douce","qty":180},{"key":"brocoli","qty":150}]},{"id":33,"name":"Wrap froid thon-fromage frais-avocat","cat":"REPAS","sub":"","ings":[{"key":"thon","qty":100},{"key":"wrap","qty":60},{"key":"philadelphia","qty":30},{"key":"avocat","qty":50},{"key":"mache","qty":50}]},{"id":37,"name":"Wrap porc-carottes-mâche","cat":"REPAS","sub":"","ings":[{"key":"porc_echine","qty":150},{"key":"wrap","qty":60},{"key":"carotte","qty":100},{"key":"mache","qty":50}]},{"id":44,"name":"Bowl froid riz-thon-maïs-avocat","cat":"REPAS","sub":"","ings":[{"key":"thon","qty":100},{"key":"riz","qty":50},{"key":"mais","qty":70},{"key":"avocat","qty":40},{"key":"mache","qty":50}]},{"id":48,"name":"Clafoutis framboise","cat":"DESSERTS","sub":"","ings":[{"key":"oeuf","qty":25},{"key":"lait","qty":50},{"key":"farine","qty":10},{"key":"whey","qty":5},{"key":"framboise","qty":70},{"key":"stevia","qty":5}]},{"id":50,"name":"Flan pâtissier","cat":"DESSERTS","sub":"","ings":[{"key":"lait","qty":105},{"key":"oeuf","qty":50},{"key":"maizena","qty":10},{"key":"whey","qty":10},{"key":"stevia","qty":7}]},{"id":51,"name":"Flan coco","cat":"DESSERTS","sub":"","ings":[{"key":"lait","qty":75},{"key":"lait_coco","qty":30},{"key":"oeuf","qty":50},{"key":"maizena","qty":10},{"key":"whey","qty":10},{"key":"stevia","qty":6}]},{"id":52,"name":"Riz au lait protéiné","cat":"DESSERTS","sub":"","ings":[{"key":"riz_rond","qty":25},{"key":"lait","qty":175},{"key":"whey","qty":12},{"key":"stevia","qty":6}]},{"id":53,"name":"Tapioca coco protéiné","cat":"DESSERTS","sub":"","ings":[{"key":"tapioca","qty":20},{"key":"lait","qty":130},{"key":"lait_coco","qty":35},{"key":"whey","qty":12},{"key":"stevia","qty":6}]},{"id":54,"name":"Cookie dough cacahuète","cat":"DESSERTS","sub":"","ings":[{"key":"fromage_blanc","qty":150},{"key":"avoine","qty":15},{"key":"beurre_cacahuete","qty":10},{"key":"whey","qty":15},{"key":"stevia","qty":5}]},{"id":56,"name":"Crème au lait protéinée","cat":"DESSERTS","sub":"","ings":[{"key":"lait","qty":180},{"key":"maizena","qty":12},{"key":"whey","qty":15},{"key":"stevia","qty":5}]},{"id":58,"name":"Crème protéinée chocolat-cacahuète","cat":"DESSERTS","sub":"","ings":[{"key":"fromage_blanc","qty":160},{"key":"whey","qty":15},{"key":"cacao","qty":6},{"key":"beurre_cacahuete","qty":8},{"key":"stevia","qty":7}]},{"id":60,"name":"Crumble framboise-amande","cat":"DESSERTS","sub":"","ings":[{"key":"framboise","qty":130},{"key":"avoine","qty":25},{"key":"farine","qty":10},{"key":"beurre","qty":8},{"key":"amandes","qty":6},{"key":"fromage_blanc","qty":100},{"key":"whey","qty":8},{"key":"stevia","qty":5}]},{"id":61,"name":"Crumble mangue-coco","cat":"DESSERTS","sub":"","ings":[{"key":"mangue","qty":120},{"key":"avoine","qty":25},{"key":"farine","qty":10},{"key":"beurre","qty":8},{"key":"coco_rapee","qty":6},{"key":"fromage_blanc","qty":100},{"key":"whey","qty":8},{"key":"stevia","qty":3.5}]},{"id":63,"name":"Fromage blanc cacao-cacahuète","cat":"DESSERTS","sub":"","ings":[{"key":"fromage_blanc","qty":180},{"key":"cacao","qty":6},{"key":"beurre_cacahuete","qty":8},{"key":"whey","qty":15},{"key":"stevia","qty":7}]},{"id":65,"name":"Faisselle mangue-chia","cat":"DESSERTS","sub":"","ings":[{"key":"faisselle","qty":200},{"key":"mangue","qty":90},{"key":"chia","qty":8},{"key":"whey","qty":12},{"key":"stevia","qty":5}]},{"id":105,"name":"Gâteau moelleux chocolat-cacahuète","cat":"DESSERTS","sub":"GÂTEAUX CUITS","ings":[{"key":"oeuf","qty":25},{"key":"fromage_blanc","qty":60},{"key":"farine","qty":22.5},{"key":"cacao","qty":5},{"key":"beurre_cacahuete","qty":8},{"key":"whey","qty":7.5},{"key":"levure_chimique","qty":1.5},{"key":"stevia","qty":6.5}]},{"id":106,"name":"Gâteau moelleux framboise-amande","cat":"DESSERTS","sub":"GÂTEAUX CUITS","ings":[{"key":"oeuf","qty":25},{"key":"fromage_blanc","qty":60},{"key":"farine","qty":22.5},{"key":"framboise","qty":60},{"key":"amandes","qty":5},{"key":"whey","qty":7.5},{"key":"levure_chimique","qty":1.5},{"key":"stevia","qty":5.5}]},{"id":108,"name":"Gâteau coco-chocolat","cat":"DESSERTS","sub":"GÂTEAUX CUITS","ings":[{"key":"oeuf","qty":25},{"key":"fromage_blanc","qty":60},{"key":"farine","qty":22.5},{"key":"coco_rapee","qty":6},{"key":"chocolat","qty":6},{"key":"whey","qty":7.5},{"key":"levure_chimique","qty":1.5},{"key":"stevia","qty":5.5}]},{"id":66,"name":"Bowl framboise-cacahuète","cat":"PETITS-DÉJEUNERS","sub":"SUCRÉ","ings":[{"key":"fromage_blanc","qty":220},{"key":"avoine","qty":30},{"key":"chia","qty":10},{"key":"framboise","qty":100},{"key":"beurre_cacahuete","qty":12},{"key":"whey","qty":25},{"key":"stevia","qty":6}]},{"id":67,"name":"Overnight mangue-coco","cat":"PETITS-DÉJEUNERS","sub":"SUCRÉ","ings":[{"key":"fromage_blanc","qty":150},{"key":"avoine","qty":50},{"key":"chia","qty":10},{"key":"mangue_conserve","qty":100},{"key":"lait","qty":100},{"key":"lait_coco","qty":25},{"key":"whey","qty":25},{"key":"stevia","qty":4}]},{"id":69,"name":"Tapioca coco-mangue","cat":"PETITS-DÉJEUNERS","sub":"SUCRÉ","ings":[{"key":"tapioca","qty":25},{"key":"lait","qty":170},{"key":"lait_coco","qty":40},{"key":"mangue_conserve","qty":100},{"key":"whey","qty":25},{"key":"stevia","qty":4}]},{"id":70,"name":"Faisselle kiwi-noix","cat":"PETITS-DÉJEUNERS","sub":"SUCRÉ","ings":[{"key":"faisselle","qty":220},{"key":"kiwi","qty":100},{"key":"avoine","qty":25},{"key":"noix","qty":10},{"key":"whey","qty":25},{"key":"stevia","qty":6}]},{"id":73,"name":"Riz au lait framboise","cat":"PETITS-DÉJEUNERS","sub":"SUCRÉ","ings":[{"key":"riz_rond","qty":35},{"key":"lait","qty":200},{"key":"framboise","qty":100},{"key":"whey","qty":25},{"key":"stevia","qty":6}]},{"id":74,"name":"Chia pudding framboise-coco","cat":"PETITS-DÉJEUNERS","sub":"SUCRÉ","ings":[{"key":"yaourt_grec","qty":180},{"key":"chia","qty":12},{"key":"framboise","qty":100},{"key":"lait_coco","qty":40},{"key":"whey","qty":25},{"key":"stevia","qty":6}]},{"id":77,"name":"Wrap œufs-avocat-feta","cat":"PETITS-DÉJEUNERS","sub":"SALÉ","ings":[{"key":"oeuf","qty":100},{"key":"wrap","qty":60},{"key":"avocat","qty":40},{"key":"feta","qty":30},{"key":"mache","qty":60},{"key":"fromage_blanc","qty":80}]},{"id":83,"name":"Wrap thon-œuf-mâche","cat":"PETITS-DÉJEUNERS","sub":"SALÉ","ings":[{"key":"thon","qty":70},{"key":"oeuf","qty":50},{"key":"wrap","qty":50},{"key":"mache","qty":70},{"key":"philadelphia","qty":20}]},{"id":99,"name":"Wrap froid saumon fumé-avocat-fromage frais","cat":"REPAS","sub":"","ings":[{"key":"wrap","qty":60},{"key":"saumon_fume","qty":80},{"key":"avocat","qty":50},{"key":"philadelphia","qty":30},{"key":"mache","qty":50}]},{"id":101,"name":"Wrap bœuf sauce poivre et fromage frais","cat":"REPAS","sub":"","ings":[{"key":"wrap","qty":60},{"key":"boeuf_hache","qty":125},{"key":"philadelphia","qty":25},{"key":"poivre","qty":2},{"key":"mache","qty":50}]},{"id":103,"name":"Wrap jambon, mozzarella et pesto","cat":"REPAS","sub":"","ings":[{"key":"wrap","qty":60},{"key":"jambon","qty":100},{"key":"mozzarella","qty":50},{"key":"pesto","qty":20},{"key":"mache","qty":50}]},{"id":104,"name":"Wrap veau crémeux moutarde-champignons","cat":"REPAS","sub":"","ings":[{"key":"wrap","qty":60},{"key":"veau","qty":130},{"key":"champignon","qty":100},{"key":"moutarde","qty":15},{"key":"philadelphia","qty":20}]},{"id":30105,"name":"Fromage blanc framboises-chia","cat":"COLLATIONS","sub":"","ings":[{"key":"fromage_blanc","qty":200},{"key":"framboise","qty":100},{"key":"chia","qty":10},{"key":"whey","qty":15},{"key":"stevia","qty":4}]},{"id":30108,"name":"Fromage blanc cacao-cacahuète","cat":"COLLATIONS","sub":"","ings":[{"key":"fromage_blanc","qty":200},{"key":"cacao","qty":8},{"key":"beurre_cacahuete","qty":10},{"key":"whey","qty":15},{"key":"stevia","qty":7}]},{"id":30109,"name":"Yaourt grec framboises-avoine","cat":"COLLATIONS","sub":"","ings":[{"key":"yaourt_grec","qty":180},{"key":"framboise","qty":100},{"key":"avoine","qty":15},{"key":"whey","qty":15},{"key":"stevia","qty":4}]},{"id":30111,"name":"Fromage blanc mangue-chia","cat":"COLLATIONS","sub":"","ings":[{"key":"fromage_blanc","qty":200},{"key":"mangue_conserve","qty":100},{"key":"chia","qty":8},{"key":"whey","qty":15},{"key":"stevia","qty":4}]},{"id":30200,"name":"Energy balls cacao-cacahuète","cat":"COLLATIONS","sub":"ENERGY BALLS","ings":[{"key":"avoine","qty":25},{"key":"beurre_cacahuete","qty":12},{"key":"whey","qty":15},{"key":"cacao","qty":5},{"key":"lait","qty":15},{"key":"stevia","qty":4}]},{"id":30201,"name":"Energy balls coco-amande","cat":"COLLATIONS","sub":"ENERGY BALLS","ings":[{"key":"avoine","qty":25},{"key":"amandes","qty":10},{"key":"whey","qty":15},{"key":"coco_rapee","qty":8},{"key":"lait","qty":20},{"key":"stevia","qty":4}]},{"id":30202,"name":"Energy balls framboise-coco","cat":"COLLATIONS","sub":"ENERGY BALLS","ings":[{"key":"avoine","qty":25},{"key":"whey","qty":15},{"key":"framboise","qty":35},{"key":"coco_rapee","qty":8},{"key":"stevia","qty":4}]},{"id":30203,"name":"Barre protéinée chocolat-cacahuète","cat":"COLLATIONS","sub":"BARRES PROTÉINÉES","ings":[{"key":"avoine","qty":30},{"key":"whey","qty":20},{"key":"beurre_cacahuete","qty":12},{"key":"cacao","qty":5},{"key":"lait","qty":25},{"key":"chocolat","qty":6},{"key":"stevia","qty":4}]},{"id":30204,"name":"Barre protéinée coco-chocolat","cat":"COLLATIONS","sub":"BARRES PROTÉINÉES","ings":[{"key":"avoine","qty":30},{"key":"whey","qty":20},{"key":"coco_rapee","qty":8},{"key":"lait","qty":30},{"key":"chocolat","qty":6},{"key":"stevia","qty":4}]},{"id":30205,"name":"Barre protéinée framboise-amande","cat":"COLLATIONS","sub":"BARRES PROTÉINÉES","ings":[{"key":"avoine","qty":30},{"key":"whey","qty":20},{"key":"amandes","qty":8},{"key":"framboise","qty":40},{"key":"lait","qty":15},{"key":"stevia","qty":4}]},{"id":30206,"name":"Cookie dough protéinée cacao-cacahuète","cat":"COLLATIONS","sub":"COOKIE DOUGH","ings":[{"key":"fromage_blanc","qty":120},{"key":"avoine","qty":20},{"key":"whey","qty":15},{"key":"beurre_cacahuete","qty":10},{"key":"cacao","qty":5},{"key":"stevia","qty":5}]},{"id":30207,"name":"Cookie dough protéinée coco-chocolat","cat":"COLLATIONS","sub":"COOKIE DOUGH","ings":[{"key":"fromage_blanc","qty":120},{"key":"avoine","qty":20},{"key":"whey","qty":15},{"key":"coco_rapee","qty":6},{"key":"chocolat","qty":6},{"key":"stevia","qty":5}]},{"id":30208,"name":"Cookie dough protéinée framboise-amande","cat":"COLLATIONS","sub":"COOKIE DOUGH","ings":[{"key":"fromage_blanc","qty":120},{"key":"avoine","qty":20},{"key":"whey","qty":15},{"key":"framboise","qty":50},{"key":"amandes","qty":6},{"key":"stevia","qty":4}]},{"id":30300,"name":"Wrap froid thon-avocat citron","cat":"REPAS","sub":"WRAPS FROIDS","ings":[{"key":"wrap","qty":60},{"key":"thon","qty":120},{"key":"avocat","qty":50},{"key":"fromage_blanc","qty":50},{"key":"mache","qty":60}]},{"id":30301,"name":"Wrap froid saumon fumé-fromage frais","cat":"REPAS","sub":"WRAPS FROIDS","ings":[{"key":"wrap","qty":60},{"key":"saumon_fume","qty":100},{"key":"philadelphia","qty":30},{"key":"avocat","qty":40},{"key":"mache","qty":60}]},{"id":30303,"name":"Wrap froid jambon cru-feta-mâche","cat":"REPAS","sub":"WRAPS FROIDS","ings":[{"key":"wrap","qty":60},{"key":"jambon_cru","qty":90},{"key":"feta","qty":35},{"key":"mache","qty":70},{"key":"fromage_blanc","qty":40}]},{"id":30304,"name":"Wrap chaud bœuf-champignons sauce poivre","cat":"REPAS","sub":"WRAPS CHAUDS","ings":[{"key":"wrap","qty":60},{"key":"boeuf_hache","qty":130},{"key":"champignon","qty":120},{"key":"fromage_blanc","qty":50},{"key":"poivre","qty":2}]},{"id":30307,"name":"Wrap chaud saumon-épinards fromage frais","cat":"REPAS","sub":"WRAPS CHAUDS","ings":[{"key":"wrap","qty":60},{"key":"saumon","qty":130},{"key":"epinard","qty":120},{"key":"philadelphia","qty":30}]},{"id":30308,"name":"Wrap chaud bœuf-feta-oignons","cat":"REPAS","sub":"WRAPS CHAUDS","ings":[{"key":"wrap","qty":60},{"key":"boeuf_hache","qty":130},{"key":"feta","qty":30},{"key":"oignon","qty":50},{"key":"mache","qty":40}]},{"id":30309,"name":"Wrap chaud porc curry-coco","cat":"REPAS","sub":"WRAPS CHAUDS","ings":[{"key":"wrap","qty":60},{"key":"porc_echine","qty":130},{"key":"courgette","qty":120},{"key":"lait_coco","qty":35},{"key":"curry","qty":3}]}];
+const RECIPES=[
+ {
+  "id": 3,
+  "name": "Porc curry-coco + riz et courgette",
+  "cat": "REPAS",
+  "sub": "",
+  "ings": [
+   {
+    "key": "porc_filet",
+    "qty": 150
+   },
+   {
+    "key": "riz",
+    "qty": 50
+   },
+   {
+    "key": "courgette",
+    "qty": 200
+   },
+   {
+    "key": "lait_coco",
+    "qty": 40
+   },
+   {
+    "key": "curry",
+    "qty": 6
+   },
+   {
+    "key": "ail",
+    "qty": 4
+   }
+  ]
+ },
+ {
+  "id": 5,
+  "name": "Wrap porc-avocat-carottes",
+  "cat": "REPAS",
+  "sub": "",
+  "ings": [
+   {
+    "key": "porc_filet",
+    "qty": 150
+   },
+   {
+    "key": "wrap",
+    "qty": 60
+   },
+   {
+    "key": "carotte",
+    "qty": 100
+   },
+   {
+    "key": "mache",
+    "qty": 50
+   },
+   {
+    "key": "avocat",
+    "qty": 50
+   }
+  ]
+ },
+ {
+  "id": 9,
+  "name": "Bœuf Roquefort + pâtes",
+  "cat": "REPAS",
+  "sub": "",
+  "ings": [
+   {
+    "key": "boeuf_mijoter",
+    "qty": 150
+   },
+   {
+    "key": "pates",
+    "qty": 50
+   },
+   {
+    "key": "roquefort",
+    "qty": 15
+   },
+   {
+    "key": "creme",
+    "qty": 15
+   },
+   {
+    "key": "courgette",
+    "qty": 200
+   }
+  ]
+ },
+ {
+  "id": 12,
+  "name": "Blanquette de veau légère + riz",
+  "cat": "REPAS",
+  "sub": "",
+  "ings": [
+   {
+    "key": "veau",
+    "qty": 150
+   },
+   {
+    "key": "riz",
+    "qty": 50
+   },
+   {
+    "key": "carotte",
+    "qty": 150
+   },
+   {
+    "key": "poireau",
+    "qty": 100
+   },
+   {
+    "key": "creme",
+    "qty": 30
+   }
+  ]
+ },
+ {
+  "id": 17,
+  "name": "Udon porc courgette-champignons",
+  "cat": "REPAS",
+  "sub": "",
+  "ings": [
+   {
+    "key": "porc_filet",
+    "qty": 150
+   },
+   {
+    "key": "udon",
+    "qty": 180
+   },
+   {
+    "key": "courgette",
+    "qty": 200
+   },
+   {
+    "key": "champignon",
+    "qty": 150
+   }
+  ]
+ },
+ {
+  "id": 19,
+  "name": "Pâtes thon-crème-poireaux",
+  "cat": "REPAS",
+  "sub": "",
+  "ings": [
+   {
+    "key": "thon",
+    "qty": 110
+   },
+   {
+    "key": "pates",
+    "qty": 50
+   },
+   {
+    "key": "poireau",
+    "qty": 200
+   },
+   {
+    "key": "philadelphia",
+    "qty": 30
+   }
+  ]
+ },
+ {
+  "id": 21,
+  "name": "Pâtes saumon-crème-épinards",
+  "cat": "REPAS",
+  "sub": "",
+  "ings": [
+   {
+    "key": "saumon",
+    "qty": 125
+   },
+   {
+    "key": "pates",
+    "qty": 50
+   },
+   {
+    "key": "epinard",
+    "qty": 200
+   },
+   {
+    "key": "creme",
+    "qty": 30
+   }
+  ]
+ },
+ {
+  "id": 22,
+  "name": "Cabillaud crème-poireaux + riz",
+  "cat": "REPAS",
+  "sub": "",
+  "ings": [
+   {
+    "key": "cabillaud",
+    "qty": 150
+   },
+   {
+    "key": "riz",
+    "qty": 50
+   },
+   {
+    "key": "poireau",
+    "qty": 200
+   },
+   {
+    "key": "creme",
+    "qty": 30
+   }
+  ]
+ },
+ {
+  "id": 27,
+  "name": "Thon-courgette façon risotto rapide",
+  "cat": "REPAS",
+  "sub": "",
+  "ings": [
+   {
+    "key": "thon",
+    "qty": 110
+   },
+   {
+    "key": "riz",
+    "qty": 50
+   },
+   {
+    "key": "courgette",
+    "qty": 200
+   },
+   {
+    "key": "parmesan",
+    "qty": 15
+   },
+   {
+    "key": "philadelphia",
+    "qty": 20
+   }
+  ]
+ },
+ {
+  "id": 29,
+  "name": "Poisson blanc pané maison + patate douce",
+  "cat": "REPAS",
+  "sub": "",
+  "ings": [
+   {
+    "key": "cabillaud",
+    "qty": 150
+   },
+   {
+    "key": "chapelure",
+    "qty": 18
+   },
+   {
+    "key": "oeuf",
+    "qty": 50
+   },
+   {
+    "key": "patate_douce",
+    "qty": 180
+   },
+   {
+    "key": "brocoli",
+    "qty": 150
+   }
+  ]
+ },
+ {
+  "id": 33,
+  "name": "Wrap froid thon-fromage frais-avocat",
+  "cat": "REPAS",
+  "sub": "",
+  "ings": [
+   {
+    "key": "thon",
+    "qty": 100
+   },
+   {
+    "key": "wrap",
+    "qty": 60
+   },
+   {
+    "key": "philadelphia",
+    "qty": 30
+   },
+   {
+    "key": "avocat",
+    "qty": 50
+   },
+   {
+    "key": "mache",
+    "qty": 70
+   }
+  ]
+ },
+ {
+  "id": 37,
+  "name": "Wrap porc-carottes-mâche",
+  "cat": "REPAS",
+  "sub": "",
+  "ings": [
+   {
+    "key": "porc_filet",
+    "qty": 150
+   },
+   {
+    "key": "wrap",
+    "qty": 60
+   },
+   {
+    "key": "carotte",
+    "qty": 130
+   },
+   {
+    "key": "mache",
+    "qty": 50
+   }
+  ]
+ },
+ {
+  "id": 44,
+  "name": "Bowl froid riz-thon-maïs-avocat",
+  "cat": "REPAS",
+  "sub": "",
+  "ings": [
+   {
+    "key": "thon",
+    "qty": 100
+   },
+   {
+    "key": "riz",
+    "qty": 50
+   },
+   {
+    "key": "mais",
+    "qty": 70
+   },
+   {
+    "key": "avocat",
+    "qty": 40
+   },
+   {
+    "key": "mache",
+    "qty": 70
+   }
+  ]
+ },
+ {
+  "id": 48,
+  "name": "Clafoutis framboise",
+  "cat": "DESSERTS",
+  "sub": "",
+  "ings": [
+   {
+    "key": "oeuf",
+    "qty": 25
+   },
+   {
+    "key": "lait",
+    "qty": 50
+   },
+   {
+    "key": "farine",
+    "qty": 10
+   },
+   {
+    "key": "whey",
+    "qty": 5
+   },
+   {
+    "key": "framboise",
+    "qty": 70
+   },
+   {
+    "key": "stevia",
+    "qty": 5
+   }
+  ]
+ },
+ {
+  "id": 50,
+  "name": "Flan pâtissier",
+  "cat": "DESSERTS",
+  "sub": "",
+  "ings": [
+   {
+    "key": "lait",
+    "qty": 105
+   },
+   {
+    "key": "oeuf",
+    "qty": 50
+   },
+   {
+    "key": "maizena",
+    "qty": 10
+   },
+   {
+    "key": "whey",
+    "qty": 10
+   },
+   {
+    "key": "stevia",
+    "qty": 7
+   }
+  ]
+ },
+ {
+  "id": 51,
+  "name": "Flan coco",
+  "cat": "DESSERTS",
+  "sub": "",
+  "ings": [
+   {
+    "key": "lait",
+    "qty": 75
+   },
+   {
+    "key": "lait_coco",
+    "qty": 30
+   },
+   {
+    "key": "oeuf",
+    "qty": 50
+   },
+   {
+    "key": "maizena",
+    "qty": 10
+   },
+   {
+    "key": "whey",
+    "qty": 10
+   },
+   {
+    "key": "stevia",
+    "qty": 6
+   }
+  ]
+ },
+ {
+  "id": 52,
+  "name": "Riz au lait protéiné",
+  "cat": "DESSERTS",
+  "sub": "",
+  "ings": [
+   {
+    "key": "riz_rond",
+    "qty": 25
+   },
+   {
+    "key": "lait",
+    "qty": 175
+   },
+   {
+    "key": "whey",
+    "qty": 12
+   },
+   {
+    "key": "stevia",
+    "qty": 6
+   }
+  ]
+ },
+ {
+  "id": 53,
+  "name": "Tapioca coco protéiné",
+  "cat": "DESSERTS",
+  "sub": "",
+  "ings": [
+   {
+    "key": "tapioca",
+    "qty": 20
+   },
+   {
+    "key": "lait",
+    "qty": 130
+   },
+   {
+    "key": "lait_coco",
+    "qty": 35
+   },
+   {
+    "key": "whey",
+    "qty": 12
+   },
+   {
+    "key": "stevia",
+    "qty": 6
+   }
+  ]
+ },
+ {
+  "id": 54,
+  "name": "Cookie dough cacahuète",
+  "cat": "DESSERTS",
+  "sub": "",
+  "ings": [
+   {
+    "key": "fromage_blanc",
+    "qty": 150
+   },
+   {
+    "key": "avoine",
+    "qty": 15
+   },
+   {
+    "key": "beurre_cacahuete",
+    "qty": 10
+   },
+   {
+    "key": "whey",
+    "qty": 15
+   },
+   {
+    "key": "stevia",
+    "qty": 5
+   }
+  ]
+ },
+ {
+  "id": 56,
+  "name": "Crème au lait protéinée",
+  "cat": "DESSERTS",
+  "sub": "",
+  "ings": [
+   {
+    "key": "lait",
+    "qty": 180
+   },
+   {
+    "key": "maizena",
+    "qty": 12
+   },
+   {
+    "key": "whey",
+    "qty": 15
+   },
+   {
+    "key": "stevia",
+    "qty": 5
+   }
+  ]
+ },
+ {
+  "id": 58,
+  "name": "Crème protéinée chocolat-cacahuète",
+  "cat": "DESSERTS",
+  "sub": "",
+  "ings": [
+   {
+    "key": "fromage_blanc",
+    "qty": 160
+   },
+   {
+    "key": "whey",
+    "qty": 15
+   },
+   {
+    "key": "cacao",
+    "qty": 6
+   },
+   {
+    "key": "beurre_cacahuete",
+    "qty": 8
+   },
+   {
+    "key": "stevia",
+    "qty": 7
+   }
+  ]
+ },
+ {
+  "id": 60,
+  "name": "Crumble framboise-amande",
+  "cat": "DESSERTS",
+  "sub": "",
+  "ings": [
+   {
+    "key": "framboise",
+    "qty": 130
+   },
+   {
+    "key": "avoine",
+    "qty": 25
+   },
+   {
+    "key": "farine",
+    "qty": 10
+   },
+   {
+    "key": "beurre",
+    "qty": 6
+   },
+   {
+    "key": "amandes",
+    "qty": 5
+   },
+   {
+    "key": "fromage_blanc",
+    "qty": 100
+   },
+   {
+    "key": "whey",
+    "qty": 8
+   },
+   {
+    "key": "stevia",
+    "qty": 5
+   }
+  ]
+ },
+ {
+  "id": 61,
+  "name": "Crumble mangue-coco",
+  "cat": "DESSERTS",
+  "sub": "",
+  "ings": [
+   {
+    "key": "mangue",
+    "qty": 120
+   },
+   {
+    "key": "avoine",
+    "qty": 25
+   },
+   {
+    "key": "farine",
+    "qty": 10
+   },
+   {
+    "key": "beurre",
+    "qty": 6
+   },
+   {
+    "key": "coco_rapee",
+    "qty": 5
+   },
+   {
+    "key": "fromage_blanc",
+    "qty": 100
+   },
+   {
+    "key": "whey",
+    "qty": 8
+   },
+   {
+    "key": "stevia",
+    "qty": 3.5
+   }
+  ]
+ },
+ {
+  "id": 63,
+  "name": "Fromage blanc cacao-cacahuète",
+  "cat": "DESSERTS",
+  "sub": "",
+  "ings": [
+   {
+    "key": "fromage_blanc",
+    "qty": 180
+   },
+   {
+    "key": "cacao",
+    "qty": 6
+   },
+   {
+    "key": "beurre_cacahuete",
+    "qty": 8
+   },
+   {
+    "key": "whey",
+    "qty": 15
+   },
+   {
+    "key": "stevia",
+    "qty": 7
+   }
+  ]
+ },
+ {
+  "id": 65,
+  "name": "Faisselle mangue-chia",
+  "cat": "DESSERTS",
+  "sub": "",
+  "ings": [
+   {
+    "key": "faisselle",
+    "qty": 200
+   },
+   {
+    "key": "mangue",
+    "qty": 90
+   },
+   {
+    "key": "chia",
+    "qty": 10
+   },
+   {
+    "key": "whey",
+    "qty": 12
+   },
+   {
+    "key": "stevia",
+    "qty": 5
+   }
+  ]
+ },
+ {
+  "id": 105,
+  "name": "Gâteau moelleux chocolat-cacahuète",
+  "cat": "DESSERTS",
+  "sub": "GÂTEAUX CUITS",
+  "ings": [
+   {
+    "key": "oeuf",
+    "qty": 25
+   },
+   {
+    "key": "fromage_blanc",
+    "qty": 60
+   },
+   {
+    "key": "farine",
+    "qty": 22.5
+   },
+   {
+    "key": "cacao",
+    "qty": 5
+   },
+   {
+    "key": "beurre_cacahuete",
+    "qty": 8
+   },
+   {
+    "key": "whey",
+    "qty": 7.5
+   },
+   {
+    "key": "levure_chimique",
+    "qty": 1.5
+   },
+   {
+    "key": "stevia",
+    "qty": 6.5
+   }
+  ]
+ },
+ {
+  "id": 106,
+  "name": "Gâteau moelleux framboise-amande",
+  "cat": "DESSERTS",
+  "sub": "GÂTEAUX CUITS",
+  "ings": [
+   {
+    "key": "oeuf",
+    "qty": 25
+   },
+   {
+    "key": "fromage_blanc",
+    "qty": 60
+   },
+   {
+    "key": "farine",
+    "qty": 22.5
+   },
+   {
+    "key": "framboise",
+    "qty": 60
+   },
+   {
+    "key": "amandes",
+    "qty": 5
+   },
+   {
+    "key": "whey",
+    "qty": 7.5
+   },
+   {
+    "key": "levure_chimique",
+    "qty": 1.5
+   },
+   {
+    "key": "stevia",
+    "qty": 5.5
+   }
+  ]
+ },
+ {
+  "id": 108,
+  "name": "Gâteau coco-chocolat",
+  "cat": "DESSERTS",
+  "sub": "GÂTEAUX CUITS",
+  "ings": [
+   {
+    "key": "oeuf",
+    "qty": 25
+   },
+   {
+    "key": "fromage_blanc",
+    "qty": 60
+   },
+   {
+    "key": "farine",
+    "qty": 22.5
+   },
+   {
+    "key": "coco_rapee",
+    "qty": 6
+   },
+   {
+    "key": "chocolat",
+    "qty": 6
+   },
+   {
+    "key": "whey",
+    "qty": 7.5
+   },
+   {
+    "key": "levure_chimique",
+    "qty": 1.5
+   },
+   {
+    "key": "stevia",
+    "qty": 5.5
+   }
+  ]
+ },
+ {
+  "id": 66,
+  "name": "Bowl framboise-cacahuète",
+  "cat": "PETITS-DÉJEUNERS",
+  "sub": "SUCRÉ",
+  "ings": [
+   {
+    "key": "fromage_blanc",
+    "qty": 220
+   },
+   {
+    "key": "avoine",
+    "qty": 30
+   },
+   {
+    "key": "chia",
+    "qty": 10
+   },
+   {
+    "key": "framboise",
+    "qty": 100
+   },
+   {
+    "key": "beurre_cacahuete",
+    "qty": 8
+   },
+   {
+    "key": "whey",
+    "qty": 25
+   },
+   {
+    "key": "stevia",
+    "qty": 6
+   }
+  ]
+ },
+ {
+  "id": 67,
+  "name": "Overnight mangue-coco",
+  "cat": "PETITS-DÉJEUNERS",
+  "sub": "SUCRÉ",
+  "ings": [
+   {
+    "key": "fromage_blanc",
+    "qty": 150
+   },
+   {
+    "key": "avoine",
+    "qty": 50
+   },
+   {
+    "key": "chia",
+    "qty": 10
+   },
+   {
+    "key": "mangue_conserve",
+    "qty": 100
+   },
+   {
+    "key": "lait",
+    "qty": 100
+   },
+   {
+    "key": "lait_coco",
+    "qty": 15
+   },
+   {
+    "key": "whey",
+    "qty": 25
+   },
+   {
+    "key": "stevia",
+    "qty": 4
+   }
+  ]
+ },
+ {
+  "id": 69,
+  "name": "Tapioca coco-mangue",
+  "cat": "PETITS-DÉJEUNERS",
+  "sub": "SUCRÉ",
+  "ings": [
+   {
+    "key": "tapioca",
+    "qty": 25
+   },
+   {
+    "key": "lait",
+    "qty": 170
+   },
+   {
+    "key": "lait_coco",
+    "qty": 40
+   },
+   {
+    "key": "mangue_conserve",
+    "qty": 100
+   },
+   {
+    "key": "whey",
+    "qty": 25
+   },
+   {
+    "key": "stevia",
+    "qty": 4
+   }
+  ]
+ },
+ {
+  "id": 70,
+  "name": "Faisselle kiwi-noix",
+  "cat": "PETITS-DÉJEUNERS",
+  "sub": "SUCRÉ",
+  "ings": [
+   {
+    "key": "faisselle",
+    "qty": 220
+   },
+   {
+    "key": "kiwi",
+    "qty": 100
+   },
+   {
+    "key": "avoine",
+    "qty": 25
+   },
+   {
+    "key": "noix",
+    "qty": 8
+   },
+   {
+    "key": "whey",
+    "qty": 25
+   },
+   {
+    "key": "stevia",
+    "qty": 6
+   }
+  ]
+ },
+ {
+  "id": 73,
+  "name": "Riz au lait framboise",
+  "cat": "PETITS-DÉJEUNERS",
+  "sub": "SUCRÉ",
+  "ings": [
+   {
+    "key": "riz_rond",
+    "qty": 35
+   },
+   {
+    "key": "lait",
+    "qty": 200
+   },
+   {
+    "key": "framboise",
+    "qty": 100
+   },
+   {
+    "key": "whey",
+    "qty": 25
+   },
+   {
+    "key": "stevia",
+    "qty": 6
+   }
+  ]
+ },
+ {
+  "id": 74,
+  "name": "Chia pudding framboise-coco",
+  "cat": "PETITS-DÉJEUNERS",
+  "sub": "SUCRÉ",
+  "ings": [
+   {
+    "key": "yaourt_grec",
+    "qty": 180
+   },
+   {
+    "key": "chia",
+    "qty": 12
+   },
+   {
+    "key": "framboise",
+    "qty": 100
+   },
+   {
+    "key": "lait_coco",
+    "qty": 20
+   },
+   {
+    "key": "whey",
+    "qty": 25
+   },
+   {
+    "key": "stevia",
+    "qty": 6
+   }
+  ]
+ },
+ {
+  "id": 77,
+  "name": "Wrap œufs-avocat-feta",
+  "cat": "PETITS-DÉJEUNERS",
+  "sub": "SALÉ",
+  "ings": [
+   {
+    "key": "oeuf",
+    "qty": 100
+   },
+   {
+    "key": "wrap",
+    "qty": 60
+   },
+   {
+    "key": "avocat",
+    "qty": 25
+   },
+   {
+    "key": "feta",
+    "qty": 20
+   },
+   {
+    "key": "mache",
+    "qty": 60
+   },
+   {
+    "key": "fromage_blanc",
+    "qty": 80
+   }
+  ]
+ },
+ {
+  "id": 83,
+  "name": "Wrap thon-œuf-mâche",
+  "cat": "PETITS-DÉJEUNERS",
+  "sub": "SALÉ",
+  "ings": [
+   {
+    "key": "thon",
+    "qty": 70
+   },
+   {
+    "key": "oeuf",
+    "qty": 50
+   },
+   {
+    "key": "wrap",
+    "qty": 50
+   },
+   {
+    "key": "mache",
+    "qty": 70
+   },
+   {
+    "key": "philadelphia",
+    "qty": 20
+   }
+  ]
+ },
+ {
+  "id": 99,
+  "name": "Wrap froid saumon fumé-avocat-fromage frais",
+  "cat": "REPAS",
+  "sub": "",
+  "ings": [
+   {
+    "key": "wrap",
+    "qty": 60
+   },
+   {
+    "key": "saumon_fume",
+    "qty": 100
+   },
+   {
+    "key": "avocat",
+    "qty": 30
+   },
+   {
+    "key": "philadelphia",
+    "qty": 20
+   },
+   {
+    "key": "mache",
+    "qty": 50
+   }
+  ]
+ },
+ {
+  "id": 101,
+  "name": "Wrap bœuf sauce poivre et fromage frais",
+  "cat": "REPAS",
+  "sub": "",
+  "ings": [
+   {
+    "key": "wrap",
+    "qty": 60
+   },
+   {
+    "key": "boeuf_hache",
+    "qty": 125
+   },
+   {
+    "key": "philadelphia",
+    "qty": 15
+   },
+   {
+    "key": "poivre",
+    "qty": 2
+   },
+   {
+    "key": "mache",
+    "qty": 70
+   }
+  ]
+ },
+ {
+  "id": 103,
+  "name": "Wrap jambon, mozzarella et pesto",
+  "cat": "REPAS",
+  "sub": "",
+  "ings": [
+   {
+    "key": "wrap",
+    "qty": 60
+   },
+   {
+    "key": "jambon",
+    "qty": 110
+   },
+   {
+    "key": "mozzarella",
+    "qty": 35
+   },
+   {
+    "key": "pesto",
+    "qty": 10
+   },
+   {
+    "key": "mache",
+    "qty": 70
+   }
+  ]
+ },
+ {
+  "id": 104,
+  "name": "Wrap veau crémeux moutarde-champignons",
+  "cat": "REPAS",
+  "sub": "",
+  "ings": [
+   {
+    "key": "wrap",
+    "qty": 60
+   },
+   {
+    "key": "veau",
+    "qty": 130
+   },
+   {
+    "key": "champignon",
+    "qty": 150
+   },
+   {
+    "key": "moutarde",
+    "qty": 15
+   },
+   {
+    "key": "philadelphia",
+    "qty": 20
+   }
+  ]
+ },
+ {
+  "id": 30105,
+  "name": "Fromage blanc framboises-chia",
+  "cat": "COLLATIONS",
+  "sub": "",
+  "ings": [
+   {
+    "key": "fromage_blanc",
+    "qty": 200
+   },
+   {
+    "key": "framboise",
+    "qty": 100
+   },
+   {
+    "key": "chia",
+    "qty": 10
+   },
+   {
+    "key": "whey",
+    "qty": 15
+   },
+   {
+    "key": "stevia",
+    "qty": 4
+   }
+  ]
+ },
+ {
+  "id": 30108,
+  "name": "Fromage blanc cacao-cacahuète",
+  "cat": "COLLATIONS",
+  "sub": "",
+  "ings": [
+   {
+    "key": "fromage_blanc",
+    "qty": 200
+   },
+   {
+    "key": "cacao",
+    "qty": 8
+   },
+   {
+    "key": "beurre_cacahuete",
+    "qty": 8
+   },
+   {
+    "key": "whey",
+    "qty": 15
+   },
+   {
+    "key": "stevia",
+    "qty": 7
+   }
+  ]
+ },
+ {
+  "id": 30109,
+  "name": "Yaourt grec framboises-avoine",
+  "cat": "COLLATIONS",
+  "sub": "",
+  "ings": [
+   {
+    "key": "yaourt_grec",
+    "qty": 120
+   },
+   {
+    "key": "framboise",
+    "qty": 100
+   },
+   {
+    "key": "avoine",
+    "qty": 15
+   },
+   {
+    "key": "whey",
+    "qty": 15
+   },
+   {
+    "key": "stevia",
+    "qty": 4
+   },
+   {
+    "key": "fromage_blanc",
+    "qty": 60
+   }
+  ]
+ },
+ {
+  "id": 30111,
+  "name": "Fromage blanc mangue-chia",
+  "cat": "COLLATIONS",
+  "sub": "",
+  "ings": [
+   {
+    "key": "fromage_blanc",
+    "qty": 200
+   },
+   {
+    "key": "mangue_conserve",
+    "qty": 100
+   },
+   {
+    "key": "chia",
+    "qty": 8
+   },
+   {
+    "key": "whey",
+    "qty": 15
+   },
+   {
+    "key": "stevia",
+    "qty": 4
+   }
+  ]
+ },
+ {
+  "id": 30200,
+  "name": "Energy balls cacao-cacahuète",
+  "cat": "COLLATIONS",
+  "sub": "ENERGY BALLS",
+  "ings": [
+   {
+    "key": "avoine",
+    "qty": 25
+   },
+   {
+    "key": "beurre_cacahuete",
+    "qty": 12
+   },
+   {
+    "key": "whey",
+    "qty": 15
+   },
+   {
+    "key": "cacao",
+    "qty": 5
+   },
+   {
+    "key": "lait",
+    "qty": 15
+   },
+   {
+    "key": "stevia",
+    "qty": 4
+   }
+  ]
+ },
+ {
+  "id": 30201,
+  "name": "Energy balls coco-amande",
+  "cat": "COLLATIONS",
+  "sub": "ENERGY BALLS",
+  "ings": [
+   {
+    "key": "avoine",
+    "qty": 25
+   },
+   {
+    "key": "amandes",
+    "qty": 8
+   },
+   {
+    "key": "whey",
+    "qty": 15
+   },
+   {
+    "key": "coco_rapee",
+    "qty": 6
+   },
+   {
+    "key": "lait",
+    "qty": 20
+   },
+   {
+    "key": "stevia",
+    "qty": 4
+   }
+  ]
+ },
+ {
+  "id": 30202,
+  "name": "Energy balls framboise-coco",
+  "cat": "COLLATIONS",
+  "sub": "ENERGY BALLS",
+  "ings": [
+   {
+    "key": "avoine",
+    "qty": 25
+   },
+   {
+    "key": "whey",
+    "qty": 15
+   },
+   {
+    "key": "framboise",
+    "qty": 35
+   },
+   {
+    "key": "coco_rapee",
+    "qty": 8
+   },
+   {
+    "key": "stevia",
+    "qty": 4
+   }
+  ]
+ },
+ {
+  "id": 30203,
+  "name": "Barre protéinée chocolat-cacahuète",
+  "cat": "COLLATIONS",
+  "sub": "BARRES PROTÉINÉES",
+  "ings": [
+   {
+    "key": "avoine",
+    "qty": 30
+   },
+   {
+    "key": "whey",
+    "qty": 20
+   },
+   {
+    "key": "beurre_cacahuete",
+    "qty": 8
+   },
+   {
+    "key": "cacao",
+    "qty": 5
+   },
+   {
+    "key": "lait",
+    "qty": 25
+   },
+   {
+    "key": "chocolat",
+    "qty": 6
+   },
+   {
+    "key": "stevia",
+    "qty": 4
+   }
+  ]
+ },
+ {
+  "id": 30204,
+  "name": "Barre protéinée coco-chocolat",
+  "cat": "COLLATIONS",
+  "sub": "BARRES PROTÉINÉES",
+  "ings": [
+   {
+    "key": "avoine",
+    "qty": 30
+   },
+   {
+    "key": "whey",
+    "qty": 20
+   },
+   {
+    "key": "coco_rapee",
+    "qty": 6
+   },
+   {
+    "key": "lait",
+    "qty": 30
+   },
+   {
+    "key": "chocolat",
+    "qty": 6
+   },
+   {
+    "key": "stevia",
+    "qty": 4
+   }
+  ]
+ },
+ {
+  "id": 30205,
+  "name": "Barre protéinée framboise-amande",
+  "cat": "COLLATIONS",
+  "sub": "BARRES PROTÉINÉES",
+  "ings": [
+   {
+    "key": "avoine",
+    "qty": 30
+   },
+   {
+    "key": "whey",
+    "qty": 20
+   },
+   {
+    "key": "amandes",
+    "qty": 8
+   },
+   {
+    "key": "framboise",
+    "qty": 40
+   },
+   {
+    "key": "lait",
+    "qty": 15
+   },
+   {
+    "key": "stevia",
+    "qty": 4
+   }
+  ]
+ },
+ {
+  "id": 30206,
+  "name": "Cookie dough protéinée cacao-cacahuète",
+  "cat": "COLLATIONS",
+  "sub": "COOKIE DOUGH",
+  "ings": [
+   {
+    "key": "fromage_blanc",
+    "qty": 120
+   },
+   {
+    "key": "avoine",
+    "qty": 20
+   },
+   {
+    "key": "whey",
+    "qty": 15
+   },
+   {
+    "key": "beurre_cacahuete",
+    "qty": 10
+   },
+   {
+    "key": "cacao",
+    "qty": 5
+   },
+   {
+    "key": "stevia",
+    "qty": 5
+   }
+  ]
+ },
+ {
+  "id": 30207,
+  "name": "Cookie dough protéinée coco-chocolat",
+  "cat": "COLLATIONS",
+  "sub": "COOKIE DOUGH",
+  "ings": [
+   {
+    "key": "fromage_blanc",
+    "qty": 120
+   },
+   {
+    "key": "avoine",
+    "qty": 20
+   },
+   {
+    "key": "whey",
+    "qty": 15
+   },
+   {
+    "key": "coco_rapee",
+    "qty": 6
+   },
+   {
+    "key": "chocolat",
+    "qty": 6
+   },
+   {
+    "key": "stevia",
+    "qty": 5
+   }
+  ]
+ },
+ {
+  "id": 30208,
+  "name": "Cookie dough protéinée framboise-amande",
+  "cat": "COLLATIONS",
+  "sub": "COOKIE DOUGH",
+  "ings": [
+   {
+    "key": "fromage_blanc",
+    "qty": 120
+   },
+   {
+    "key": "avoine",
+    "qty": 20
+   },
+   {
+    "key": "whey",
+    "qty": 15
+   },
+   {
+    "key": "framboise",
+    "qty": 50
+   },
+   {
+    "key": "amandes",
+    "qty": 6
+   },
+   {
+    "key": "stevia",
+    "qty": 4
+   }
+  ]
+ },
+ {
+  "id": 30300,
+  "name": "Wrap froid thon-avocat citron",
+  "cat": "REPAS",
+  "sub": "WRAPS FROIDS",
+  "ings": [
+   {
+    "key": "wrap",
+    "qty": 60
+   },
+   {
+    "key": "thon",
+    "qty": 120
+   },
+   {
+    "key": "avocat",
+    "qty": 50
+   },
+   {
+    "key": "fromage_blanc",
+    "qty": 50
+   },
+   {
+    "key": "mache",
+    "qty": 80
+   }
+  ]
+ },
+ {
+  "id": 30301,
+  "name": "Wrap froid saumon fumé-fromage frais",
+  "cat": "REPAS",
+  "sub": "WRAPS FROIDS",
+  "ings": [
+   {
+    "key": "wrap",
+    "qty": 60
+   },
+   {
+    "key": "saumon_fume",
+    "qty": 110
+   },
+   {
+    "key": "philadelphia",
+    "qty": 20
+   },
+   {
+    "key": "avocat",
+    "qty": 25
+   },
+   {
+    "key": "mache",
+    "qty": 80
+   }
+  ]
+ },
+ {
+  "id": 30303,
+  "name": "Wrap froid jambon cru-feta-mâche",
+  "cat": "REPAS",
+  "sub": "WRAPS FROIDS",
+  "ings": [
+   {
+    "key": "wrap",
+    "qty": 60
+   },
+   {
+    "key": "jambon_cru",
+    "qty": 90
+   },
+   {
+    "key": "feta",
+    "qty": 25
+   },
+   {
+    "key": "mache",
+    "qty": 90
+   },
+   {
+    "key": "fromage_blanc",
+    "qty": 50
+   }
+  ]
+ },
+ {
+  "id": 30304,
+  "name": "Wrap chaud bœuf-champignons sauce poivre",
+  "cat": "REPAS",
+  "sub": "WRAPS CHAUDS",
+  "ings": [
+   {
+    "key": "wrap",
+    "qty": 60
+   },
+   {
+    "key": "boeuf_hache",
+    "qty": 130
+   },
+   {
+    "key": "champignon",
+    "qty": 150
+   },
+   {
+    "key": "fromage_blanc",
+    "qty": 50
+   },
+   {
+    "key": "poivre",
+    "qty": 2
+   }
+  ]
+ },
+ {
+  "id": 30307,
+  "name": "Wrap chaud saumon-épinards fromage frais",
+  "cat": "REPAS",
+  "sub": "WRAPS CHAUDS",
+  "ings": [
+   {
+    "key": "wrap",
+    "qty": 60
+   },
+   {
+    "key": "saumon",
+    "qty": 130
+   },
+   {
+    "key": "epinard",
+    "qty": 170
+   },
+   {
+    "key": "philadelphia",
+    "qty": 20
+   }
+  ]
+ },
+ {
+  "id": 30308,
+  "name": "Wrap chaud bœuf-feta-oignons",
+  "cat": "REPAS",
+  "sub": "WRAPS CHAUDS",
+  "ings": [
+   {
+    "key": "wrap",
+    "qty": 60
+   },
+   {
+    "key": "boeuf_hache",
+    "qty": 130
+   },
+   {
+    "key": "feta",
+    "qty": 20
+   },
+   {
+    "key": "oignon",
+    "qty": 70
+   },
+   {
+    "key": "mache",
+    "qty": 40
+   }
+  ]
+ },
+ {
+  "id": 30309,
+  "name": "Wrap chaud porc curry-coco",
+  "cat": "REPAS",
+  "sub": "WRAPS CHAUDS",
+  "ings": [
+   {
+    "key": "wrap",
+    "qty": 60
+   },
+   {
+    "key": "porc_filet",
+    "qty": 140
+   },
+   {
+    "key": "courgette",
+    "qty": 180
+   },
+   {
+    "key": "lait_coco",
+    "qty": 25
+   },
+   {
+    "key": "curry",
+    "qty": 3
+   }
+  ]
+ }
+]
 const META={"stevia":{"name":"Pure Via Stévia poudre","unit":"g","costPer100":4.5},"fromage_blanc":{"name":"Fromage blanc","unit":"g","costPer100":0.32},"skyr":{"name":"Skyr","unit":"g","costPer100":0.55},"yaourt_grec":{"name":"Yaourt grec","unit":"g","costPer100":0.55},"faisselle":{"name":"Faisselle","unit":"g","costPer100":0.48},"whey":{"name":"Whey isolate neutre","unit":"g","costPer100":3.75},"avoine":{"name":"Flocons d'avoine","unit":"g","costPer100":0.16},"chia":{"name":"Graines de chia","unit":"g","costPer100":0.75},"framboise":{"name":"Framboises","unit":"g","costPer100":0.9},"mangue":{"name":"Mangue","unit":"g","costPer100":0.65},"banane":{"name":"Banane","unit":"g","costPer100":0.18},"kiwi":{"name":"Kiwi","unit":"g","costPer100":0.5},"compote":{"name":"Compote SSA","unit":"g","costPer100":0.24},"brugnon":{"name":"Brugnon","unit":"g","costPer100":0.45},"clementine":{"name":"Clémentine","unit":"g","costPer100":0.35},"datte":{"name":"Dattes","unit":"g","costPer100":0.85},"beurre":{"name":"Beurre","unit":"g","costPer100":0.9},"beurre_cacahuete":{"name":"Beurre de cacahuète","unit":"g","costPer100":0.75},"amandes":{"name":"Amandes","unit":"g","costPer100":1.1},"noix":{"name":"Noix","unit":"g","costPer100":1.2},"pecan":{"name":"Noix de pécan","unit":"g","costPer100":1.45},"coco_rapee":{"name":"Noix de coco râpée","unit":"g","costPer100":0.7},"lait_coco":{"name":"Lait de coco","unit":"g","costPer100":0.6},"lait":{"name":"Lait demi-écrémé","unit":"g","costPer100":0.12},"oeuf":{"name":"Œufs","unit":"œuf","costPer":0.35},"pain":{"name":"Pain","unit":"g","costPer100":0.3},"wrap":{"name":"Wrap souple","unit":"g","costPer100":0.45},"crepe_froment_salee":{"name":"Crêpe au froment salée","unit":"g","costPer100":0.45},"riz":{"name":"Riz basmati","unit":"g","costPer100":0.11},"riz_rond":{"name":"Riz rond spécial dessert","unit":"g","costPer100":0.12},"pates":{"name":"Pâtes","unit":"g","costPer100":0.1},"nouilles":{"name":"Nouilles chinoises","unit":"g","costPer100":0.2},"udon":{"name":"Udon frais","unit":"g","costPer100":0.4},"semoule":{"name":"Semoule","unit":"g","costPer100":0.14},"polenta":{"name":"Polenta","unit":"g","costPer100":0.14},"gnocchi":{"name":"Gnocchi","unit":"g","costPer100":0.24},"pomme_terre":{"name":"Pommes de terre","unit":"g","costPer100":0.18},"patate_douce":{"name":"Patate douce","unit":"g","costPer100":0.3},"porc_filet":{"name":"Filet mignon de porc","unit":"g","costPer100":1.55},"porc_echine":{"name":"Échine/épaule de porc","unit":"g","costPer100":1.05},"boeuf_mijoter":{"name":"Bœuf à mijoter","unit":"g","costPer100":1.65},"boeuf_hache":{"name":"Bœuf haché 10-15%","unit":"g","costPer100":1.52},"veau":{"name":"Veau à blanquette","unit":"g","costPer100":2.15},"agneau":{"name":"Agneau à mijoter","unit":"g","costPer100":2.2},"canard":{"name":"Canard","unit":"g","costPer100":2.12},"cabillaud":{"name":"Poisson blanc/cabillaud","unit":"g","costPer100":2.3},"saumon":{"name":"Saumon","unit":"g","costPer100":1.98},"crevettes":{"name":"Crevettes","unit":"g","costPer100":1.95},"thon":{"name":"Thon en boîte égoutté","unit":"g","costPer100":1.35},"surimi":{"name":"Surimi","unit":"g","costPer100":0.55},"saumon_fume":{"name":"Saumon fumé","unit":"g","costPer100":4.42},"jambon_cru":{"name":"Jambon cru","unit":"g","costPer100":1.6},"philadelphia":{"name":"Fromage frais type Philadelphia","unit":"g","costPer100":0.9},"feta":{"name":"Feta","unit":"g","costPer100":1.05},"mozzarella":{"name":"Mozzarella","unit":"g","costPer100":0.95},"parmesan":{"name":"Parmesan","unit":"g","costPer100":1.7},"roquefort":{"name":"Roquefort","unit":"g","costPer100":1.75},"creme":{"name":"Crème légère","unit":"g","costPer100":0.42},"courgette":{"name":"Courgette","unit":"g","costPer100":0.24},"poireau":{"name":"Poireau","unit":"g","costPer100":0.3},"champignon":{"name":"Champignons","unit":"g","costPer100":0.5},"carotte":{"name":"Carottes","unit":"g","costPer100":0.18},"brocoli":{"name":"Brocoli","unit":"g","costPer100":0.42},"epinard":{"name":"Épinards","unit":"g","costPer100":0.4},"avocat":{"name":"Avocat","unit":"g","costPer100":0.9},"mais":{"name":"Maïs","unit":"g","costPer100":0.35},"mache":{"name":"Mâche","unit":"g","costPer100":0.65},"oignon":{"name":"Oignon","unit":"g","costPer100":0.12},"ail":{"name":"Ail frais","unit":"g","costPer100":0.65},"curry":{"name":"Curry en poudre","unit":"g","costPer100":1.8},"moutarde":{"name":"Moutarde","unit":"g","costPer100":0.45},"poivre":{"name":"Poivre","unit":"g","costPer100":3.5},"pesto":{"name":"Pesto","unit":"g","costPer100":1.15},"bouillon":{"name":"Bouillon","unit":"g","costPer100":1.5},"huile":{"name":"Huile d'olive","unit":"g","costPer100":0.12},"farine":{"name":"Farine","unit":"g","costPer100":0.06},"maizena":{"name":"Maïzena","unit":"g","costPer100":0.08},"chapelure":{"name":"Chapelure","unit":"g","costPer100":0.12},"cacao":{"name":"Cacao non sucré","unit":"g","costPer100":0.55},"chocolat":{"name":"Chocolat noir","unit":"g","costPer100":0.95},"tapioca":{"name":"Perles de tapioca","unit":"g","costPer100":0.18},"chevre":{"name":"Fromage de chèvre","unit":"g","costPer100":1.35},"jambon":{"name":"Jambon blanc","unit":"g","costPer100":1.05},"poire":{"name":"Poire","unit":"g","costPer100":0.28},"mangue_conserve":{"name":"Mangue au jus égouttée","unit":"g","costPer100":0.35},"levure_chimique":{"name":"Levure chimique","unit":"g","costPer100":1.5}};
 const DAYS=["Samedi soir","Dimanche","Lundi","Mardi","Mercredi","Jeudi","Vendredi","Samedi midi"];
 const SLOTS=[
