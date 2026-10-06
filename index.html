@@ -2300,13 +2300,9 @@ function rebuildGeneratedRecipes(){
  recalculateAllRecipeMacros();
 }
 function pruneInactiveCanonicalRecipes(){
- // Keep only recipes the user actually allows: curated, not manually excluded,
- // and containing only currently active foods. This removes hidden legacy stock
- // from the runtime catalogue before lunch/dinner mirrors are created.
- for(let i=RECIPES.length-1;i>=0;i--){
-  const r=RECIPES[i];
-  if(!CURATED_RECIPE_IDS.has(r.id)||RECIPE_OFF.has(r.id)||!r.ings.every(x=>activeFoodKey(x.key)))RECIPES.splice(i,1);
- }
+ // The canonical catalogue must stay intact. User exclusions hide recipes from
+ // suggestions only; they must never delete them from RECIPES, otherwise a
+ // previously saved week can no longer be restored after an update.
 }
 function deleteCatalogueFood(key){
  const food=META[key]||FOOD_PREF.custom.find(f=>f.key===key);
@@ -3774,10 +3770,18 @@ function load(){
   let state=JSON.parse(localStorage.getItem(WEEK_STATE_KEY)||'null');
   if(!state||!Object.values(state).some(v=>v&&v.id)){try{const backup=JSON.parse(localStorage.getItem('mealWeekStateBackupV4')||'null');if(backup&&Object.values(backup).some(v=>v&&v.id))state=backup}catch(e){}}
   if(state){
+   const backup=(()=>{try{return JSON.parse(localStorage.getItem('mealWeekStateBackupV4')||'null')}catch(e){return null}})();
+   // Merge the backup only into empty/missing slots. Never overwrite a valid current choice.
+   if(backup)for(const [k,v] of Object.entries(backup)){if((!state[k]||!state[k].id)&&v?.id)state[k]=v}
    document.querySelectorAll('select[data-slot]').forEach(s=>{
     const saved=state[s.dataset.day+':'+s.dataset.slot];if(!saved)return;
     const recipe=RECIPES.find(r=>String(r.id)===String(saved.id))||RECIPES.find(r=>r.name===saved.name);
-    if(recipe){s.innerHTML=opts(s.dataset.cat,String(recipe.id));s.value=String(recipe.id)}
+    if(recipe){
+      const normal=opts(s.dataset.cat,String(recipe.id));
+      if(normal.includes('value="'+recipe.id+'"'))s.innerHTML=normal;
+      else s.innerHTML='<option value="'+recipe.id+'">'+escapeFoodHtml(recipe.name)+' · '+recipe.macros.kcal+' kcal · '+Math.round(Number(recipe.macros.protein)||0)+'g P</option>'+normal;
+      s.value=String(recipe.id);
+    }
    });
    return;
   }
