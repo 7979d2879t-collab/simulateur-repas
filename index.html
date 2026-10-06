@@ -2418,10 +2418,21 @@ function renderRecipeCatalogue(){
  const arr=cat==='REPAS'?(()=>{const seen=new Set();return source.filter(r=>{const k=r.name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim();if(seen.has(k))return false;seen.add(k);return true})})():canonicalRecipes(source);
  if(!arr.length)return '';
  const groups={};arr.forEach(r=>{const g=mealGroup(r);(groups[g]||(groups[g]=[])).push(r)});
- return '<details '+((q||cat==='COLLATIONS')?'open':'')+'><summary>'+cat+' ('+arr.length+')</summary><div class="catalogue-grid">'+Object.entries(groups).map(([g,rs])=>'<div class="recipeSubcategoryTitle" style="grid-column:1/-1;font-weight:700;font-style:italic;margin:10px 0 2px">'+g+'</div>'+rs.map(r=>'<div class="entry"><span>'+r.name+' · '+r.macros.kcal+' kcal · '+Math.round(Number(r.macros.protein)||0)+' g prot.</span><button class="mini" onclick="showRecipeById('+r.id+')">📖 Fiche</button>'+(cat==='REPAS'?'<button type="button" class="mini" onclick="showRecipeBatchPreview('+r.id+',4)">🍳 Batch 4 repas</button>':'')+'<button type="button" class="mini" onclick="editRecipe('+r.id+')">Modifier</button><button type="button" class="mini" onclick="deleteCatalogueRecipe('+r.id+')">🗑 Supprimer</button></div>').join('')).join('')+'</div></details>';
+ return '<details '+((q||cat==='COLLATIONS')?'open':'')+'><summary>'+cat+' ('+arr.length+')</summary><div class="catalogue-grid">'+Object.entries(groups).map(([g,rs])=>'<div class="recipeSubcategoryTitle" style="grid-column:1/-1;font-weight:700;font-style:italic;margin:10px 0 2px">'+g+'</div>'+rs.map(r=>'<div class="entry"><span>'+r.name+' · '+r.macros.kcal+' kcal · '+Math.round(Number(r.macros.protein)||0)+' g prot.</span><button class="mini" onclick="showRecipeById('+r.id+')">📖 Fiche'+(cat==='REPAS'?' batch':'')+'</button><button type="button" class="mini" onclick="editRecipe('+r.id+')">Modifier</button><button type="button" class="mini" onclick="deleteCatalogueRecipe('+r.id+')">🗑 Supprimer</button></div>').join('')).join('')+'</div></details>';
  }).join('');
 }
 function showRecipeById(id){
+ const r=RECIPES.find(x=>x.id===+id);
+ // In the REPAS catalogue, a fiche is a batch-cooking fiche by default.
+ // If the recipe is already planned at least twice, showRecipe uses the real
+ // number and adjusted portions; otherwise show a practical 4-meal batch.
+ if(r?.cat==='REPAS'){
+  const occ=batchForRecipe(id);
+  if(occ.length>1){
+   const select=document.createElement('select');select.innerHTML='<option value="'+id+'"></option>';select.value=String(id);showRecipe(select);
+  }else showRecipeBatchPreview(id,4);
+  return;
+ }
  const select=document.createElement('select');select.innerHTML='<option value="'+id+'"></option>';select.value=String(id);showRecipe(select);
 }
 function showRecipeBatchPreview(id,portions){
