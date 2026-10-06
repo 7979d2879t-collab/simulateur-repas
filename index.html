@@ -1720,13 +1720,12 @@ function drawTargetBars(values){
  }).join('')+'</div><p class="note">Glucides : repère indicatif déduit des objectifs calories, protéines et lipides.</p>';
 }
 function paintBatch(){
- document.querySelectorAll('.mealpick').forEach(x=>{x.classList.remove('batch1','batch2','batch3');x.querySelectorAll('.batchtag,.tooltag').forEach(t=>t.remove());let s=x.querySelector('select');if(s&&s.value){let r=RECIPES.find(z=>z.id===+s.value),info=prepInfo(r),tag=document.createElement('div');tag.className='tooltag';tag.textContent=info.appliance;x.insertBefore(tag,x.querySelector('.slotactions'));}});
- let map={};document.querySelectorAll('select[data-slot]').forEach(s=>{if(s.value)(map[s.value]||(map[s.value]=[])).push(s)});
- let color=0;
- Object.entries(map).filter(([id,arr])=>arr.length>1).forEach(([id,arr])=>{
-   let cls='batch'+(color%3+1);color++;
-   arr.sort((a,b)=>+a.dataset.day-+b.dataset.day);
-   arr.forEach((s,i)=>{let box=s.closest('.mealpick');box.classList.add(cls);let tag=document.createElement('div');tag.className='batchtag';tag.textContent=i===0?'🍳 PRÉPARER '+arr.length+' PORTIONS':'♻️ BATCH — portion '+(i+1)+'/'+arr.length;box.insertBefore(tag,box.querySelector('label').nextSibling)});
+ // V9.3 : planning volontairement épuré.
+ // Les modes de cuisson et informations de batch/portions restent disponibles
+ // dans les fiches recettes, mais ne sont plus répétés dans le tableau hebdomadaire.
+ document.querySelectorAll('.mealpick').forEach(x=>{
+  x.classList.remove('batch1','batch2','batch3');
+  x.querySelectorAll('.batchtag,.tooltag').forEach(t=>t.remove());
  });
 }
 function update(){
