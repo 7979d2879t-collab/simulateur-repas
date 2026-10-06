@@ -2625,7 +2625,12 @@ function batchForRecipe(id){
  occ.sort((a,b)=>a.day-b.day);return occ;
 }
 function batchIngredientTotals(r,occ){
- return r.ings.map(x=>({key:x.key,qty:occ.reduce((sum,o)=>sum+x.qty*(Number(o.scale)||1),0)}));
+ return r.ings.map(x=>({
+  key:x.key,
+  // Round the accumulated quantity to avoid floating-point artefacts
+  // such as 213.00000000000003 g in the recipe sheet.
+  qty:Math.round(occ.reduce((sum,o)=>sum+x.qty*(Number(o.scale)||1),0)*10)/10
+ }));
 }
 // Pure Via used in this simulator: package equivalence 100 g sugar = 50 g Pure Via (1/2 tsp = 2 g).
 function showRecipe(sel){
