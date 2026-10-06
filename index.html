@@ -48,7 +48,9 @@ button{border:0;background:var(--teal);color:#fff;padding:9px 12px;border-radius
 .batchStep{display:flex;gap:10px;align-items:flex-start;padding:10px 0;border-bottom:1px solid #dce5e7}.batchStep:last-child{border-bottom:0}
 .batchStep input{width:20px;height:20px;flex:0 0 auto;margin-top:2px}.batchStepText{line-height:1.4}.batchStepTime{font-weight:800;color:var(--teal)}
 .batchDetails summary{cursor:pointer;padding:7px 0}.batchRecipeList{margin:8px 0 12px;padding:10px 12px;background:#edf5f3;border-radius:9px}
-.macroOk{color:#237a57;font-weight:700}.macroOut{color:#b42318;font-weight:700}.macroOk small,.macroOut small{font-size:9px;font-weight:800} </style></head>
+.macroOk{color:#237a57;font-weight:700}.macroOut{color:#b42318;font-weight:700}.macroOk small,.macroOut small{font-size:9px;font-weight:800} 
+.recipeSteps{padding-left:28px}.recipeSteps li{margin:0 0 14px;line-height:1.42}.recipeSteps li>b{display:inline-block;margin-bottom:3px;font-size:1.02em}
+</style></head>
 <body>
 <header><h1>Simulateur repas semaine</h1>
 <p>Cibles actuelles : 2 050-2 150 kcal · 150-170 g protéines · 30-35 g fibres · 60-75 g lipides. Aucune calorie ajoutée automatiquement avec le sport.</p></header>
@@ -2445,7 +2447,7 @@ function showRecipeBatchPreview(id,portions){
  '<h3>À manger par repas — 1 portion</h3><ul>'+r.ings.map(x=>'<li>'+(META[x.key]?.name||x.key)+' : <b>'+ingredientDisplay(x)+'</b></li>').join('')+'</ul>'+
  '<h3>À préparer pour le batch — '+n+' repas</h3><ul>'+totals.map(x=>'<li>'+(META[x.key]?.name||x.key)+' : <b>'+ingredientDisplay(x)+'</b></li>').join('')+'</ul>'+
  '<h3>Cuisson & préparation</h3>'+(()=>{const g=cookingGuide(r);return '<div class="daytotal"><b>Appareil :</b> '+g.appliance+' · <b>Température :</b> '+g.temp+' · <b>Temps :</b> '+g.time+'<br><b>Repère de cuisson :</b> '+g.cue+'</div>'})()+
- '<h3>Préparation étape par étape</h3><ol>'+info.steps.map(x=>'<li>'+x+'</li>').join('')+'</ol>';
+ '<h3>Préparation étape par étape</h3>'+renderRecipeSteps(info);
  document.getElementById('recipeModal').classList.add('open');
 }
 
@@ -2510,6 +2512,23 @@ function cookingGuide(r){
  if(has('boeuf_hache'))return {appliance:'Cookeo / poêle',temp:'Feu moyen-vif',time:'6–10 min',cue:'Bœuf entièrement cuit'};
  if(has('porc_filet')||has('porc_echine')||has('veau')||has('boeuf_mijoter')||has('agneau')||has('canard'))return {appliance:'Cookeo',temp:'Sous pression / Dorer selon recette',time:'20–35 min',cue:'Viande tendre et cuite à cœur'};
  return {appliance:'Cookeo / Air Fryer',temp:'Selon les ingrédients',time:'15–30 min',cue:'Cuisson complète des éléments chauds'};
+}
+function stepTitle(text,i){
+ const rules=[
+  [/^(couper|émincer|râper|laver|préparer et peser|battre)/i,'Préparer'],
+  [/^(cuire le riz|cuire les pâtes|cuire les haricots|cuire la patate)/i,'Cuire le féculent / accompagnement'],
+  [/^(mode dorer|saisir|cuire le filet|cuire le bœuf|ajouter le bœuf|cuire le saumon|cuire le cabillaud)/i,'Cuire la protéine'],
+  [/^(ajouter la courgette|faire revenir courgette|faire tomber|ajouter les champignons|émincer finement les poireaux)/i,'Cuire les légumes'],
+  [/^(ajouter un petit fond|verser le lait|baisser le feu|ouvrir le cookeo|hors cuisson|égoutter le thon\. ajouter|chauffer la crème)/i,'Faire la sauce'],
+  [/^(réchauffer le wrap|étaler|ajouter la protéine|garnir|rabattre|rouler)/i,'Garnir et assembler'],
+  [/^(répartir|dans chaque boîte|conserver|pour le batch|laisser refroidir)/i,'Servir / conserver']
+ ];
+ for(const [re,t] of rules)if(re.test(text))return t;
+ return ['Préparer','Cuire','Assembler','Finaliser','Servir / conserver'][Math.min(i,4)];
+}
+function renderRecipeSteps(info){
+ return '<ol class="recipeSteps">'+info.steps.map((x,i)=>'<li><b>'+stepTitle(x,i)+'</b><br>'+x+'</li>').join('')+'</ol>'+
+ (info.tips?'<div class="daytotal"><b>Conservation / repère :</b> '+info.tips+'</div>':'');
 }
 function detailedMealPrep(r,use,has){
  const S=(appliance,time,steps,tips='Batch cooking : refroidir rapidement, mettre en boîtes et conserver au réfrigérateur. Réchauffer uniquement la portion à consommer.')=>({appliance,time,steps,tips});
