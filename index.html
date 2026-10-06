@@ -2007,7 +2007,11 @@ function canonicalRecipes(list){
  const seen=new Set();
  return list.filter(r=>{const k=recipeCanonicalKey(r);if(seen.has(k))return false;seen.add(k);return true});
 }
-function allowedRecipe(r){return curatedRecipe(r)&&!RECIPE_OFF.has(r.id)&&r.ings.every(x=>activeFoodKey(x.key))}
+function allowedRecipe(r){
+ // V10: the 60 curated recipes are always available. Old browser exclusions
+ // must never be able to blank the catalogue or prevent a saved week loading.
+ return curatedRecipe(r);
+}
 function persistFoods(){localStorage.setItem(FOOD_PREF_KEY,JSON.stringify(FOOD_PREF))}
 function toggleFood(key,kind,on){
  let arr=FOOD_PREF[kind];FOOD_PREF[kind]=on?[...new Set([...arr,key])]:arr.filter(x=>x!==key);
@@ -3814,6 +3818,15 @@ function resetWeek(){localStorage.removeItem('mealV1');localStorage.removeItem('
   }catch(e){}
  }
  localStorage.setItem(key,'1');
+})();
+(()=>{
+ const k='catalogueRecoveryV10';
+ if(!localStorage.getItem(k)){
+  localStorage.removeItem(RECIPE_OFF_KEY);
+  FOOD_PREF.excluded=[];
+  persistFoods();
+  localStorage.setItem(k,'1');
+ }
 })();
 applySavedRecipeEdits();rebuildGeneratedRecipes();pruneInactiveCanonicalRecipes();recalculateAllRecipeMacros();normalizeAfternoonSnackCategories();renderFoodCatalogue();renderRecipeCatalogue();
 try{build()}catch(e){console.error('Initialisation planning',e)}
