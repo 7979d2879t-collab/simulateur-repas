@@ -2418,11 +2418,23 @@ function renderRecipeCatalogue(){
  const arr=cat==='REPAS'?(()=>{const seen=new Set();return source.filter(r=>{const k=r.name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim();if(seen.has(k))return false;seen.add(k);return true})})():canonicalRecipes(source);
  if(!arr.length)return '';
  const groups={};arr.forEach(r=>{const g=mealGroup(r);(groups[g]||(groups[g]=[])).push(r)});
- return '<details '+((q||cat==='COLLATIONS')?'open':'')+'><summary>'+cat+' ('+arr.length+')</summary><div class="catalogue-grid">'+Object.entries(groups).map(([g,rs])=>'<div class="recipeSubcategoryTitle" style="grid-column:1/-1;font-weight:700;font-style:italic;margin:10px 0 2px">'+g+'</div>'+rs.map(r=>'<div class="entry"><span>'+r.name+' · '+r.macros.kcal+' kcal · '+Math.round(Number(r.macros.protein)||0)+' g prot.</span><button class="mini" onclick="showRecipeById('+r.id+')">📖 Fiche</button><button type="button" class="mini" onclick="editRecipe('+r.id+')">Modifier</button><button type="button" class="mini" onclick="deleteCatalogueRecipe('+r.id+')">🗑 Supprimer</button></div>').join('')).join('')+'</div></details>';
+ return '<details '+((q||cat==='COLLATIONS')?'open':'')+'><summary>'+cat+' ('+arr.length+')</summary><div class="catalogue-grid">'+Object.entries(groups).map(([g,rs])=>'<div class="recipeSubcategoryTitle" style="grid-column:1/-1;font-weight:700;font-style:italic;margin:10px 0 2px">'+g+'</div>'+rs.map(r=>'<div class="entry"><span>'+r.name+' · '+r.macros.kcal+' kcal · '+Math.round(Number(r.macros.protein)||0)+' g prot.</span><button class="mini" onclick="showRecipeById('+r.id+')">📖 Fiche</button>'+(cat==='REPAS'?'<button type="button" class="mini" onclick="showRecipeBatchPreview('+r.id+',4)">🍳 Batch 4 repas</button>':'')+'<button type="button" class="mini" onclick="editRecipe('+r.id+')">Modifier</button><button type="button" class="mini" onclick="deleteCatalogueRecipe('+r.id+')">🗑 Supprimer</button></div>').join('')).join('')+'</div></details>';
  }).join('');
 }
 function showRecipeById(id){
  const select=document.createElement('select');select.innerHTML='<option value="'+id+'"></option>';select.value=String(id);showRecipe(select);
+}
+function showRecipeBatchPreview(id,portions){
+ const r=RECIPES.find(x=>x.id===+id),d=document.getElementById('recipeDetail');if(!r||!d)return;
+ const n=Math.max(2,Math.round(Number(portions)||4)),info=prepInfo(r);
+ const totals=r.ings.map(x=>({key:x.key,qty:Math.round(x.qty*n*10)/10}));
+ d.innerHTML='<h2>'+escapeFoodHtml(r.name)+'</h2>'+
+ '<div class="daytotal ok"><b>Version batch cooking — '+n+' repas</b><br>Quantités totales à préparer. Répartis ensuite en <b>'+n+' portions égales</b>.</div>'+
+ '<h3>À manger par repas — 1 portion</h3><ul>'+r.ings.map(x=>'<li>'+(META[x.key]?.name||x.key)+' : <b>'+ingredientDisplay(x)+'</b></li>').join('')+'</ul>'+
+ '<h3>À préparer pour le batch — '+n+' repas</h3><ul>'+totals.map(x=>'<li>'+(META[x.key]?.name||x.key)+' : <b>'+ingredientDisplay(x)+'</b></li>').join('')+'</ul>'+
+ '<h3>Cuisson & préparation</h3>'+(()=>{const g=cookingGuide(r);return '<div class="daytotal"><b>Appareil :</b> '+g.appliance+' · <b>Température :</b> '+g.temp+' · <b>Temps :</b> '+g.time+'<br><b>Repère de cuisson :</b> '+g.cue+'</div>'})()+
+ '<h3>Préparation étape par étape</h3><ol>'+info.steps.map(x=>'<li>'+x+'</li>').join('')+'</ol>';
+ document.getElementById('recipeModal').classList.add('open');
 }
 
 function opts(cat,current='',q='',favOnly=false){
