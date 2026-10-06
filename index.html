@@ -633,13 +633,12 @@ function toggleRecipeCatalogue(id,kind,on){
 function renderRecipeCatalogue(){
  const root=document.getElementById('recipeCatalogue');if(!root)return;
  const q=(document.getElementById('catalogSearch')?.value||'').trim().toLowerCase();
- const mealCategoryOrder=['PETITS-DÉJEUNERS','DÉJEUNERS & BATCH COOKING','DESSERTS','COLLATIONS','DÎNERS RAPIDES'];
- const categories=[...new Set(RECIPES.map(r=>r.cat))].sort((a,b)=>{
-  const ia=mealCategoryOrder.indexOf(a),ib=mealCategoryOrder.indexOf(b);
-  return (ia<0?999:ia)-(ib<0?999:ib);
- });
+ const mealCategoryOrder=['PETITS-DÉJEUNERS','REPAS','DESSERTS','COLLATIONS'];
+ const categories=mealCategoryOrder;
  root.innerHTML=categories.map(cat=>{
- const arr=canonicalRecipes(RECIPES.filter(r=>r.cat===cat&&allowedRecipe(r)&&(cat!=='PETITS-DÉJEUNERS'||suitableBreakfast(r))&&(!q||(r.name+' '+r.ings.map(x=>META[x.key]?.name||x.key).join(' ')).toLowerCase().includes(q))));
+ const sourceCats=cat==='REPAS'?['DÉJEUNERS & BATCH COOKING','DÎNERS RAPIDES']:[cat];
+ const source=RECIPES.filter(r=>sourceCats.includes(r.cat)&&allowedRecipe(r)&&(cat!=='PETITS-DÉJEUNERS'||suitableBreakfast(r))&&(!q||(r.name+' '+r.ings.map(x=>META[x.key]?.name||x.key).join(' ')).toLowerCase().includes(q)));
+ const arr=cat==='REPAS'?(()=>{const seen=new Set();return source.filter(r=>{const k=r.name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim();if(seen.has(k))return false;seen.add(k);return true})})():canonicalRecipes(source);
  if(!arr.length)return '';
  const groups={};arr.forEach(r=>{const g=mealGroup(r);(groups[g]||(groups[g]=[])).push(r)});
  return '<details '+((q||cat==='COLLATIONS')?'open':'')+'><summary>'+cat+' ('+arr.length+')</summary><div class="catalogue-grid">'+Object.entries(groups).map(([g,rs])=>'<div class="recipeSubcategoryTitle" style="grid-column:1/-1;font-weight:700;font-style:italic;margin:10px 0 2px">'+g+'</div>'+rs.map(r=>'<div class="entry"><span>'+r.name+' · '+r.macros.kcal+' kcal · '+Math.round(Number(r.macros.protein)||0)+' g prot.</span><button class="mini" onclick="showRecipeById('+r.id+')">📖 Fiche</button><button type="button" class="mini" onclick="editRecipe('+r.id+')">Modifier</button><button type="button" class="mini" onclick="deleteCatalogueRecipe('+r.id+')">🗑 Supprimer</button></div>').join('')).join('')+'</div></details>';
