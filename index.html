@@ -532,9 +532,15 @@ function recalculateAllRecipeMacros(){
 function rebuildGeneratedRecipes(){
  RECIPES.splice(BASE_RECIPE_COUNT);
  recalculateAllRecipeMacros();
- // No automatic meal compositions or scaled meal variants: each visible lunch/dinner remains a real curated recipe.
- // Only genuine dessert recipes receive generated dessert portions.
- // V5.4: no generated dessert portion variants; one canonical recipe only.
+}
+function pruneInactiveCanonicalRecipes(){
+ // Keep only recipes the user actually allows: curated, not manually excluded,
+ // and containing only currently active foods. This removes hidden legacy stock
+ // from the runtime catalogue before lunch/dinner mirrors are created.
+ for(let i=RECIPES.length-1;i>=0;i--){
+  const r=RECIPES[i];
+  if(!CURATED_RECIPE_IDS.has(r.id)||RECIPE_OFF.has(r.id)||!r.ings.every(x=>activeFoodKey(x.key)))RECIPES.splice(i,1);
+ }
 }
 function deleteCatalogueFood(key){
  const food=META[key]||FOOD_PREF.custom.find(f=>f.key===key);
@@ -2036,7 +2042,7 @@ function resetWeek(){localStorage.removeItem('mealV1');localStorage.removeItem('
  }
  localStorage.setItem(key,'1');
 })();
-applySavedRecipeEdits();rebuildGeneratedRecipes();mirrorSavoryMealsAcrossLunchDinner();mirrorWrapsAcrossMeals();recalculateAllRecipeMacros();normalizeAfternoonSnackCategories();renderFoodCatalogue();renderRecipeCatalogue();
+applySavedRecipeEdits();rebuildGeneratedRecipes();pruneInactiveCanonicalRecipes();mirrorSavoryMealsAcrossLunchDinner();mirrorWrapsAcrossMeals();recalculateAllRecipeMacros();normalizeAfternoonSnackCategories();renderFoodCatalogue();renderRecipeCatalogue();
 try{build()}catch(e){console.error('Initialisation planning',e)}
 renderFoodCatalogue();renderRecipeCatalogue();
 document.addEventListener('change',e=>{if(e.target?.matches?.('select[data-slot]'))setTimeout(()=>save(),0)},true);
