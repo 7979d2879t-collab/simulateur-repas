@@ -2449,16 +2449,19 @@ function refreshChoices(){
 }
 
 function ingredientDisplay(x){
- let m=META[x.key]||FOOD_PREF.custom.find(f=>f.key===x.key); if(!m)return x.qty+' g';
+ let m=META[x.key]||FOOD_PREF.custom.find(f=>f.key===x.key);
+ const q=Math.round((Number(x.qty)||0)*10)/10;
+ const qtxt=Number.isInteger(q)?String(q):q.toFixed(1).replace('.',',');
+ if(!m)return qtxt+' g';
  const liquids=new Set(['lait','lait_coco','creme','huile']);
- if(liquids.has(x.key)){return x.qty>=1000?(x.qty/1000).toFixed(2).replace('.',',')+' L':Math.round(x.qty)+' ml';}
+ if(liquids.has(x.key)){return q>=1000?(q/1000).toFixed(2).replace('.',',')+' L':Math.round(q)+' ml';}
  const pieces={oeuf:[50,'œuf'],kiwi:[100,'kiwi'],banane:[120,'banane'],avocat:[200,'avocat'],poire:[150,'poire'],wrap:[60,'wrap']};
- if(pieces[x.key]){let n=Math.round((x.qty/pieces[x.key][0])*2)/2;return n+' '+pieces[x.key][1]+(n>1?'s':'')+' ('+Math.round(x.qty)+' g)'}
+ if(pieces[x.key]){let n=Math.round((q/pieces[x.key][0])*2)/2;return n+' '+pieces[x.key][1]+(n>1?'s':'')+' ('+Math.round(q)+' g)'}
  const dryStarches=new Set(['riz','pates','nouilles','semoule','tapioca']);
- if(dryStarches.has(x.key))return x.qty+' g cru';
- if(x.key==='udon')return x.qty+' g précuits (poids du paquet)';
- if(x.key==='pomme_terre'||x.key==='patate_douce')return x.qty+' g cru';
- return x.qty+' g';
+ if(dryStarches.has(x.key))return qtxt+' g cru';
+ if(x.key==='udon')return qtxt+' g précuits (poids du paquet)';
+ if(x.key==='pomme_terre'||x.key==='patate_douce')return qtxt+' g cru';
+ return qtxt+' g';
 }
 function cookingGuide(r){
  const n=r.name.toLowerCase(),keys=new Set(r.ings.map(x=>x.key)),has=k=>keys.has(k);
