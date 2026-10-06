@@ -3839,9 +3839,18 @@ function resetWeek(){localStorage.removeItem('mealV1');localStorage.removeItem('
   localStorage.setItem(k,'1');
  }
 })();
-applySavedRecipeEdits();rebuildGeneratedRecipes();pruneInactiveCanonicalRecipes();recalculateAllRecipeMacros();normalizeAfternoonSnackCategories();renderFoodCatalogue();renderRecipeCatalogue();
-try{build()}catch(e){console.error('Initialisation planning',e)}
-renderFoodCatalogue();renderRecipeCatalogue();
+function startupSafe(label,fn){
+ try{return fn()}catch(e){
+  console.error(label,e);
+  const host=document.getElementById('weeklyPickerStatus')||document.getElementById('week');
+  if(host){const d=document.createElement('div');d.style.cssText='margin:8px 0;padding:8px;border:1px solid #b42318;background:#fff4f2;color:#7a271a;border-radius:6px;font-weight:700';d.textContent='Erreur '+label+' : '+(e?.message||e);host.parentNode.insertBefore(d,host);}
+ }
+}
+startupSafe('préparation des recettes',()=>{applySavedRecipeEdits();rebuildGeneratedRecipes();pruneInactiveCanonicalRecipes();recalculateAllRecipeMacros();normalizeAfternoonSnackCategories();});
+// Le planning est prioritaire : une panne d'un catalogue secondaire ne doit plus empêcher son affichage.
+startupSafe('chargement du planning',()=>build());
+startupSafe('catalogue des aliments',()=>renderFoodCatalogue());
+startupSafe('catalogue des recettes',()=>renderRecipeCatalogue());
 document.addEventListener('change',e=>{if(e.target?.matches?.('select[data-slot]'))setTimeout(()=>save(),0)},true);
 window.addEventListener('beforeunload',()=>save());
 window.addEventListener('resize',alignWeeklySlotControls);
