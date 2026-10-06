@@ -1720,12 +1720,16 @@ function drawTargetBars(values){
  }).join('')+'</div><p class="note">Glucides : repère indicatif déduit des objectifs calories, protéines et lipides.</p>';
 }
 function paintBatch(){
- // V9.3 : planning volontairement épuré.
- // Les modes de cuisson et informations de batch/portions restent disponibles
- // dans les fiches recettes, mais ne sont plus répétés dans le tableau hebdomadaire.
- document.querySelectorAll('.mealpick').forEach(x=>{
-  x.classList.remove('batch1','batch2','batch3');
-  x.querySelectorAll('.batchtag,.tooltag').forEach(t=>t.remove());
+ // Planning épuré : aucun texte batch/cuisson, mais une couleur commune
+ // permet d'identifier visuellement les portions issues de la même recette.
+ const boxes=document.querySelectorAll('.mealpick');
+ boxes.forEach(x=>{x.classList.remove('batch1','batch2','batch3');x.querySelectorAll('.batchtag,.tooltag').forEach(t=>t.remove())});
+ const map={};
+ document.querySelectorAll('select[data-slot]').forEach(s=>{if(s.value)(map[s.value]||(map[s.value]=[])).push(s)});
+ let color=0;
+ Object.values(map).filter(arr=>arr.length>1).forEach(arr=>{
+  const cls='batch'+(color%3+1);color++;
+  arr.forEach(s=>s.closest('.mealpick')?.classList.add(cls));
  });
 }
 function update(){
