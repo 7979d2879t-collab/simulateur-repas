@@ -303,7 +303,8 @@ function renderMaturity(){
  const salaryRow=state.expenses.find(x=>x.id==="salary"),empRow=state.expenses.find(x=>x.id==="employer");
  const listedMonthly=expenseByType(3,"monthly"),listedResp=(salaryRow?num(salaryRow.values[2]):0)+(empRow?num(empRow.values[2]):0);
  const otherMonthly=Math.max(0,listedMonthly-listedResp),commMonthly=comm3/12,loanMonthly=annuity(current,rate,years,12)/12;
- const honorMonthly=num(m.honorLoanAmount)>0?num(m.honorLoanAmount)/Math.max(1,num(m.honorLoanMonths)):0;\n const base=otherMonthly+respBase+commMonthly+loanMonthly+honorMonthly;
+ const honorMonthly=num(m.honorLoanAmount)>0?num(m.honorLoanAmount)/Math.max(1,num(m.honorLoanMonths)):0;
+ const base=otherMonthly+respBase+commMonthly+loanMonthly+honorMonthly;
  const targetCost=num(m.ownerNetTarget)*num(m.ownerCostFactor);
  const rows=(m.hours||[]).map(h=>{
   const contribution=h*netHour,clients=h/hoursClient;
