@@ -28,7 +28,8 @@ details{border:1px solid var(--line);border-radius:13px;margin:10px 0;background
 .tabpane{display:none}.tabpane.show{display:block}.stack{display:grid;gap:15px}
 .footer{color:#8999a2;text-align:center;font-size:12px;line-height:1.6;margin-top:30px}
 @media(max-width:1060px){.cards{grid-template-columns:repeat(3,1fr)}.grid{grid-template-columns:1fr}.formgrid{grid-template-columns:repeat(3,1fr)}}
-@media(max-width:680px){.hero{padding:25px 16px 38px}.cards{grid-template-columns:repeat(2,1fr)}.card{padding:14px}.formgrid{grid-template-columns:repeat(2,1fr)}.yeargrid{grid-template-columns:1fr}.sitebar .brand{width:100%}.sitebar a{flex:1;text-align:center}.nav button{flex:1}.panel{padding:15px}.field{padding:9px}}
+.credit-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.credit-option{border:1px solid var(--line);background:#f8fafb;border-radius:14px;padding:16px;text-align:left;color:var(--navy)}.credit-option strong{display:block;font-size:25px;margin-bottom:7px}.credit-option span{display:block;font-size:12px;color:var(--sub);line-height:1.55}.credit-option.active{border:2px solid var(--teal);background:#edf7f4}.assumption-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.assumption-grid>div{background:#f5f8f9;border:1px solid #e4ecee;border-radius:12px;padding:13px}.assumption-grid b{display:block;color:var(--navy);margin-bottom:5px}.maturity-table{min-width:760px}.maturity-table td:nth-child(n+3){font-weight:750}.maturity-table .best{color:var(--green)}.maturity-table .tight{color:var(--amber)}.maturity-table .bad{color:var(--red)}
+@media(max-width:680px){.credit-grid,.assumption-grid{grid-template-columns:1fr}.hero{padding:25px 16px 38px}.cards{grid-template-columns:repeat(2,1fr)}.card{padding:14px}.formgrid{grid-template-columns:repeat(2,1fr)}.yeargrid{grid-template-columns:1fr}.sitebar .brand{width:100%}.sitebar a{flex:1;text-align:center}.nav button{flex:1}.panel{padding:15px}.field{padding:9px}}
 @media(max-width:420px){.formgrid{grid-template-columns:1fr}.cards{grid-template-columns:1fr 1fr}}
 @media print{.sitebar,.hero,.controls,.nav,.footer,.no-print{display:none!important}.tabpane{display:block!important}.panel{box-shadow:none;break-inside:avoid}}
 .exp-wrap{overflow-x:auto;border:1px solid #dae6e7;border-radius:12px}
@@ -50,6 +51,7 @@ details{border:1px solid var(--line);border-radius:13px;margin:10px 0;background
  <button type="button" data-tab="overview" class="active">⌂ Vue d’ensemble</button>
  <button type="button" data-tab="cash">◷ Trésorerie M1–M36</button>
  <button type="button" data-tab="expenses">▤ Liste des dépenses</button>
+ <button type="button" data-tab="maturity">◎ Rentabilité mature</button>
  <button type="button" data-tab="settings">⚙ Mes hypothèses</button>
 </nav>
 <div class="controls">
@@ -95,6 +97,19 @@ details{border:1px solid var(--line);border-radius:13px;margin:10px 0;background
  <label class="field"><span class="lab">Catégorie</span><select id="newExpenseCat"><option>RH</option><option>Local</option><option>Réseau</option><option>Communication</option><option>Administration</option><option>Autres</option></select></label>
  <label class="field"><span class="lab">Nature</span><select id="newExpenseType"><option value="monthly">Mensuel</option><option value="annual">Annuel</option><option value="oneoff">Ponctuel</option></select></label>
  <div class="field" style="display:flex;align-items:end"><button id="addExpenseBtn" class="btn primary" type="button" style="width:100%">+ Ajouter une dépense</button></div></div></div>
+</section>
+<section id="maturity" class="tabpane">
+ <div class="panel"><span class="badge">Décision</span><h2 style="margin-top:12px">Crédit holding · 80 / 90 / 100 k€</h2>
+ <p class="subtitle">Comparaison en annuités sur 7 ans. Le différé de 12 mois est conservé comme hypothèse de travail ; la date exacte de la première échéance reste à confirmer par la banque.</p>
+ <div class="credit-grid" id="creditScenarios"></div>
+ <div class="note">Cliquez sur un montant pour l'appliquer au simulateur 36 mois. Le reliquat du crédit et la trésorerie déjà accumulée ne sont jamais comptés comme bénéfice.</div></div>
+ <div class="panel"><h2>Hypothèses retenues après nos échanges</h2>
+ <div class="assumption-grid" id="discussionAssumptions"></div></div>
+ <div class="panel"><h2>Rentabilité à maturité · A3</h2>
+ <p class="subtitle">Lecture volontairement séparée de la trésorerie historique : il s'agit de la capacité économique annuelle créée par l'activité, après structure, communication A3 et équivalent de l'annuité du crédit choisi, avant IS.</p>
+ <div class="formgrid" id="maturityFields"></div>
+ <div class="tablewrap" style="max-height:none;margin-top:15px"><table class="maturity-table"><thead><tr><th>Heures / mois</th><th>Clients estimés</th><th>Responsable seule</th><th>+ Alternante</th><th>+ RS</th><th>Lecture</th></tr></thead><tbody id="maturityTable"></tbody></table></div>
+ <div class="note warn" id="maturityNote"></div></div>
 </section>
 <section id="settings" class="tabpane">
  <div class="note">Les cellules financières sont des <b>hypothèses modifiables</b> ; le simulateur n’est pas une offre bancaire. Notamment, la durée du prêt création, la date exacte de la première annuité et les dividendes futurs doivent encore être confirmés.</div>
@@ -165,6 +180,9 @@ function ensureBudget(){
  if(!o.communicationPayment)o.communicationPayment="monthly";
  if(!o.royaltyBase)o.royaltyBase="billed";
  if(o.royaltyAlreadyInMargin==null)o.royaltyAlreadyInMargin=0;
+ if(!state.maturity)state.maturity={responsibleGross:2600,employerRate:30,rsGross:2200,alternantCost:1100,ownerNetTarget:750,ownerCostFactor:1.9,hours:[1300,1400,1500,1600,1700,1800,2000],loanOptions:[80000,90000,100000]};
+ if(!Array.isArray(state.maturity.hours))state.maturity.hours=[1300,1400,1500,1600,1700,1800,2000];
+ if(!Array.isArray(state.maturity.loanOptions))state.maturity.loanOptions=[80000,90000,100000];
 }
 ensureBudget();
 function loanSplit(){
@@ -261,11 +279,48 @@ function chart(target,series,labels){
  svg+='</svg>';el.innerHTML=svg;
 }
 function kpi(label,value,sub,warn){return '<article class="card '+(warn?"warn":"")+'"><div class="label">'+label+'</div><div class="big">'+value+'</div><div class="micro">'+sub+'</div></article>';}
+function renderMaturity(){
+ const el=document.getElementById("creditScenarios");if(!el)return;
+ const m=state.maturity,f=state.finance,c=state.commercial,o=state.operations;
+ const opts=m.loanOptions||[80000,90000,100000],rate=num(f.annualRate)||4.65,years=num(f.years)||7,current=num(f.totalBorrowed);
+ el.innerHTML=opts.map(amount=>{const a=annuity(amount,rate,years,12);return '<button type="button" class="credit-option '+(Math.abs(current-amount)<1?"active":"")+'" data-credit="'+amount+'"><strong>'+euro(amount)+'</strong><span>Annuité théorique : <b>'+euro(a)+'/an</b><br>Équiv. mensuel : '+euro(a/12)+'<br>Taux : '+fmt(rate)+' % · '+years+' ans</span></button>';}).join("");
+ el.querySelectorAll("[data-credit]").forEach(b=>b.addEventListener("click",()=>{state.financing="holding";state.finance.totalBorrowed=num(b.dataset.credit);save();render();}));
+ const netHour=effectiveMarginPerHour(3),hoursClient=Math.max(1,num(c.hoursPerClient)),entry=expenseByType(2,"entry"),comm1=expenseByType(1,"communication"),comm2=expenseByType(2,"communication"),comm3=expenseByType(3,"communication");
+ document.getElementById("discussionAssumptions").innerHTML=[
+  '<div><b>Économie horaire</b>VA '+fmt(c.caPerHour)+' €/h · marge avant PTF '+fmt(c.marginPerHour)+' €/h · après PTF <strong>'+fmt(netHour)+' €/h</strong></div>',
+  '<div><b>Accompagnement réseau</b>Com A1 supportée : '+euro(comm1)+' · droit d’entrée A2 : '+euro(entry)+' sur M'+num(o.entryFrom)+'–M'+num(o.entryTo)+'</div>',
+  '<div><b>Communication</b>A1 '+euro(comm1)+' · A2 '+euro(comm2)+' · A3 '+euro(comm3)+'</div>',
+  '<div><b>Staffing lancement</b>RD ~2 300 € brut A1 · RA ~2 500 € A2 · ~2 600 € A3 (hypothèses de travail)</div>',
+  '<div><b>URSSAF AV</b>'+fmt(o.urssafPerHour)+' €/h provisionnés · suivi banque / dette URSSAF / disponible séparé</div>',
+  '<div><b>Objectif personnel</b>'+euro(m.ownerNetTarget)+' net/mois visés à terme, sans confondre rémunération et trésorerie accumulée</div>'
+ ].join("");
+ const defs=[["RA / responsable A3 · brut","maturity.responsibleGross","€/mois"],["Charges employeur estimées","maturity.employerRate","%"],["RS · brut","maturity.rsGross","€/mois"],["Alternante · coût employeur","maturity.alternantCost","€/mois"],["Rémunération perso cible nette","maturity.ownerNetTarget","€/mois"],["Facteur coût société / net perso","maturity.ownerCostFactor","×"]];
+ document.getElementById("maturityFields").innerHTML=defs.map(x=>makeField(...x)).join("");
+ document.querySelectorAll("#maturityFields [data-input]").forEach(inp=>inp.addEventListener("input",()=>{pathSet(inp.dataset.input,Math.max(0,num(inp.value)));save();render();}));
+ const respBase=num(m.responsibleGross)*(1+num(m.employerRate)/100),rsCost=num(m.rsGross)*(1+num(m.employerRate)/100);
+ // Les autres charges A3 sont reprises de la liste de dépenses, en retirant salaire/charges responsable pour éviter le double comptage.
+ const salaryRow=state.expenses.find(x=>x.id==="salary"),empRow=state.expenses.find(x=>x.id==="employer");
+ const listedMonthly=expenseByType(3,"monthly"),listedResp=(salaryRow?num(salaryRow.values[2]):0)+(empRow?num(empRow.values[2]):0);
+ const otherMonthly=Math.max(0,listedMonthly-listedResp),commMonthly=comm3/12,loanMonthly=annuity(current,rate,years,12)/12;
+ const base=otherMonthly+respBase+commMonthly+loanMonthly;
+ const targetCost=num(m.ownerNetTarget)*num(m.ownerCostFactor);
+ const rows=(m.hours||[]).map(h=>{
+  const contribution=h*netHour,clients=h/hoursClient;
+  const solo=contribution-base,alt=solo-num(m.alternantCost),rs=solo-rsCost;
+  const cls=v=>v<0?"bad":v<targetCost?"tight":"best";
+  const read=solo>=targetCost?"Rémunération cible possible avant IS":solo>=0?"Agence positive, rémunération à arbitrer":"Sous le point mort";
+  return '<tr><td><b>'+fmt(h)+' h</b></td><td>'+fmt(clients)+'</td><td class="'+cls(solo)+'">'+euro(solo)+'/mois</td><td class="'+cls(alt)+'">'+euro(alt)+'/mois</td><td class="'+cls(rs)+'">'+euro(rs)+'/mois</td><td style="text-align:left">'+read+'</td></tr>';
+ }).join("");
+ document.getElementById("maturityTable").innerHTML=rows;
+ const ownerHours=netHour>0?targetCost/netHour:0;
+ document.getElementById("maturityNote").innerHTML='<strong>Lecture :</strong> les montants sont une capacité mensuelle avant IS, après structure A3, communication et équivalent de l’annuité. Le reliquat du crédit et le cash A1/A2 sont exclus. La cible personnelle de '+euro(m.ownerNetTarget)+' net est provisionnée prudemment à '+euro(targetCost)+' de coût société, soit environ '+fmt(ownerHours)+' h/mois de contribution supplémentaire. Le coût réel d’une alternante et de votre rémunération reste à confirmer.';
+}
 function render(){
  last=compute();let h=last,c=state.commercial,f=state.finance,o=state.operations,sp=loanSplit();
  const totalEl=document.getElementById("loanTotalInput");if(document.activeElement!==totalEl)totalEl.value=sp.total;
  document.getElementById("loanSplit").innerHTML='<span>Holding : <b>'+euro(sp.holding)+'</b></span><span>Prêt création : <b>'+euro(sp.creation)+'</b></span><span>Gardé holding : <b>'+euro(sp.holding-sp.transfer)+'</b></span>';
  renderExpenseTotals();
+ renderMaturity();
  document.querySelectorAll("[data-growth]").forEach(b=>b.classList.toggle("on",b.dataset.growth===state.growth));
  document.querySelectorAll("[data-finance]").forEach(b=>b.classList.toggle("on",b.dataset.finance===state.financing));
  let minA=Math.min(...h.map(x=>x.cashA)),minH=Math.min(...h.map(x=>x.cashH)),minG=Math.min(...h.map(x=>x.cashG));
@@ -375,7 +430,7 @@ const fields={
  finance:[
  ["Dépenses éligibles au prêt création","finance.eligible","€"],["Part création","finance.zeroPercent","%"],["Plafond création","finance.zeroCap","€"],
  ["Somme à garder dans la holding","finance.cashKeptHolding","€"],["Taux nominal annuel holding","finance.annualRate","%"],
- ["Durée holding","finance.years","ans"],["1re annuité avec capital","finance.firstCapitalMonth","M12 ou M24"],
+ ["Durée holding","finance.years","ans"],["1re annuité avec capital","finance.firstCapitalMonth","M12 à M24"],
  ["Assurance holding mixte","finance.insuranceHolding","€/mois"],["Assurance holding seule","finance.insuranceHoldingOnly","€/mois"],
  ["Frais dossier holding mixte","finance.feesHolding","€"],["Frais dossier holding seule","finance.feesHoldingOnly","€"],["Parts sociales","finance.shares","€"],
  ["Durée prêt création provisoire","finance.zeroMonths","mois"],["1re mensualité création","finance.zeroStartMonth","M"],
@@ -410,7 +465,7 @@ function drawFields(){
   if(p==="commercial.paymentLag")x=Math.max(0,Math.min(2,Math.round(x)));
   if(p==="operations.urssafPaymentLagMonths")x=Math.max(1,Math.min(3,Math.round(x)));
   if(p==="operations.urssafPerHour")x=Math.max(0,x);
-  if(p==="finance.firstCapitalMonth")x=x===12?12:24;
+  if(p==="finance.firstCapitalMonth")x=Math.max(12,Math.min(24,Math.round(x)));
   pathSet(p,x);save();render();el.value=x;
  }));
  document.querySelectorAll("[data-select]").forEach(el=>el.addEventListener("change",()=>{
