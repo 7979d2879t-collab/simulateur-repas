@@ -102,7 +102,7 @@ details{border:1px solid var(--line);border-radius:13px;margin:10px 0;background
  <div class="panel"><span class="badge">Décision</span><h2 style="margin-top:12px">Crédit holding · 80 / 90 / 100 k€</h2>
  <p class="subtitle">Comparaison en annuités sur 7 ans. Le différé de 12 mois est conservé comme hypothèse de travail ; la date exacte de la première échéance reste à confirmer par la banque.</p>
  <div class="credit-grid" id="creditScenarios"></div>
- <div class="note">Cliquez sur un montant pour l'appliquer au simulateur 36 mois. Le reliquat du crédit et la trésorerie déjà accumulée ne sont jamais comptés comme bénéfice.</div></div>
+ <div class="note">Cliquez sur un montant pour l'appliquer au simulateur 36 mois. Le reliquat du crédit et la trésorerie déjà accumulée ne sont jamais comptés comme bénéfice.</div><div class="note warn"><strong>Doctrine de financement :</strong> scénario de référence sans apport de Seniors d’Auvergne et sans apport personnel en numéraire. Le prêt d’honneur, s’il est obtenu, est traité séparément comme ressource remboursable et non comme bénéfice. Objectif bancaire : financement sans caution personnelle ; à confirmer contractuellement avec la banque.</div></div>
  <div class="panel"><h2>Hypothèses retenues après nos échanges</h2>
  <div class="assumption-grid" id="discussionAssumptions"></div></div>
  <div class="panel"><h2>Rentabilité à maturité · A3</h2>
@@ -180,7 +180,8 @@ function ensureBudget(){
  if(!o.communicationPayment)o.communicationPayment="monthly";
  if(!o.royaltyBase)o.royaltyBase="billed";
  if(o.royaltyAlreadyInMargin==null)o.royaltyAlreadyInMargin=0;
- if(!state.maturity)state.maturity={responsibleGross:2600,employerRate:30,rsGross:2200,alternantCost:1100,ownerNetTarget:750,ownerCostFactor:1.9,hours:[1300,1400,1500,1600,1700,1800,2000],loanOptions:[80000,90000,100000]};
+ if(!state.maturity)state.maturity={responsibleGross:2600,employerRate:30,rsGross:2200,alternantCost:1100,ownerNetTarget:750,ownerCostFactor:1.9,hours:[1300,1400,1500,1600,1700,1800,2000],loanOptions:[80000,90000,100000],honorLoanAmount:0,honorLoanMonths:60,honorLoanStartMonth:1};
+ if(state.maturity.honorLoanAmount==null)state.maturity.honorLoanAmount=0;if(state.maturity.honorLoanMonths==null)state.maturity.honorLoanMonths=60;if(state.maturity.honorLoanStartMonth==null)state.maturity.honorLoanStartMonth=1;
  if(!Array.isArray(state.maturity.hours))state.maturity.hours=[1300,1400,1500,1600,1700,1800,2000];
  if(!Array.isArray(state.maturity.loanOptions))state.maturity.loanOptions=[80000,90000,100000];
 }
@@ -294,7 +295,7 @@ function renderMaturity(){
   '<div><b>URSSAF AV</b>'+fmt(o.urssafPerHour)+' €/h provisionnés · suivi banque / dette URSSAF / disponible séparé</div>',
   '<div><b>Objectif personnel</b>'+euro(m.ownerNetTarget)+' net/mois visés à terme, sans confondre rémunération et trésorerie accumulée</div>'
  ].join("");
- const defs=[["RA / responsable A3 · brut","maturity.responsibleGross","€/mois"],["Charges employeur estimées","maturity.employerRate","%"],["RS · brut","maturity.rsGross","€/mois"],["Alternante · coût employeur","maturity.alternantCost","€/mois"],["Rémunération perso cible nette","maturity.ownerNetTarget","€/mois"],["Facteur coût société / net perso","maturity.ownerCostFactor","×"]];
+ const defs=[["RA / responsable A3 · brut","maturity.responsibleGross","€/mois"],["Charges employeur estimées","maturity.employerRate","%"],["RS · brut","maturity.rsGross","€/mois"],["Alternante · coût employeur","maturity.alternantCost","€/mois"],["Rémunération perso cible nette","maturity.ownerNetTarget","€/mois"],["Facteur coût société / net perso","maturity.ownerCostFactor","×"],["Prêt d’honneur","maturity.honorLoanAmount","€ · 0 / 5k / 10k / 15k / 20k"],["Durée prêt d’honneur","maturity.honorLoanMonths","mois"],["Début remboursement prêt d’honneur","maturity.honorLoanStartMonth","M"]];
  document.getElementById("maturityFields").innerHTML=defs.map(x=>makeField(...x)).join("");
  document.querySelectorAll("#maturityFields [data-input]").forEach(inp=>inp.addEventListener("input",()=>{pathSet(inp.dataset.input,Math.max(0,num(inp.value)));save();render();}));
  const respBase=num(m.responsibleGross)*(1+num(m.employerRate)/100),rsCost=num(m.rsGross)*(1+num(m.employerRate)/100);
@@ -302,7 +303,7 @@ function renderMaturity(){
  const salaryRow=state.expenses.find(x=>x.id==="salary"),empRow=state.expenses.find(x=>x.id==="employer");
  const listedMonthly=expenseByType(3,"monthly"),listedResp=(salaryRow?num(salaryRow.values[2]):0)+(empRow?num(empRow.values[2]):0);
  const otherMonthly=Math.max(0,listedMonthly-listedResp),commMonthly=comm3/12,loanMonthly=annuity(current,rate,years,12)/12;
- const base=otherMonthly+respBase+commMonthly+loanMonthly;
+ const honorMonthly=num(m.honorLoanAmount)>0?num(m.honorLoanAmount)/Math.max(1,num(m.honorLoanMonths)):0;\n const base=otherMonthly+respBase+commMonthly+loanMonthly+honorMonthly;
  const targetCost=num(m.ownerNetTarget)*num(m.ownerCostFactor);
  const rows=(m.hours||[]).map(h=>{
   const contribution=h*netHour,clients=h/hoursClient;
@@ -313,7 +314,7 @@ function renderMaturity(){
  }).join("");
  document.getElementById("maturityTable").innerHTML=rows;
  const ownerHours=netHour>0?targetCost/netHour:0;
- document.getElementById("maturityNote").innerHTML='<strong>Lecture :</strong> les montants sont une capacité mensuelle avant IS, après structure A3, communication et équivalent de l’annuité. Le reliquat du crédit et le cash A1/A2 sont exclus. La cible personnelle de '+euro(m.ownerNetTarget)+' net est provisionnée prudemment à '+euro(targetCost)+' de coût société, soit environ '+fmt(ownerHours)+' h/mois de contribution supplémentaire. Le coût réel d’une alternante et de votre rémunération reste à confirmer.';
+ document.getElementById("maturityNote").innerHTML='<strong>Lecture :</strong> les montants sont une capacité mensuelle avant IS, après structure A3, communication, équivalent de l’annuité bancaire et mensualité du prêt d’honneur ('+euro(honorMonthly)+'/mois). Le reliquat du crédit et le cash A1/A2 sont exclus. La cible personnelle de '+euro(m.ownerNetTarget)+' net est provisionnée prudemment à '+euro(targetCost)+' de coût société, soit environ '+fmt(ownerHours)+' h/mois de contribution supplémentaire. Le coût réel d’une alternante et de votre rémunération reste à confirmer.';
 }
 function render(){
  last=compute();let h=last,c=state.commercial,f=state.finance,o=state.operations,sp=loanSplit();
